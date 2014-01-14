@@ -1,0 +1,4 @@
+horizondb
+=========
+
+Time series database
