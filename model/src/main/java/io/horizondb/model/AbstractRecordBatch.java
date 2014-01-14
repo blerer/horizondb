@@ -29,33 +29,34 @@ import org.apache.commons.lang.builder.ToStringStyle;
  * Base class for the record batch classes.
  * 
  * @author Benjamin
- *
+ * 
  */
 public abstract class AbstractRecordBatch implements Serializable {
 
 	/**
 	 * The database in which the records must be inserted.
 	 */
-    private final String databaseName;
+	private final String databaseName;
 	/**
 	 * The time series in which the records must be inserted.
 	 */
-    private final String seriesName;
-    
+	private final String seriesName;
+
 	/**
 	 * The partition ID.
 	 */
-    private final long partition;
+	private final long partition;
 
 	/**
-	 * Creates a new <code>AbstractRecordBatch</code> for the specified database and the specified series.
+	 * Creates a new <code>AbstractRecordBatch</code> for the specified database
+	 * and the specified series.
 	 * 
 	 * @param databaseName the database name
 	 * @param seriesName the time series name
 	 * @param partition the partition ID
 	 */
 	public AbstractRecordBatch(String databaseName, String seriesName, long partition) {
-		
+
 		this.databaseName = databaseName;
 		this.seriesName = seriesName;
 		this.partition = partition;
@@ -80,8 +81,9 @@ public abstract class AbstractRecordBatch implements Serializable {
 	}
 
 	/**
-	 * Returns the partition ID.	
-	 * @return the partition ID.	
+	 * Returns the partition ID.
+	 * 
+	 * @return the partition ID.
 	 */
 	public long getPartition() {
 		return this.partition;
@@ -90,76 +92,75 @@ public abstract class AbstractRecordBatch implements Serializable {
 	/**
 	 * {@inheritDoc}
 	 */
-    @Override
-    public final int computeSerializedSize() {
-	    return VarInts.computeStringSize(this.databaseName) 
-	    		+ VarInts.computeStringSize(this.seriesName) 
-	    		+ VarInts.computeUnsignedLongSize(this.partition)
-	    		+ computeRecordSetSerializedSize();
-    }
+	@Override
+	public final int computeSerializedSize() {
+		return VarInts.computeStringSize(this.databaseName) + VarInts.computeStringSize(this.seriesName)
+		        + VarInts.computeUnsignedLongSize(this.partition) + computeRecordSetSerializedSize();
+	}
 
-    /**
+	/**
 	 * {@inheritDoc}
 	 */
-    @Override
-    public final void writeTo(ByteWriter writer) throws IOException {
-    	
-    	VarInts.writeString(writer, this.databaseName);
-    	VarInts.writeString(writer, this.seriesName);
-    	VarInts.writeUnsignedLong(writer, this.partition);
-    	writeRecordSetTo(writer);
-    }
+	@Override
+	public final void writeTo(ByteWriter writer) throws IOException {
+
+		VarInts.writeString(writer, this.databaseName);
+		VarInts.writeString(writer, this.seriesName);
+		VarInts.writeUnsignedLong(writer, this.partition);
+		writeRecordSetTo(writer);
+	}
 
 	/**
 	 * Computes the serialized size of the record set.
 	 * 
 	 * @return the serialized size of the record set.
 	 */
-    protected abstract int computeRecordSetSerializedSize();
+	protected abstract int computeRecordSetSerializedSize();
 
-    /**
-     * Writes the record set to the specified writer.
-     * 
-     * @param writer the writer to write to
-     * @throws IOException if an I/O problem occurs while writing the record set. 
-     */
-    protected abstract void writeRecordSetTo(ByteWriter writer) throws IOException;
+	/**
+	 * Writes the record set to the specified writer.
+	 * 
+	 * @param writer the writer to write to
+	 * @throws IOException if an I/O problem occurs while writing the record
+	 *             set.
+	 */
+	protected abstract void writeRecordSetTo(ByteWriter writer) throws IOException;
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
 	public String toString() {
 		return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE).append("databaseName", this.databaseName)
 		                                                                  .append("seriesName", this.seriesName)
 		                                                                  .append("partition", this.partition)
 		                                                                  .toString();
 	}
-    
-    protected static abstract class AbstractParser<T extends AbstractRecordBatch, S> implements Parser<T> {
 
-    	/**
-    	 * {@inheritDoc}
-    	 */
+	protected static abstract class AbstractParser<T extends AbstractRecordBatch, S> implements Parser<T> {
+
+		/**
+		 * {@inheritDoc}
+		 */
 		@Override
-        public final T parseFrom(ByteReader reader) throws IOException {
-	        
-			String databaseName = VarInts.readString(reader);
-	        String seriesName = VarInts.readString(reader);
-	        long partition = VarInts.readUnsignedLong(reader);
+		public final T parseFrom(ByteReader reader) throws IOException {
 
-	        S recordSet = parseRecordSetFrom(reader);
-	        
-	        return newRecordBatch(databaseName, seriesName, partition, recordSet);
-        }
-		
+			String databaseName = VarInts.readString(reader);
+			String seriesName = VarInts.readString(reader);
+			long partition = VarInts.readUnsignedLong(reader);
+
+			S recordSet = parseRecordSetFrom(reader);
+
+			return newRecordBatch(databaseName, seriesName, partition, recordSet);
+		}
+
 		/**
 		 * Parses the record set from the specified reader.
 		 * 
 		 * @param reader the reader
 		 * @return the record set.
 		 */
-		protected abstract  S parseRecordSetFrom(ByteReader reader) throws IOException;
+		protected abstract S parseRecordSetFrom(ByteReader reader) throws IOException;
 
 		/**
 		 * Creates a new record batch instance.
@@ -171,6 +172,6 @@ public abstract class AbstractRecordBatch implements Serializable {
 		 * @return a new record batch instance.
 		 */
 		protected abstract T newRecordBatch(String databaseName, String seriesName, long partition, S recordSet);
-    	
-    }
+
+	}
 }
