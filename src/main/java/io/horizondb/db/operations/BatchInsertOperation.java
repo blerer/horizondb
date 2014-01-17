@@ -21,8 +21,8 @@ import io.horizondb.db.OperationContext;
 import io.horizondb.db.databases.Database;
 import io.horizondb.db.series.TimeSeries;
 import io.horizondb.model.BinaryRecordBatch;
-import io.horizondb.protocol.Msg;
-import io.horizondb.protocol.MsgHeader;
+import io.horizondb.model.protocol.Msg;
+import io.horizondb.model.protocol.MsgHeader;
 
 import java.io.IOException;
 

@@ -17,6 +17,7 @@ package io.horizondb.db.databases;
 
 import io.horizondb.db.Component;
 import io.horizondb.db.HorizonDBException;
+import io.horizondb.model.DatabaseDefinition;
 
 import java.io.IOException;
 
@@ -29,15 +30,15 @@ import java.io.IOException;
 public interface DatabaseManager extends Component {
 
     /**
-     * Creates the database with the specified name.
+     * Creates the database with the specified definition.
      * 
-     * @param name the database name.
+     * @param definition the database definition.
      * @param throwExceptionIfExists <code>true</code> if an exception must be thrown if the database already exists.
      * @throws IOException if an I/O problem occurs while creating the database.
      * @throws HorizonDBException if a database with the same name already exists and throwExceptionIfExists is
      * <code>true</code>.
      */
-    void createDatabase(String name, boolean throwExceptionIfExists) throws IOException, HorizonDBException;
+    void createDatabase(DatabaseDefinition definition, boolean throwExceptionIfExists) throws IOException, HorizonDBException;
 
     /**
      * Returns the database with the specified name if it exists.

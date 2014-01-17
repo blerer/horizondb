@@ -15,7 +15,6 @@
  */
 package io.horizondb.db.series;
 
-import io.horizondb.ErrorCodes;
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.commitlog.ReplayPosition;
@@ -23,10 +22,11 @@ import io.horizondb.io.Buffer;
 import io.horizondb.io.buffers.CompositeBuffer;
 import io.horizondb.io.files.SeekableFileDataInput;
 import io.horizondb.io.files.SeekableFileDataInputs;
-import io.horizondb.model.Record;
+import io.horizondb.model.ErrorCodes;
 import io.horizondb.model.RecordIterator;
 import io.horizondb.model.TimeSeriesDefinition;
-import io.horizondb.model.records.TimeSeriesRecord;
+import io.horizondb.model.core.Record;
+import io.horizondb.model.core.records.TimeSeriesRecord;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;

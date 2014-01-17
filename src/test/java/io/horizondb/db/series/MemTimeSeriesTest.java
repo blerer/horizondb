@@ -21,11 +21,11 @@ import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.model.BinaryTimeSeriesRecordIterator;
 import io.horizondb.model.DatabaseDefinition;
 import io.horizondb.model.FieldType;
-import io.horizondb.model.Record;
 import io.horizondb.model.RecordIterator;
 import io.horizondb.model.RecordTypeDefinition;
 import io.horizondb.model.TimeSeriesDefinition;
 import io.horizondb.model.TimeSeriesRecordIterator;
+import io.horizondb.model.core.Record;
 
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;

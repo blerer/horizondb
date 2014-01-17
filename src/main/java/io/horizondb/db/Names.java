@@ -15,7 +15,7 @@
  */
 package io.horizondb.db;
 
-import io.horizondb.ErrorCodes;
+import io.horizondb.model.ErrorCodes;
 
 import java.util.Arrays;
 

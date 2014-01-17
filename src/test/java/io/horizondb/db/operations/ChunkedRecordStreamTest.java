@@ -7,10 +7,10 @@ import io.horizondb.io.encoding.VarInts;
 import io.horizondb.model.DataChunk;
 import io.horizondb.model.FieldType;
 import io.horizondb.model.RecordIterator;
-import io.horizondb.model.records.TimeSeriesRecord;
-import io.horizondb.protocol.Msg;
-import io.horizondb.protocol.MsgHeader;
-import io.horizondb.protocol.OpCode;
+import io.horizondb.model.core.records.TimeSeriesRecord;
+import io.horizondb.model.protocol.Msg;
+import io.horizondb.model.protocol.MsgHeader;
+import io.horizondb.model.protocol.OpCode;
 import io.netty.channel.ChannelHandlerContext;
 
 import java.io.IOException;

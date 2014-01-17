@@ -15,7 +15,6 @@
  */
 package io.horizondb.db;
 
-import io.horizondb.model.Error;
 
 /**
  * Base exception for all the exceptions throw by the database.
@@ -65,14 +64,5 @@ public class HorizonDBException extends Exception {
      */
     public int getCode() {
         return this.code;
-    }
-
-    /**
-     * Converts this exception into an error message.
-     * 
-     * @return an error message corresponding to that exception.
-     */
-    public Error toError() {
-        return new Error(getCode(), getMessage());
     }
 }

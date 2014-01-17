@@ -16,7 +16,7 @@
 package io.horizondb.db;
 
 import io.horizondb.db.utils.concurrent.NamedThreadFactory;
-import io.horizondb.protocol.MsgHeader;
+import io.horizondb.model.protocol.MsgHeader;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;

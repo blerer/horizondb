@@ -21,7 +21,6 @@ import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.metrics.CacheMetrics;
 import io.horizondb.db.metrics.PrefixFilter;
 import io.horizondb.model.TimeSeriesDefinition;
-import io.horizondb.model.TimeSeriesId;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;

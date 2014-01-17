@@ -15,7 +15,6 @@
  */
 package io.horizondb.db.databases;
 
-import io.horizondb.ErrorCodes;
 import io.horizondb.db.AbstractComponent;
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
@@ -35,6 +34,7 @@ import io.horizondb.io.encoding.VarInts;
 import io.horizondb.io.files.FileDataOutput;
 import io.horizondb.io.files.SeekableFileDataInput;
 import io.horizondb.model.DatabaseDefinition;
+import io.horizondb.model.ErrorCodes;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -151,15 +151,14 @@ public final class DefaultDatabaseManager extends AbstractComponent implements D
      * {@inheritDoc}
      */
     @Override
-    public void createDatabase(String name, boolean throwExceptionIfExists) throws IOException, HorizonDBException {
+    public void createDatabase(DatabaseDefinition definition, boolean throwExceptionIfExists) throws IOException, HorizonDBException {
 
+        String name = definition.getName();
         String lowerCaseName = name.toLowerCase();
 
         Names.checkDatabaseName(name);
 
-        DatabaseDefinition metaData = new DatabaseDefinition(name);
-
-        if (!this.btree.insertIfAbsent(lowerCaseName, metaData) && throwExceptionIfExists) {
+        if (!this.btree.insertIfAbsent(lowerCaseName, definition) && throwExceptionIfExists) {
 
             throw new HorizonDBException(ErrorCodes.DUPLICATE_DATABASE, "Duplicate database name " + name);
         }

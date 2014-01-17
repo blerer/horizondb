@@ -18,7 +18,7 @@ package io.horizondb.db;
 import java.nio.ByteOrder;
 
 import io.horizondb.io.buffers.Buffers;
-import io.horizondb.protocol.Msg;
+import io.horizondb.model.protocol.Msg;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;

@@ -20,6 +20,7 @@ import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.metrics.CacheMetrics;
 import io.horizondb.db.metrics.PrefixFilter;
+import io.horizondb.model.DatabaseDefinition;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
@@ -116,8 +117,8 @@ public final class DatabaseManagerCache extends AbstractComponent implements Dat
      * {@inheritDoc}
      */
     @Override
-    public void createDatabase(String name, boolean throwExceptionIfExists) throws IOException, HorizonDBException {
-        this.manager.createDatabase(name, throwExceptionIfExists);
+    public void createDatabase(DatabaseDefinition definition, boolean throwExceptionIfExists) throws IOException, HorizonDBException {
+        this.manager.createDatabase(definition, throwExceptionIfExists);
     }
 
     /**

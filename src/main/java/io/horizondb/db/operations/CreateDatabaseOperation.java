@@ -18,17 +18,18 @@ package io.horizondb.db.operations;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.Operation;
 import io.horizondb.db.OperationContext;
-import io.horizondb.model.DatabaseDefinition;
-import io.horizondb.protocol.Msg;
-import io.horizondb.protocol.MsgHeader;
+import io.horizondb.model.protocol.CreateDatabaseRequestPayload;
+import io.horizondb.model.protocol.Msg;
+import io.horizondb.model.protocol.Msgs;
 
 import java.io.IOException;
 
 /**
- * Operation used to create a new database.
+ * <code>Operation</code> that handle <code>CREATE_DATABASE</code> operations.
  * 
  * @author Benjamin
  */
+
 public final class CreateDatabaseOperation implements Operation {
 
     /**
@@ -37,11 +38,10 @@ public final class CreateDatabaseOperation implements Operation {
     @Override
     public Object perform(OperationContext context, Msg<?> request) throws IOException, HorizonDBException {
 
-        @SuppressWarnings("unchecked")
-        Msg<DatabaseDefinition> msg = (Msg<DatabaseDefinition>) request;
+        CreateDatabaseRequestPayload payload = Msgs.getPayload(request);
 
-        context.getDatabaseManager().createDatabase(msg.getPayload().getName(), !context.isReplay());
+        context.getDatabaseManager().createDatabase(payload.getDefinition(), !context.isReplay());
 
-        return Msg.emptyMsg(MsgHeader.newResponseHeader(msg.getHeader(), 0, 0));
+        return Msgs.newCreateDatabaseResponse(request);
     }
 }

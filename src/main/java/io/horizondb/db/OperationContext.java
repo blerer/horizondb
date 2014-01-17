@@ -15,9 +15,9 @@
  */
 package io.horizondb.db;
 
-import io.horizondb.ErrorCodes;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.db.databases.DatabaseManager;
+import io.horizondb.model.ErrorCodes;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;

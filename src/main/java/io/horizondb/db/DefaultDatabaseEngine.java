@@ -15,7 +15,6 @@
  */
 package io.horizondb.db;
 
-import io.horizondb.ErrorCodes;
 import io.horizondb.db.commitlog.CommitLog;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.db.databases.DatabaseManager;
@@ -34,10 +33,11 @@ import io.horizondb.db.series.TimeSeriesManagerCache;
 import io.horizondb.db.series.TimeSeriesPartitionManager;
 import io.horizondb.db.series.TimeSeriesPartitionManagerCaches;
 import io.horizondb.io.ReadableBuffer;
-import io.horizondb.model.Error;
-import io.horizondb.protocol.Msg;
-import io.horizondb.protocol.MsgHeader;
-import io.horizondb.protocol.OpCode;
+import io.horizondb.model.ErrorCodes;
+import io.horizondb.model.protocol.Msg;
+import io.horizondb.model.protocol.MsgHeader;
+import io.horizondb.model.protocol.Msgs;
+import io.horizondb.model.protocol.OpCode;
 
 import java.io.IOException;
 import java.util.EnumMap;
@@ -162,8 +162,7 @@ public class DefaultDatabaseEngine extends AbstractComponent implements Database
 
             this.logger.error("", e);
 
-            Error error = new Error(ErrorCodes.INTERNAL_ERROR, e.getMessage());
-            return Msg.newErrorMsg(error);
+            return Msgs.newErrorMsg(ErrorCodes.INTERNAL_ERROR, e.getMessage());
         }
     }
 
@@ -182,9 +181,7 @@ public class DefaultDatabaseEngine extends AbstractComponent implements Database
 
                 this.logger.error(message);
 
-                Error error = new Error(ErrorCodes.UNKNOWN_OPERATION_CODE, message);
-
-                return Msg.newErrorMsg(header, error);
+                return Msgs.newErrorMsg(header, ErrorCodes.UNKNOWN_OPERATION_CODE, message);
             }
 
             OperationContext context = this.contextBuilder.build();
@@ -199,7 +196,7 @@ public class DefaultDatabaseEngine extends AbstractComponent implements Database
 
             this.logger.error("", e);
 
-            return Msg.newErrorMsg(header, e.toError());
+            return Msgs.newErrorMsg(header, e.getCode(), e.getMessage());
         }
     }
 

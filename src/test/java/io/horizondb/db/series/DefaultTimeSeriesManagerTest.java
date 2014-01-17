@@ -15,11 +15,11 @@
  */
 package io.horizondb.db.series;
 
-import io.horizondb.ErrorCodes;
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.io.files.FileUtils;
 import io.horizondb.model.DatabaseDefinition;
+import io.horizondb.model.ErrorCodes;
 import io.horizondb.model.RecordTypeDefinition;
 import io.horizondb.model.TimeSeriesDefinition;
 

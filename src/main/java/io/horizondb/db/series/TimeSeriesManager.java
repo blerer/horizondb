@@ -18,7 +18,6 @@ package io.horizondb.db.series;
 import io.horizondb.db.Component;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.model.TimeSeriesDefinition;
-import io.horizondb.model.TimeSeriesId;
 
 import java.io.IOException;
 

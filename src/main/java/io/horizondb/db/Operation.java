@@ -17,7 +17,7 @@ package io.horizondb.db;
 
 import java.io.IOException;
 
-import io.horizondb.protocol.Msg;
+import io.horizondb.model.protocol.Msg;
 
 /**
  * Performs the operation requested by the specified message.

@@ -15,12 +15,12 @@
  */
 package io.horizondb.db.databases;
 
-import io.horizondb.ErrorCodes;
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.series.TimeSeriesManager;
 import io.horizondb.io.files.FileUtils;
 import io.horizondb.model.DatabaseDefinition;
+import io.horizondb.model.ErrorCodes;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -68,7 +68,7 @@ public class DatabaseManagerCacheTest {
         DatabaseManager manager = EasyMock.createMock(DatabaseManager.class);
 
         manager.start();
-        manager.createDatabase("test", true);
+        manager.createDatabase(new DatabaseDefinition("test"), true);
         Database database = new Database(this.configuration, new DatabaseDefinition("test"), timeSeriesManager);
         EasyMock.expect(manager.getDatabase("test")).andReturn(database);
         manager.shutdown();
@@ -78,7 +78,7 @@ public class DatabaseManagerCacheTest {
         DatabaseManagerCache cache = new DatabaseManagerCache(this.configuration, manager);
         cache.start();
 
-        cache.createDatabase("test", true);
+        cache.createDatabase(new DatabaseDefinition("test"), true);
 
         Database firstCall = cache.getDatabase("Test");
 
@@ -116,7 +116,7 @@ public class DatabaseManagerCacheTest {
                                                                                      "boom"));
 
         manager.start();
-        manager.createDatabase("test", true);
+        manager.createDatabase(new DatabaseDefinition("test"), true);
         Database database = new Database(this.configuration, new DatabaseDefinition("test"), timeSeriesManager);
         EasyMock.expect(manager.getDatabase("test")).andReturn(database);
         manager.shutdown();
@@ -136,7 +136,7 @@ public class DatabaseManagerCacheTest {
             Assert.assertEquals(ErrorCodes.UNKNOWN_DATABASE, e.getCode());
         }
 
-        cache.createDatabase("test", true);
+        cache.createDatabase(new DatabaseDefinition("test"), true);
 
         Database firstCall = cache.getDatabase("Test");
 
@@ -161,8 +161,8 @@ public class DatabaseManagerCacheTest {
 
         DatabaseManager manager = EasyMock.createMock(DatabaseManager.class);
         manager.start();
-        manager.createDatabase("test", true);
-        manager.createDatabase("test", true);
+        manager.createDatabase(new DatabaseDefinition("test"), true);
+        manager.createDatabase(new DatabaseDefinition("test"), true);
         EasyMock.expectLastCall().andThrow(new HorizonDBException(ErrorCodes.DUPLICATE_DATABASE, "boom"));
         manager.shutdown();
 
@@ -173,8 +173,8 @@ public class DatabaseManagerCacheTest {
 
         try {
 
-            cache.createDatabase("test", true);
-            cache.createDatabase("test", true);
+            cache.createDatabase(new DatabaseDefinition("test"), true);
+            cache.createDatabase(new DatabaseDefinition("test"), true);
             Assert.fail();
 
         } catch (HorizonDBException e) {

@@ -15,10 +15,9 @@
  */
 package io.horizondb.db;
 
-import io.horizondb.ErrorCodes;
 import io.horizondb.io.buffers.Buffers;
-import io.horizondb.model.Error;
-import io.horizondb.protocol.Msg;
+import io.horizondb.model.ErrorCodes;
+import io.horizondb.model.protocol.Msgs;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -66,8 +65,7 @@ class HorizonServerHandler extends ChannelInboundHandlerAdapter {
 
         if (ctx.channel().isActive()) {
 
-            Error error = new Error(ErrorCodes.INTERNAL_ERROR, cause.getMessage());
-            ctx.channel().writeAndFlush(Msg.newErrorMsg(error));
+            ctx.channel().writeAndFlush(Msgs.newErrorMsg(ErrorCodes.INTERNAL_ERROR, cause.getMessage()));
         }
     }
 }

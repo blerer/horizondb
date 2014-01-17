@@ -19,17 +19,18 @@ import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.Operation;
 import io.horizondb.db.OperationContext;
 import io.horizondb.db.databases.Database;
-import io.horizondb.model.TimeSeriesDefinition;
-import io.horizondb.protocol.Msg;
-import io.horizondb.protocol.MsgHeader;
+import io.horizondb.model.protocol.CreateTimeSeriesRequestPayload;
+import io.horizondb.model.protocol.Msg;
+import io.horizondb.model.protocol.Msgs;
 
 import java.io.IOException;
 
 /**
- * @author Benjamin
+ * <code>Operation</code> that handle <code>CREATE_TIMESERIES</code> operations.
  * 
+ * @author Benjamin
  */
-public class CreateTimeSeriesOperation implements Operation {
+public final class CreateTimeSeriesOperation implements Operation {
 
     /**
      * {@inheritDoc}
@@ -37,16 +38,12 @@ public class CreateTimeSeriesOperation implements Operation {
     @Override
     public Object perform(OperationContext context, Msg<?> request) throws IOException, HorizonDBException {
 
-        @SuppressWarnings("unchecked")
-        Msg<TimeSeriesDefinition> msg = (Msg<TimeSeriesDefinition>) request;
+        CreateTimeSeriesRequestPayload payload = Msgs.getPayload(request);
 
-        TimeSeriesDefinition definition = msg.getPayload();
+        Database database = context.getDatabaseManager().getDatabase(payload.getDatabaseName());
 
-        Database database = context.getDatabaseManager().getDatabase(definition.getDatabaseName());
+        database.createTimeSeries(payload.getDefinition(), !context.isReplay());
 
-        database.createTimeSeries(definition, !context.isReplay());
-
-        return Msg.emptyMsg(MsgHeader.newResponseHeader(msg.getHeader(), 0, 0));
+        return Msgs.newCreateTimeSeriesResponse(request);
     }
-
 }

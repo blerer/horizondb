@@ -20,8 +20,9 @@ import io.horizondb.db.Operation;
 import io.horizondb.db.OperationContext;
 import io.horizondb.db.databases.Database;
 import io.horizondb.db.series.TimeSeries;
-import io.horizondb.model.TimeSeriesId;
-import io.horizondb.protocol.Msg;
+import io.horizondb.model.protocol.GetTimeSeriesRequestPayload;
+import io.horizondb.model.protocol.Msg;
+import io.horizondb.model.protocol.Msgs;
 
 import java.io.IOException;
 
@@ -37,15 +38,12 @@ public class GetTimeSeriesOperation implements Operation {
     @Override
     public Object perform(OperationContext context, Msg<?> request) throws IOException, HorizonDBException {
 
-        @SuppressWarnings("unchecked")
-        Msg<TimeSeriesId> msg = (Msg<TimeSeriesId>) request;
+        GetTimeSeriesRequestPayload payload = Msgs.getPayload(request);
 
-        TimeSeriesId id = msg.getPayload();
+        Database database = context.getDatabaseManager().getDatabase(payload.getDatabaseName());
 
-        Database database = context.getDatabaseManager().getDatabase(id.getDatabaseName());
+        TimeSeries series = database.getTimeSeries(payload.getSeriesName());
 
-        TimeSeries series = database.getTimeSeries(id.getSeriesName());
-
-        return Msg.newResponseMsg(msg.getHeader(), series.getDefinition());
+        return Msgs.newGetTimeSeriesResponse(request, series.getDefinition());
     }
 }

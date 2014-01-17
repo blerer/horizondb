@@ -19,10 +19,10 @@ import io.horizondb.io.Buffer;
 import io.horizondb.io.buffers.Buffers;
 import io.horizondb.io.encoding.VarInts;
 import io.horizondb.model.DataChunk;
-import io.horizondb.model.Record;
 import io.horizondb.model.RecordIterator;
-import io.horizondb.protocol.Msg;
-import io.horizondb.protocol.MsgHeader;
+import io.horizondb.model.core.Record;
+import io.horizondb.model.protocol.Msg;
+import io.horizondb.model.protocol.MsgHeader;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.stream.ChunkedInput;
 

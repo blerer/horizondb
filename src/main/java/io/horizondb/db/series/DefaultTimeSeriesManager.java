@@ -15,7 +15,6 @@
  */
 package io.horizondb.db.series;
 
-import io.horizondb.ErrorCodes;
 import io.horizondb.db.AbstractComponent;
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
@@ -32,8 +31,8 @@ import io.horizondb.io.ByteReader;
 import io.horizondb.io.ByteWriter;
 import io.horizondb.io.files.FileDataOutput;
 import io.horizondb.io.files.SeekableFileDataInput;
+import io.horizondb.model.ErrorCodes;
 import io.horizondb.model.TimeSeriesDefinition;
-import io.horizondb.model.TimeSeriesId;
 
 import java.io.IOException;
 import java.nio.file.Files;

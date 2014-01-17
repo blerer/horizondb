@@ -19,16 +19,18 @@ import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.Operation;
 import io.horizondb.db.OperationContext;
 import io.horizondb.db.databases.Database;
-import io.horizondb.io.serialization.SerializableString;
-import io.horizondb.protocol.Msg;
+import io.horizondb.model.protocol.GetDatabaseRequestPayload;
+import io.horizondb.model.protocol.Msg;
+import io.horizondb.model.protocol.Msgs;
 
 import java.io.IOException;
 
 /**
- * @author Benjamin
+ * <code>Operation</code> that handle <code>GET_DATABASE</code> operations.
  * 
+ * @author Benjamin
  */
-public class GetDatabaseOperation implements Operation {
+public final class GetDatabaseOperation implements Operation {
 
     /**
      * {@inheritDoc}
@@ -36,11 +38,10 @@ public class GetDatabaseOperation implements Operation {
     @Override
     public Object perform(OperationContext context, Msg<?> request) throws IOException, HorizonDBException {
 
-        @SuppressWarnings("unchecked")
-        Msg<SerializableString> msg = (Msg<SerializableString>) request;
+        GetDatabaseRequestPayload payload = Msgs.getPayload(request);
 
-        Database database = context.getDatabaseManager().getDatabase(msg.getPayload().toString());
+        Database database = context.getDatabaseManager().getDatabase(payload.getDatabaseName());
 
-        return Msg.newResponseMsg(request.getHeader(), database.getDefinition());
+        return Msgs.newGetDatabaseResponse(request, database.getDefinition());
     }
 }

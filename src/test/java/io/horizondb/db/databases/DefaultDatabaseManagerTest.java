@@ -15,11 +15,12 @@
  */
 package io.horizondb.db.databases;
 
-import io.horizondb.ErrorCodes;
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.series.TimeSeriesManager;
 import io.horizondb.io.files.FileUtils;
+import io.horizondb.model.DatabaseDefinition;
+import io.horizondb.model.ErrorCodes;
 import io.horizondb.test.AssertFiles;
 
 import java.io.IOException;
@@ -67,7 +68,7 @@ public class DefaultDatabaseManagerTest {
 
         manager.start();
 
-        manager.createDatabase("test", true);
+        manager.createDatabase(new DatabaseDefinition("test"), true);
 
         Database database = manager.getDatabase("Test");
 
@@ -110,8 +111,8 @@ public class DefaultDatabaseManagerTest {
 
         try {
 
-            manager.createDatabase("test", true);
-            manager.createDatabase("Test", true);
+            manager.createDatabase(new DatabaseDefinition("test"), true);
+            manager.createDatabase(new DatabaseDefinition("Test"), true);
             Assert.fail();
 
         } catch (HorizonDBException e) {
@@ -133,8 +134,8 @@ public class DefaultDatabaseManagerTest {
 
         manager.start();
 
-        manager.createDatabase("test", true);
-        manager.createDatabase("Test", false);
+        manager.createDatabase(new DatabaseDefinition("test"), true);
+        manager.createDatabase(new DatabaseDefinition("Test"), false);
 
         manager.shutdown();
     }
