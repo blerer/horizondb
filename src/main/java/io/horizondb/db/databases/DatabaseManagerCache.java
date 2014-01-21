@@ -20,7 +20,7 @@ import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.metrics.CacheMetrics;
 import io.horizondb.db.metrics.PrefixFilter;
-import io.horizondb.model.DatabaseDefinition;
+import io.horizondb.model.schema.DatabaseDefinition;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;

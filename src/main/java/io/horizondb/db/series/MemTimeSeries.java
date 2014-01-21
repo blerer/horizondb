@@ -23,10 +23,10 @@ import io.horizondb.io.buffers.CompositeBuffer;
 import io.horizondb.io.files.SeekableFileDataInput;
 import io.horizondb.io.files.SeekableFileDataInputs;
 import io.horizondb.model.ErrorCodes;
-import io.horizondb.model.RecordIterator;
-import io.horizondb.model.TimeSeriesDefinition;
 import io.horizondb.model.core.Record;
+import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.core.records.TimeSeriesRecord;
+import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;

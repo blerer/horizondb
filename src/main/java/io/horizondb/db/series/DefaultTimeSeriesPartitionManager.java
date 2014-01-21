@@ -30,7 +30,7 @@ import io.horizondb.io.ByteWriter;
 import io.horizondb.io.files.FileDataOutput;
 import io.horizondb.io.files.SeekableFileDataInput;
 import io.horizondb.model.PartitionId;
-import io.horizondb.model.TimeSeriesDefinition;
+import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
 import java.nio.file.Files;

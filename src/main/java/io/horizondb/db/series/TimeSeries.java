@@ -18,11 +18,11 @@ package io.horizondb.db.series;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.OperationContext;
 import io.horizondb.io.ReadableBuffer;
-import io.horizondb.model.BinaryTimeSeriesRecordIterator;
 import io.horizondb.model.PartitionId;
 import io.horizondb.model.Query;
-import io.horizondb.model.RecordIterator;
-import io.horizondb.model.TimeSeriesDefinition;
+import io.horizondb.model.core.RecordIterator;
+import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;
+import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
 

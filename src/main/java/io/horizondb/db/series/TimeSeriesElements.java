@@ -20,8 +20,8 @@ import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.files.CompositeSeekableFileDataInput;
 import io.horizondb.io.files.SeekableFileDataInput;
-import io.horizondb.model.RecordIterator;
-import io.horizondb.model.TimeSeriesDefinition;
+import io.horizondb.model.core.RecordIterator;
+import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
 import java.util.ArrayList;

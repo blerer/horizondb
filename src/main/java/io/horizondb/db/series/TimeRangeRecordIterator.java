@@ -15,11 +15,11 @@
  */
 package io.horizondb.db.series;
 
-import io.horizondb.model.RecordIterator;
 import io.horizondb.model.TimeRange;
-import io.horizondb.model.TimeSeriesDefinition;
 import io.horizondb.model.core.Record;
+import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.core.records.TimeSeriesRecord;
+import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
 import java.util.NoSuchElementException;

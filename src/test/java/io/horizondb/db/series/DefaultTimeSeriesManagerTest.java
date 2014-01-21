@@ -18,10 +18,10 @@ package io.horizondb.db.series;
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.io.files.FileUtils;
-import io.horizondb.model.DatabaseDefinition;
 import io.horizondb.model.ErrorCodes;
-import io.horizondb.model.RecordTypeDefinition;
-import io.horizondb.model.TimeSeriesDefinition;
+import io.horizondb.model.schema.DatabaseDefinition;
+import io.horizondb.model.schema.RecordTypeDefinition;
+import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -39,7 +39,7 @@ import org.junit.Test;
  * 
  */
 public class DefaultTimeSeriesManagerTest {
-
+    
     private Path testDirectory;
 
     private Configuration configuration;
@@ -158,7 +158,7 @@ public class DefaultTimeSeriesManagerTest {
     public void testCreateTimeSeriesWithExistingTimeSeriesAndThrowExceptionFalse() throws IOException,
                                                                                   InterruptedException,
                                                                                   HorizonDBException {
-
+        
         TimeSeriesManager manager = new DefaultTimeSeriesManager(this.partitionManager, this.configuration);
 
         manager.start();

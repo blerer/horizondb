@@ -21,7 +21,7 @@ import io.horizondb.db.OperationContext;
 import io.horizondb.db.databases.Database;
 import io.horizondb.db.series.TimeSeries;
 import io.horizondb.model.Query;
-import io.horizondb.model.RecordIterator;
+import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.protocol.Msg;
 
 import java.io.IOException;

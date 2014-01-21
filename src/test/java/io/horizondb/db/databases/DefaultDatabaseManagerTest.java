@@ -19,8 +19,8 @@ import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.series.TimeSeriesManager;
 import io.horizondb.io.files.FileUtils;
-import io.horizondb.model.DatabaseDefinition;
 import io.horizondb.model.ErrorCodes;
+import io.horizondb.model.schema.DatabaseDefinition;
 import io.horizondb.test.AssertFiles;
 
 import java.io.IOException;

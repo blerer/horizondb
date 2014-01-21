@@ -21,7 +21,7 @@ import io.horizondb.io.files.RandomAccessDataFile;
 import io.horizondb.io.files.SeekableFileDataInput;
 import io.horizondb.io.files.SeekableFileDataInputs;
 import io.horizondb.io.files.SeekableFileDataOutput;
-import io.horizondb.model.TimeSeriesDefinition;
+import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.Closeable;
 import java.io.IOException;

@@ -33,8 +33,8 @@ import io.horizondb.io.ByteWriter;
 import io.horizondb.io.encoding.VarInts;
 import io.horizondb.io.files.FileDataOutput;
 import io.horizondb.io.files.SeekableFileDataInput;
-import io.horizondb.model.DatabaseDefinition;
 import io.horizondb.model.ErrorCodes;
+import io.horizondb.model.schema.DatabaseDefinition;
 
 import java.io.IOException;
 import java.nio.file.Files;

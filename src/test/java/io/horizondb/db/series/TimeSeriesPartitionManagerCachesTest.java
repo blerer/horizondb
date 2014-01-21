@@ -18,13 +18,13 @@ package io.horizondb.db.series;
 import io.horizondb.db.Configuration;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.files.FileUtils;
-import io.horizondb.model.DatabaseDefinition;
-import io.horizondb.model.FieldType;
 import io.horizondb.model.PartitionId;
-import io.horizondb.model.RecordIterator;
-import io.horizondb.model.RecordTypeDefinition;
-import io.horizondb.model.TimeSeriesDefinition;
-import io.horizondb.model.TimeSeriesRecordIterator;
+import io.horizondb.model.core.RecordIterator;
+import io.horizondb.model.core.iterators.DefaultRecordIterator;
+import io.horizondb.model.schema.DatabaseDefinition;
+import io.horizondb.model.schema.FieldType;
+import io.horizondb.model.schema.RecordTypeDefinition;
+import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -38,7 +38,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static io.horizondb.db.utils.TimeUtils.getTime;
-
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -334,24 +333,24 @@ public class TimeSeriesPartitionManagerCachesTest {
 
             long timestamp = getTime("2013.11.26 12:32:12.000");
 
-            RecordIterator recordIterator = TimeSeriesRecordIterator.newBuilder(daxDefinition)
-                                                                    .newRecord("exchangeState")
-                                                                    .setTimestampInMillis(0, timestamp)
-                                                                    .setTimestampInMillis(1, timestamp)
-                                                                    .setByte(2, 10)
-                                                                    .newRecord("exchangeState")
-                                                                    .setTimestampInMillis(0, timestamp + 100)
-                                                                    .setTimestampInMillis(1, timestamp + 100)
-                                                                    .setByte(2, 5)
-                                                                    .newRecord("exchangeState")
-                                                                    .setTimestampInMillis(0, timestamp + 350)
-                                                                    .setTimestampInMillis(1, timestamp + 350)
-                                                                    .setByte(2, 10)
-                                                                    .newRecord("exchangeState")
-                                                                    .setTimestampInMillis(0, timestamp + 450)
-                                                                    .setTimestampInMillis(1, timestamp + 450)
-                                                                    .setByte(2, 6)
-                                                                    .build();
+            RecordIterator recordIterator = DefaultRecordIterator.newBuilder(daxDefinition)
+                                                                 .newRecord("exchangeState")
+                                                                 .setTimestampInMillis(0, timestamp)
+                                                                 .setTimestampInMillis(1, timestamp)
+                                                                 .setByte(2, 10)
+                                                                 .newRecord("exchangeState")
+                                                                 .setTimestampInMillis(0, timestamp + 100)
+                                                                 .setTimestampInMillis(1, timestamp + 100)
+                                                                 .setByte(2, 5)
+                                                                 .newRecord("exchangeState")
+                                                                 .setTimestampInMillis(0, timestamp + 350)
+                                                                 .setTimestampInMillis(1, timestamp + 350)
+                                                                 .setByte(2, 10)
+                                                                 .newRecord("exchangeState")
+                                                                 .setTimestampInMillis(0, timestamp + 450)
+                                                                 .setTimestampInMillis(1, timestamp + 450)
+                                                                 .setByte(2, 6)
+                                                                 .build();
 
             daxPartition.write(recordIterator, newFuture());
 
@@ -376,24 +375,24 @@ public class TimeSeriesPartitionManagerCachesTest {
             assertEquals(0, caches.readCacheStats().hitCount());
             assertEquals(0, caches.readCacheStats().missCount());
 
-            recordIterator = TimeSeriesRecordIterator.newBuilder(cacDefinition)
-                                                     .newRecord("exchangeState")
-                                                     .setTimestampInMillis(0, timestamp)
-                                                     .setTimestampInMillis(1, timestamp)
-                                                     .setByte(2, 10)
-                                                     .newRecord("exchangeState")
-                                                     .setTimestampInMillis(0, timestamp + 100)
-                                                     .setTimestampInMillis(1, timestamp + 100)
-                                                     .setByte(2, 5)
-                                                     .newRecord("exchangeState")
-                                                     .setTimestampInMillis(0, timestamp + 350)
-                                                     .setTimestampInMillis(1, timestamp + 350)
-                                                     .setByte(2, 10)
-                                                     .newRecord("exchangeState")
-                                                     .setTimestampInMillis(0, timestamp + 450)
-                                                     .setTimestampInMillis(1, timestamp + 450)
-                                                     .setByte(2, 6)
-                                                     .build();
+            recordIterator = DefaultRecordIterator.newBuilder(cacDefinition)
+                                                  .newRecord("exchangeState")
+                                                  .setTimestampInMillis(0, timestamp)
+                                                  .setTimestampInMillis(1, timestamp)
+                                                  .setByte(2, 10)
+                                                  .newRecord("exchangeState")
+                                                  .setTimestampInMillis(0, timestamp + 100)
+                                                  .setTimestampInMillis(1, timestamp + 100)
+                                                  .setByte(2, 5)
+                                                  .newRecord("exchangeState")
+                                                  .setTimestampInMillis(0, timestamp + 350)
+                                                  .setTimestampInMillis(1, timestamp + 350)
+                                                  .setByte(2, 10)
+                                                  .newRecord("exchangeState")
+                                                  .setTimestampInMillis(0, timestamp + 450)
+                                                  .setTimestampInMillis(1, timestamp + 450)
+                                                  .setByte(2, 6)
+                                                  .build();
 
             cacPartition.write(recordIterator, newFuture());
 

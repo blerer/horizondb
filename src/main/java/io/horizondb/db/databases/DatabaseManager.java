@@ -17,7 +17,7 @@ package io.horizondb.db.databases;
 
 import io.horizondb.db.Component;
 import io.horizondb.db.HorizonDBException;
-import io.horizondb.model.DatabaseDefinition;
+import io.horizondb.model.schema.DatabaseDefinition;
 
 import java.io.IOException;
 
