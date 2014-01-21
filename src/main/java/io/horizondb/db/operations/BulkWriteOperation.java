@@ -20,17 +20,18 @@ import io.horizondb.db.Operation;
 import io.horizondb.db.OperationContext;
 import io.horizondb.db.databases.Database;
 import io.horizondb.db.series.TimeSeries;
-import io.horizondb.model.BinaryRecordBatch;
+import io.horizondb.model.protocol.BinaryBulkWritePayload;
 import io.horizondb.model.protocol.Msg;
-import io.horizondb.model.protocol.MsgHeader;
+import io.horizondb.model.protocol.Msgs;
 
 import java.io.IOException;
 
 /**
- * @author Benjamin
+ * <code>Operation</code> that handle <code>BULK_WRITE</code> operations.
  * 
+ * @author Benjamin
  */
-public class BatchInsertOperation implements Operation {
+public class BulkWriteOperation implements Operation {
 
     /**
      * {@inheritDoc}
@@ -38,17 +39,14 @@ public class BatchInsertOperation implements Operation {
     @Override
     public Object perform(OperationContext context, Msg<?> request) throws IOException, HorizonDBException {
 
-        @SuppressWarnings("unchecked")
-        Msg<BinaryRecordBatch> msg = (Msg<BinaryRecordBatch>) request;
+        BinaryBulkWritePayload payload = Msgs.getPayload(request);
 
-        BinaryRecordBatch batch = msg.getPayload();
+        Database database = context.getDatabaseManager().getDatabase(payload.getDatabaseName());
 
-        Database database = context.getDatabaseManager().getDatabase(batch.getDatabaseName());
+        TimeSeries series = database.getTimeSeries(payload.getSeriesName());
 
-        TimeSeries series = database.getTimeSeries(batch.getSeriesName());
+        series.write(context, payload.getPartitionTimeRange(), payload.getBuffer());
 
-        series.write(context, batch.getPartition(), batch.getBuffer());
-
-        return Msg.emptyMsg(MsgHeader.newResponseHeader(msg.getHeader(), 0, 0));
+        return Msgs.newBulkWriteResponse(request);
     }
 }

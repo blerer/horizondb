@@ -18,9 +18,9 @@ package io.horizondb.db.operations;
 import io.horizondb.io.Buffer;
 import io.horizondb.io.buffers.Buffers;
 import io.horizondb.io.encoding.VarInts;
-import io.horizondb.model.DataChunk;
 import io.horizondb.model.core.Record;
 import io.horizondb.model.core.RecordIterator;
+import io.horizondb.model.protocol.DataChunkPayload;
 import io.horizondb.model.protocol.Msg;
 import io.horizondb.model.protocol.MsgHeader;
 import io.netty.channel.ChannelHandlerContext;
@@ -36,7 +36,7 @@ import static io.horizondb.io.files.FileUtils.ONE_KB;
  * @author Benjamin
  * 
  */
-public final class ChunkedRecordStream implements ChunkedInput<Msg<DataChunk>> {
+public final class ChunkedRecordStream implements ChunkedInput<Msg<DataChunkPayload>> {
 
     /**
      * The default buffer size.
@@ -119,7 +119,7 @@ public final class ChunkedRecordStream implements ChunkedInput<Msg<DataChunk>> {
      * {@inheritDoc}
      */
     @Override
-    public Msg<DataChunk> readChunk(ChannelHandlerContext ctx) throws Exception {
+    public Msg<DataChunkPayload> readChunk(ChannelHandlerContext ctx) throws Exception {
 
         this.buffer.clear();
 
@@ -151,7 +151,7 @@ public final class ChunkedRecordStream implements ChunkedInput<Msg<DataChunk>> {
             this.next = loadNextRecord();
         }
 
-        return Msg.newResponseMsg(this.requestHeader, new DataChunk(this.buffer));
+        return Msg.newResponseMsg(this.requestHeader, new DataChunkPayload(this.buffer));
     }
 
     /**

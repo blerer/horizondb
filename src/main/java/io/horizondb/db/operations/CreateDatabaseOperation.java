@@ -29,7 +29,6 @@ import java.io.IOException;
  * 
  * @author Benjamin
  */
-
 public final class CreateDatabaseOperation implements Operation {
 
     /**

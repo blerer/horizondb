@@ -20,7 +20,7 @@ import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.db.databases.DatabaseManager;
 import io.horizondb.db.databases.DatabaseManagerCache;
 import io.horizondb.db.databases.DefaultDatabaseManager;
-import io.horizondb.db.operations.BatchInsertOperation;
+import io.horizondb.db.operations.BulkWriteOperation;
 import io.horizondb.db.operations.CreateDatabaseOperation;
 import io.horizondb.db.operations.CreateTimeSeriesOperation;
 import io.horizondb.db.operations.GetDatabaseOperation;
@@ -88,7 +88,7 @@ public class DefaultDatabaseEngine extends AbstractComponent implements Database
         this.operations.put(OpCode.GET_DATABASE, new GetDatabaseOperation());
         this.operations.put(OpCode.CREATE_TIMESERIES, new CreateTimeSeriesOperation());
         this.operations.put(OpCode.GET_TIMESERIES, new GetTimeSeriesOperation());
-        this.operations.put(OpCode.BATCH_INSERT, new BatchInsertOperation());
+        this.operations.put(OpCode.BULK_WRITE, new BulkWriteOperation());
         this.operations.put(OpCode.QUERY, new QueryOperation());
     }
 

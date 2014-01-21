@@ -19,7 +19,7 @@ import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.OperationContext;
 import io.horizondb.io.ReadableBuffer;
 import io.horizondb.model.PartitionId;
-import io.horizondb.model.Query;
+import io.horizondb.model.TimeRange;
 import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;
 import io.horizondb.model.schema.TimeSeriesDefinition;
@@ -56,12 +56,12 @@ public final class TimeSeries {
         return this.definition;
     }
 
-    public void write(OperationContext context, long partitionStartTime, ReadableBuffer buffer) throws IOException,
+    public void write(OperationContext context, TimeRange partitionTimeRange, ReadableBuffer buffer) throws IOException,
                                                                                                HorizonDBException {
 
         PartitionId partitionId = new PartitionId(this.definition.getDatabaseName(),
                                                   this.definition.getSeriesName(),
-                                                  partitionStartTime);
+                                                  partitionTimeRange.getStart());
 
         TimeSeriesPartition partition = this.partitionManager.getPartitionForWrite(partitionId, this.definition);
 
@@ -76,11 +76,17 @@ public final class TimeSeries {
      * @param timeRange
      * @throws IOException
      */
-    public RecordIterator read(Query query) throws IOException {
+    public RecordIterator read(TimeRange timeRange) throws IOException {
 
-        TimeSeriesPartition partition = this.partitionManager.getPartitionForRead(query.getPartitionId(),
+        TimeRange partitionTimeRange = this.definition.getPartitionTimeRange(timeRange.getStart());
+        
+        PartitionId partitionId = new PartitionId(this.definition.getDatabaseName(), 
+                                                  this.definition.getSeriesName(), 
+                                                  partitionTimeRange.getStart());
+        
+        TimeSeriesPartition partition = this.partitionManager.getPartitionForRead(partitionId,
                                                                                   this.definition);
 
-        return partition.read(query.getTimeRange());
+        return partition.read(timeRange);
     }
 }

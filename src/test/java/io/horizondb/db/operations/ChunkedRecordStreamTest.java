@@ -4,9 +4,9 @@ import io.horizondb.io.Buffer;
 import io.horizondb.io.ByteWriter;
 import io.horizondb.io.buffers.Buffers;
 import io.horizondb.io.encoding.VarInts;
-import io.horizondb.model.DataChunk;
 import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.core.records.TimeSeriesRecord;
+import io.horizondb.model.protocol.DataChunkPayload;
 import io.horizondb.model.protocol.Msg;
 import io.horizondb.model.protocol.MsgHeader;
 import io.horizondb.model.protocol.OpCode;
@@ -47,12 +47,12 @@ public class ChunkedRecordStreamTest {
 
         assertFalse(input.isEndOfInput());
 
-        Msg<DataChunk> msg = input.readChunk(context);
+        Msg<DataChunkPayload> msg = input.readChunk(context);
 
         Buffer heapBuffer = Buffers.allocate(bufferSize);
         heapBuffer.writeByte(Msg.END_OF_STREAM_MARKER);
 
-        Msg<DataChunk> expected = Msg.newResponseMsg(requestHeader, new DataChunk(heapBuffer));
+        Msg<DataChunkPayload> expected = Msg.newResponseMsg(requestHeader, new DataChunkPayload(heapBuffer));
 
         assertEquals(expected, msg);
         assertTrue(input.isEndOfInput());
@@ -89,7 +89,7 @@ public class ChunkedRecordStreamTest {
 
         assertFalse(input.isEndOfInput());
 
-        Msg<DataChunk> msg = input.readChunk(context);
+        Msg<DataChunkPayload> msg = input.readChunk(context);
 
         Buffer heapBuffer = Buffers.allocate(bufferSize);
 
@@ -97,7 +97,7 @@ public class ChunkedRecordStreamTest {
 
         heapBuffer.writeByte(Msg.END_OF_STREAM_MARKER);
 
-        Msg<DataChunk> expected = Msg.newResponseMsg(requestHeader, new DataChunk(heapBuffer));
+        Msg<DataChunkPayload> expected = Msg.newResponseMsg(requestHeader, new DataChunkPayload(heapBuffer));
 
         assertEquals(expected, msg);
         assertTrue(input.isEndOfInput());
@@ -154,7 +154,7 @@ public class ChunkedRecordStreamTest {
 
         assertFalse(input.isEndOfInput());
 
-        Msg<DataChunk> msg = input.readChunk(context);
+        Msg<DataChunkPayload> msg = input.readChunk(context);
 
         Buffer heapBuffer = Buffers.allocate(bufferSize);
         writeRecord(heapBuffer, first);
@@ -162,7 +162,7 @@ public class ChunkedRecordStreamTest {
         writeRecord(heapBuffer, third);
         heapBuffer.writeByte(Msg.END_OF_STREAM_MARKER);
 
-        Msg<DataChunk> expected = Msg.newResponseMsg(requestHeader, new DataChunk(heapBuffer));
+        Msg<DataChunkPayload> expected = Msg.newResponseMsg(requestHeader, new DataChunkPayload(heapBuffer));
 
         assertEquals(expected, msg);
         assertTrue(input.isEndOfInput());
@@ -219,13 +219,13 @@ public class ChunkedRecordStreamTest {
 
         assertFalse(input.isEndOfInput());
 
-        Msg<DataChunk> msg = input.readChunk(context);
+        Msg<DataChunkPayload> msg = input.readChunk(context);
 
         Buffer heapBuffer = Buffers.allocate(bufferSize);
         writeRecord(heapBuffer, first);
         writeRecord(heapBuffer, second);
 
-        Msg<DataChunk> expected = Msg.newResponseMsg(requestHeader, new DataChunk(heapBuffer));
+        Msg<DataChunkPayload> expected = Msg.newResponseMsg(requestHeader, new DataChunkPayload(heapBuffer));
 
         assertEquals(expected, msg);
         assertFalse(input.isEndOfInput());
@@ -236,7 +236,7 @@ public class ChunkedRecordStreamTest {
         writeRecord(heapBuffer, third);
         heapBuffer.writeByte(Msg.END_OF_STREAM_MARKER);
 
-        expected = Msg.newResponseMsg(requestHeader, new DataChunk(heapBuffer));
+        expected = Msg.newResponseMsg(requestHeader, new DataChunkPayload(heapBuffer));
 
         assertEquals(expected, msg);
         assertTrue(input.isEndOfInput());
@@ -293,14 +293,14 @@ public class ChunkedRecordStreamTest {
 
         assertFalse(input.isEndOfInput());
 
-        Msg<DataChunk> msg = input.readChunk(context);
+        Msg<DataChunkPayload> msg = input.readChunk(context);
 
         Buffer heapBuffer = Buffers.allocate(bufferSize);
         writeRecord(heapBuffer, first);
         writeRecord(heapBuffer, second);
         writeRecord(heapBuffer, third);
 
-        Msg<DataChunk> expected = Msg.newResponseMsg(requestHeader, new DataChunk(heapBuffer));
+        Msg<DataChunkPayload> expected = Msg.newResponseMsg(requestHeader, new DataChunkPayload(heapBuffer));
 
         assertEquals(expected, msg);
         assertFalse(input.isEndOfInput());
@@ -310,7 +310,7 @@ public class ChunkedRecordStreamTest {
         heapBuffer.clear();
         heapBuffer.writeByte(Msg.END_OF_STREAM_MARKER);
 
-        expected = Msg.newResponseMsg(requestHeader, new DataChunk(heapBuffer));
+        expected = Msg.newResponseMsg(requestHeader, new DataChunkPayload(heapBuffer));
 
         assertEquals(expected, msg);
         assertTrue(input.isEndOfInput());
