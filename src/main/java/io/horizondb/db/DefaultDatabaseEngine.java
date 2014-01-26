@@ -186,11 +186,7 @@ public class DefaultDatabaseEngine extends AbstractComponent implements Database
 
             OperationContext context = this.contextBuilder.build();
 
-            Object response = operation.perform(context, msg);
-
-            context.waitForCommitLogFlush();
-
-            return response;
+            return operation.perform(context, msg);
 
         } catch (HorizonDBException e) {
 

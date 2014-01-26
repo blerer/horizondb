@@ -18,29 +18,34 @@ package io.horizondb.db.commitlog;
 import io.horizondb.db.AbstractComponent;
 import io.horizondb.db.Configuration;
 import io.horizondb.db.DatabaseEngine;
-import io.horizondb.db.metrics.PrefixFilter;
-import io.horizondb.db.metrics.ThreadPoolExecutorMetrics;
-import io.horizondb.db.utils.concurrent.ExecutorsUtils;
-import io.horizondb.db.utils.concurrent.NamedThreadFactory;
 import io.horizondb.io.ReadableBuffer;
 
 import java.io.IOException;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.Validate;
 
 import com.codahale.metrics.MetricRegistry;
-
-import static com.codahale.metrics.MetricRegistry.name;
+import com.google.common.util.concurrent.ListenableFuture;
 
 public final class CommitLog extends AbstractComponent {
 
+    /**
+     * The possible sync modes.
+     */
+    public enum SyncMode {
+        
+        /**
+         * Flushes the data to the disk after the specified interval of time.
+         */
+        BATCH,
+        
+        /**
+         * Flushes the data to the disk at specified interval of time.
+         */
+        PERIODIC;
+    }
+    
     /**
      * The database configuration.
      */
@@ -52,9 +57,9 @@ public final class CommitLog extends AbstractComponent {
     private final CommitLogAllocator allocator;
 
     /**
-     * The executor service used to performs the writes.
+     * The executor used to performs the writes.
      */
-    private ScheduledExecutorService executor;
+    private WriteExecutor executor;
 
     /**
      * The segment on which the writes must be performed.
@@ -75,8 +80,9 @@ public final class CommitLog extends AbstractComponent {
      */
     @Override
     public void register(MetricRegistry registry) {
-        registry.registerAll(new ThreadPoolExecutorMetrics(name(getName(), "executor"),
-                                                           (ThreadPoolExecutor) this.executor));
+        
+        this.allocator.register(registry);
+        this.executor.register(registry);
     }
 
     /**
@@ -84,7 +90,9 @@ public final class CommitLog extends AbstractComponent {
      */
     @Override
     public void unregister(MetricRegistry registry) {
-        registry.removeMatching(new PrefixFilter(getName()));
+        
+        this.executor.unregister(registry);
+        this.allocator.unregister(registry);
     }
 
     /**
@@ -93,10 +101,11 @@ public final class CommitLog extends AbstractComponent {
      * @param bytes the bytes to add to the log
      * @return the future returning the <code>ReplayPosition</code> for the written bytes.
      */
-    public Future<ReplayPosition> write(ReadableBuffer bytes) {
+    public ListenableFuture<ReplayPosition> write(ReadableBuffer bytes) {
 
         checkRunning();
-        return this.executor.submit(new WriteTask(bytes));
+        
+        return this.executor.executeWrite(new WriteTask(bytes));
     }
 
     /**
@@ -106,12 +115,7 @@ public final class CommitLog extends AbstractComponent {
     protected void doStart() throws IOException, InterruptedException {
 
         this.allocator.start();
-
-        ThreadFactory threadFactory = new NamedThreadFactory(getName() + "-Writer");
-        this.executor = Executors.newScheduledThreadPool(1, threadFactory);
-
-        long periodInMillis = this.configuration.getCommitLogFlushPeriodInMillis();
-        this.executor.scheduleAtFixedRate(new FlushTask(), periodInMillis, periodInMillis, TimeUnit.MILLISECONDS);
+        this.executor = new PeriodicWriteExecutor(this.configuration, new FlushTask());  
     }
 
     /**
@@ -123,9 +127,7 @@ public final class CommitLog extends AbstractComponent {
 
         try {
 
-            this.executor.execute(new FlushTask());
-            ExecutorsUtils.shutdownAndAwaitForTermination(this.executor,
-                                                          this.configuration.getShutdownWaitingTimeInSeconds());
+            this.executor.shutdown();
 
         } finally {
 
@@ -171,7 +173,7 @@ public final class CommitLog extends AbstractComponent {
      * <code>Callable</code> in charge of performing the write to the commit log segment.
      * 
      */
-    private class WriteTask implements Callable<ReplayPosition> {
+    class WriteTask implements Callable<ReplayPosition> {
 
         /**
          * The bytes to write to the commit log.
@@ -205,7 +207,7 @@ public final class CommitLog extends AbstractComponent {
      * Flushes all the in memory data to the disk.
      * 
      */
-    private class FlushTask implements Runnable {
+    final class FlushTask implements Runnable {
 
         /**
          * {@inheritDoc}
@@ -215,8 +217,10 @@ public final class CommitLog extends AbstractComponent {
 
             try {
                 flush();
+                
             } catch (IOException e) {
-                CommitLog.this.logger.error("A problem has occured while flushing the data to the disk", e);
+                CommitLog.this.logger.error("", e);
+                e.printStackTrace();
             }
         }
     }

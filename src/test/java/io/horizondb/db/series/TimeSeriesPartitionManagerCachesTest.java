@@ -29,13 +29,14 @@ import io.horizondb.model.schema.TimeSeriesDefinition;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.easymock.EasyMock;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.google.common.util.concurrent.ListenableFuture;
 
 import static io.horizondb.db.utils.TimeUtils.getTime;
 import static org.junit.Assert.assertEquals;
@@ -446,9 +447,9 @@ public class TimeSeriesPartitionManagerCachesTest {
         }
     }
 
-    private static Future<ReplayPosition> newFuture() {
+    private static ListenableFuture<ReplayPosition> newFuture() {
 
-        return EasyMock.createNiceMock(Future.class);
+        return EasyMock.createNiceMock(ListenableFuture.class);
     }
 
 }

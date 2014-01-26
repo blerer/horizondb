@@ -27,14 +27,14 @@ import io.horizondb.model.schema.FieldType;
 import io.horizondb.model.schema.RecordTypeDefinition;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.easymock.EasyMock;
 import org.junit.Test;
 
-import static io.horizondb.db.utils.TimeUtils.getTime;
+import com.google.common.util.concurrent.ListenableFuture;
 
+import static io.horizondb.db.utils.TimeUtils.getTime;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -363,8 +363,8 @@ public class MemTimeSeriesTest {
 
     }
 
-    private static Future<ReplayPosition> newFuture() {
+    private static ListenableFuture<ReplayPosition> newFuture() {
 
-        return EasyMock.createNiceMock(Future.class);
+        return EasyMock.createNiceMock(ListenableFuture.class);
     }
 }

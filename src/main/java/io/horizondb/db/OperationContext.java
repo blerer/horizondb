@@ -20,10 +20,11 @@ import io.horizondb.db.databases.DatabaseManager;
 import io.horizondb.model.ErrorCodes;
 
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.util.concurrent.ListenableFuture;
 
 /**
  * Specify the context in which an operation occurs.
@@ -51,7 +52,7 @@ public final class OperationContext {
     /**
      * The future returned by the commit log.
      */
-    private final Future<ReplayPosition> future;
+    private final ListenableFuture<ReplayPosition> future;
 
     /**
      * Returns the database manager.
@@ -76,7 +77,7 @@ public final class OperationContext {
      * 
      * @return the commit log write future.
      */
-    public Future<ReplayPosition> getFuture() {
+    public ListenableFuture<ReplayPosition> getFuture() {
         return this.future;
     }
 
@@ -149,7 +150,7 @@ public final class OperationContext {
         /**
          * The future returning the replay position for the mutation.
          */
-        private Future<ReplayPosition> future;
+        private ListenableFuture<ReplayPosition> future;
 
         /**
          * <code>true</code> if the operation is a replay from the commit log.
@@ -172,7 +173,7 @@ public final class OperationContext {
             return this;
         }
 
-        public Builder future(Future<ReplayPosition> future) {
+        public Builder future(ListenableFuture<ReplayPosition> future) {
 
             this.future = future;
             return this;

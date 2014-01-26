@@ -15,6 +15,9 @@
  */
 package io.horizondb.db;
 
+import io.horizondb.db.commitlog.CommitLog;
+import io.horizondb.db.commitlog.CommitLog.SyncMode;
+
 import java.nio.file.Path;
 
 import javax.annotation.concurrent.Immutable;
@@ -63,6 +66,11 @@ public final class Configuration {
      */
     private final int maximumNumberOfCommitLogSegments;
 
+    /**
+     * Specify how the commit log will sync data to the disk.
+     */
+    private final CommitLog.SyncMode commitLogSyncMode;
+        
     /**
      * The period of time in milliseconds at which the commit log will flush data to the disk.
      */
@@ -117,6 +125,7 @@ public final class Configuration {
         this.port = builder.port;
         this.dataDirectory = builder.dataDirectory;
         this.commitLogDirectory = builder.commitLogDirectory;
+        this.commitLogSyncMode = builder.commitLogSyncMode;
         this.commitLogSegmentSize = builder.commitLogSegmentSize;
         this.maximumNumberOfCommitLogSegments = builder.maximumNumberOfCommitLogSegments;
         this.commitLogFlushPeriodInMillis = builder.commitLogFlushPeriodInMillis;
@@ -167,6 +176,15 @@ public final class Configuration {
     public Path getCommitLogDirectory() {
 
         return this.commitLogDirectory;
+    }
+
+    /**
+     * Returns the mode used by the commit log to sync the data to the disk.  
+     *   
+     * @return the mode used by the commit log to sync the data to the disk.  
+     */
+    public CommitLog.SyncMode getCommitLogSyncMode() {
+        return this.commitLogSyncMode;
     }
 
     /**
@@ -262,6 +280,11 @@ public final class Configuration {
     public static final class Builder {
 
         /**
+         * The default mode used by the commit log to sync data to the disk.
+         */
+        private static final SyncMode DEFAULT_COMMITLOG_SYNC_MODE = CommitLog.SyncMode.BATCH;
+
+        /**
          * The default concurrency level for the caches.
          */
         private static final int DEFAULT_CACHES_CONCURRENCY_LEVEL = 4;
@@ -330,6 +353,11 @@ public final class Configuration {
          * The commit log directory.
          */
         private Path commitLogDirectory;
+        
+        /**
+         * Specify how the commit log will sync data to the disk.
+         */
+        private CommitLog.SyncMode commitLogSyncMode = DEFAULT_COMMITLOG_SYNC_MODE;
 
         /**
          * The maximum number of commit log segments.
@@ -435,6 +463,18 @@ public final class Configuration {
             return this;
         }
 
+        /**
+         * Specifies mode used by the commit log to sync the data to the disk.
+         * 
+         * @param commitLogSyncMode the mode used by the commit log to sync the data to the disk
+         * @return this <code>Builder</code>.
+         */
+        public Builder commitLogSyncMode(CommitLog.SyncMode commitLogSyncMode) {
+
+            this.commitLogSyncMode = commitLogSyncMode;
+            return this;
+        }
+        
         /**
          * Specifies the maximum number of commit log segments.
          * 

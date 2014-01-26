@@ -70,6 +70,7 @@ public class CommitLogTest {
         this.configuration = Configuration.newBuilder()
                                           .commitLogDirectory(this.testDirectory)
                                           .commitLogSegmentSize(8 * ONE_KB)
+                                          .commitLogFlushPeriodInMillis(1000)
                                           .build();
 
         this.databaseEngine = EasyMock.createMock(DatabaseEngine.class);
@@ -112,8 +113,6 @@ public class CommitLogTest {
 
         assertEquals(firstPosition, this.commitLog.write(firstBuffer).get());
 
-        Thread.sleep(this.configuration.getCommitLogFlushPeriodInMillis());
-
         Path expectedFile = this.testDirectory.resolve("CommitLog-" + expectedId + ".log");
 
         assertFileContainsAt(0, new byte[] { 4, 0, 0, 0 }, expectedFile);
@@ -121,8 +120,6 @@ public class CommitLogTest {
         assertFileContainsAt(24, new byte[] { 0, 0, 0, 0 }, expectedFile);
 
         assertEquals(secondPosition, this.commitLog.write(secondBuffer).get());
-
-        Thread.sleep(this.configuration.getCommitLogFlushPeriodInMillis());
 
         assertFileContainsAt(24, new byte[] { 6, 0, 0, 0 }, expectedFile);
         assertFileContainsAt(36, secondBuffer.array(), expectedFile);

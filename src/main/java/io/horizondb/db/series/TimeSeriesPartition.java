@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.concurrent.GuardedBy;
@@ -37,6 +36,8 @@ import javax.annotation.concurrent.ThreadSafe;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.util.concurrent.ListenableFuture;
 
 import static org.apache.commons.lang.Validate.notNull;
 
@@ -134,8 +135,9 @@ public final class TimeSeriesPartition implements TimeSeriesElement {
      * @throws IOException if an I/O problem occurs.
      * @throws HorizonDBException if the record set is invalid.
      */
-    public synchronized void write(RecordIterator iterator, Future<ReplayPosition> future) throws IOException,
-                                                                                          HorizonDBException {
+    public synchronized void write(RecordIterator iterator, 
+                                   ListenableFuture<ReplayPosition> future) 
+                                           throws IOException, HorizonDBException {
 
         this.logger.debug("writing records to partition {}", getId());
 

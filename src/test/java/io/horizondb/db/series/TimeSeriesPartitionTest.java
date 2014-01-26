@@ -31,7 +31,6 @@ import io.horizondb.model.schema.TimeSeriesDefinition;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.easymock.EasyMock;
@@ -40,8 +39,9 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import static io.horizondb.db.utils.TimeUtils.getTime;
+import com.google.common.util.concurrent.ListenableFuture;
 
+import static io.horizondb.db.utils.TimeUtils.getTime;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -842,8 +842,8 @@ public class TimeSeriesPartitionTest {
         EasyMock.verify(this.manager, this.listener);
     }
 
-    private static Future<ReplayPosition> newFuture() {
+    private static ListenableFuture<ReplayPosition> newFuture() {
 
-        return EasyMock.createNiceMock(Future.class);
+        return EasyMock.createNiceMock(ListenableFuture.class);
     }
 }

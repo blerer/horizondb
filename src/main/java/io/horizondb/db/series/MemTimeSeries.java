@@ -30,11 +30,11 @@ import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 import javax.annotation.concurrent.Immutable;
 
 import com.google.common.collect.Range;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import static io.horizondb.io.encoding.VarInts.computeUnsignedIntSize;
 import static io.horizondb.io.encoding.VarInts.writeByte;
@@ -65,7 +65,7 @@ final class MemTimeSeries implements TimeSeriesElement {
     /**
      * The future associated to the latest write.
      */
-    private final Future<ReplayPosition> future;
+    private final ListenableFuture<ReplayPosition> future;
 
     /**
      * The range of the regions used by this <code>MemTimeSeries</code>.
@@ -103,9 +103,10 @@ final class MemTimeSeries implements TimeSeriesElement {
      * @throws IOException if an I/O problem occurs while writing the records.
      * @throws HorizonDBException if the one of the records is invalid
      */
-    public MemTimeSeries
-            write(SlabAllocator allocator, RecordIterator iterator, Future<ReplayPosition> future) throws IOException,
-                                                                                                  HorizonDBException {
+    public MemTimeSeries write(SlabAllocator allocator, 
+                               RecordIterator iterator, 
+                               ListenableFuture<ReplayPosition> future) 
+                                       throws IOException, HorizonDBException {
 
         CompositeBuffer buffer = this.compositeBuffer.duplicate();
         TimeSeriesRecord[] copy = TimeSeriesRecord.deepCopy(this.lastRecords);
@@ -311,7 +312,7 @@ final class MemTimeSeries implements TimeSeriesElement {
     private MemTimeSeries(Configuration configuration,
             TimeSeriesRecord[] lastRecords,
             CompositeBuffer buffer,
-            Future<ReplayPosition> future,
+            ListenableFuture<ReplayPosition> future,
             Range<Integer> regionRange) {
 
         this.configuration = configuration;

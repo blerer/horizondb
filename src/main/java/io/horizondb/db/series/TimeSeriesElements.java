@@ -28,11 +28,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.Future;
 
 import javax.annotation.concurrent.Immutable;
 
 import com.google.common.collect.Range;
+import com.google.common.util.concurrent.ListenableFuture;
 
 /**
  * Container for the time series elements.
@@ -139,9 +139,9 @@ final class TimeSeriesElements {
         return composite;
     }
 
-    public TimeSeriesElements
-            write(SlabAllocator allocator, RecordIterator iterator, Future<ReplayPosition> future) throws IOException,
-                                                                                                  HorizonDBException {
+    public TimeSeriesElements write(SlabAllocator allocator, 
+                                    RecordIterator iterator, 
+                                    ListenableFuture<ReplayPosition> future) throws IOException,                                                                                                                     HorizonDBException {
 
         if (!hasMemTimeSeries()) {
 
