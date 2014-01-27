@@ -115,7 +115,15 @@ public final class CommitLog extends AbstractComponent {
     protected void doStart() throws IOException, InterruptedException {
 
         this.allocator.start();
-        this.executor = new PeriodicWriteExecutor(this.configuration, new FlushTask());  
+        
+        if (this.configuration.getCommitLogSyncMode() == SyncMode.BATCH) {
+        
+            this.executor = new BatchWriteExecutor(this.configuration, new FlushTask());  
+        
+        } else {    
+            
+            this.executor = new PeriodicWriteExecutor(this.configuration, new FlushTask());
+        }    
     }
 
     /**

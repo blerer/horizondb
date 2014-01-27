@@ -127,7 +127,7 @@ public class CommitLogTest {
 
         EasyMock.verify(this.databaseEngine);
     }
-
+    
     /**
      * Test method for the recovery process.
      */

@@ -72,6 +72,12 @@ public final class Configuration {
     private final CommitLog.SyncMode commitLogSyncMode;
         
     /**
+     * The window of time in milliseconds during which the commit log will wait for more writes before flushing 
+     * the data to the disk.
+     */
+    private final long commitLogBatchWindowInMillis;
+    
+    /**
      * The period of time in milliseconds at which the commit log will flush data to the disk.
      */
     private final long commitLogFlushPeriodInMillis;
@@ -129,6 +135,7 @@ public final class Configuration {
         this.commitLogSegmentSize = builder.commitLogSegmentSize;
         this.maximumNumberOfCommitLogSegments = builder.maximumNumberOfCommitLogSegments;
         this.commitLogFlushPeriodInMillis = builder.commitLogFlushPeriodInMillis;
+        this.commitLogBatchWindowInMillis = builder.commitLogBatchWindowInMillis;
         this.databaseCacheMaximumSize = builder.databaseCacheMaximumSize;
         this.memTimeSeriesSize = builder.memTimeSeriesSize;
         this.shutdownWaitingTimeInSeconds = builder.shutdownWaitingTimeInSeconds;
@@ -205,6 +212,18 @@ public final class Configuration {
     public long getCommitLogFlushPeriodInMillis() {
 
         return this.commitLogFlushPeriodInMillis;
+    }
+    
+    /**
+     * Returns window of time in milliseconds during which the commit log will wait for more writes before flushing 
+     * the data to the disk.
+     * 
+     * @return the window of time in milliseconds during which the commit log will wait for more writes before flushing 
+     * the data to the disk
+     */
+    public long getCommitLogBatchWindowInMillis() {
+
+        return this.commitLogBatchWindowInMillis;
     }
 
     /**
@@ -327,7 +346,12 @@ public final class Configuration {
         /**
          * The default period of time in millisecond at which the commit-log will flush the data to the disk.
          */
-        private static final int DEFAULT_COMMITLOG_FLUSH_PERIOD = 100;
+        private static final int DEFAULT_COMMITLOG_FLUSH_PERIOD = 1000;
+        
+        /**
+         * The default commit log batch window.
+         */
+        private static final int DEFAULT_COMMITLOG_BATCH_WINDOW = 50;
 
         /**
          * The default size for the database cache.
@@ -373,6 +397,12 @@ public final class Configuration {
          * The period of time in milliseconds at which the commit log will flush data to the disk.
          */
         private long commitLogFlushPeriodInMillis = DEFAULT_COMMITLOG_FLUSH_PERIOD;
+        
+        /**
+         * The window of time in milliseconds during which the commit log will wait for more writes before flushing 
+         * the data to the disk.
+         */
+        private long commitLogBatchWindowInMillis = DEFAULT_COMMITLOG_BATCH_WINDOW;
 
         /**
          * The maximum size of the database cache.
@@ -500,7 +530,23 @@ public final class Configuration {
 
             return commitLogSegmentSize(commitLogSegmentSizeInMB * ONE_MB);
         }
+        
+        /**
+         * Specifies the window of time in milliseconds during which the commit log will wait for more writes before 
+         * flushing the data to the disk.
+         * 
+         * @param commitLogBatchWindowInMillis the window of time in milliseconds during which the commit log will 
+         * wait for more writes before flushing the data to the disk
+         * @return this <code>Builder</code>.
+         */
+        public Builder commitLogBatchWindowInMillis(long commitLogBatchWindowInMillis) {
 
+            Validate.isTrue(commitLogBatchWindowInMillis > 0, "The commit log batch window must be greater than 0.");
+
+            this.commitLogBatchWindowInMillis = commitLogBatchWindowInMillis;
+            return this;
+        }
+        
         /**
          * Specifies the size in bytes of the commit log segments.
          * 
