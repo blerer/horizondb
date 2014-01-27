@@ -29,7 +29,6 @@ import io.horizondb.model.core.records.TimeSeriesRecord;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutionException;
 
 import javax.annotation.concurrent.Immutable;
 
@@ -88,9 +87,9 @@ final class MemTimeSeries implements TimeSeriesElement {
      * {@inheritDoc}
      */
     @Override
-    public ReplayPosition getReplayPosition() throws InterruptedException, ExecutionException {
+    public ListenableFuture<ReplayPosition> getFuture() {
 
-        return this.future.get();
+        return this.future;
     }
 
     /**

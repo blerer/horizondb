@@ -67,7 +67,7 @@ public class DefaultTimeSeriesPartitionManagerTest {
     }
 
     @Test
-    public void testGetPartition() throws InterruptedException, IOException {
+    public void testGetPartition() throws InterruptedException, IOException, ExecutionException {
 
         DefaultTimeSeriesPartitionManager partitionManager = new DefaultTimeSeriesPartitionManager(this.configuration);
 
@@ -171,7 +171,7 @@ public class DefaultTimeSeriesPartitionManagerTest {
             TimeSeriesPartition partition = partitionManager.getPartitionForRead(id, definition);
 
             assertEquals(id, partition.getId());
-            assertEquals(new ReplayPosition(1, 2), partition.getReplayPosition());
+            assertEquals(new ReplayPosition(1, 2), partition.getFuture().get());
             assertEquals(1064, partition.getMetaData().getFileSize());
 
         } finally {

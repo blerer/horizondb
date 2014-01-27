@@ -27,10 +27,12 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 
 /**
  * File containing the time series data.
@@ -61,9 +63,9 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
     private final long fileSize;
 
     /**
-     * The replay position of the data on disk.
+     * The future returning the replay position of the data on disk.
      */
-    private final ReplayPosition replayPosition;
+    private final ListenableFuture<ReplayPosition> future;
 
     /**
      * Opens the time series file.
@@ -100,7 +102,7 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
         return new TimeSeriesFile(fileMetaData,
                                   file,
                                   partitionMetadata.getFileSize(),
-                                  partitionMetadata.getReplayPosition());
+                                  Futures.immediateFuture(partitionMetadata.getReplayPosition()));
     }
 
     /**
@@ -132,8 +134,8 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
      * {@inheritDoc}
      */
     @Override
-    public ReplayPosition getReplayPosition() {
-        return this.replayPosition;
+    public ListenableFuture<ReplayPosition> getFuture() {
+        return this.future;
     }
 
     /**
@@ -149,7 +151,7 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
         this.logger.debug("appending " + memTimeSeriesList.size() + " memTimeSeries to file: " + getPath()
                 + " at position " + this.fileSize);
 
-        ReplayPosition replayPosition = null;
+        ListenableFuture<ReplayPosition> future = null;
 
         try (SeekableFileDataOutput output = this.file.getOutput()) {
 
@@ -168,21 +170,13 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
 
                     output.transfer(input);
                 }
-
-                try {
-
-                    replayPosition = memTimeSeries.getReplayPosition();
-
-                } catch (ExecutionException e) {
-
-                    throw new IOException("An error occured when writting to the commit log.", e.getCause());
-                }
+                future = memTimeSeries.getFuture();
             }
 
             output.flush();
         }
 
-        return new TimeSeriesFile(this.metadata, this.file, this.file.size(), replayPosition);
+        return new TimeSeriesFile(this.metadata, this.file, this.file.size(), future);
     }
 
     /**
@@ -208,15 +202,19 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
      * @param metadata the file meta data.
      * @param file the underlying file.
      * @param size the expected size of the file.
-     * @param replayPosition the replay position of the last record written to the disk.
+     * @param future the future returning the replay position of the last record written to the disk.
      * @throws IOException if an I/O problem occurs.
      */
-    private TimeSeriesFile(FileMetaData metadata, RandomAccessDataFile file, long size, ReplayPosition replayPosition) throws IOException {
+    private TimeSeriesFile(FileMetaData metadata, 
+                           RandomAccessDataFile file, 
+                           long size, 
+                           ListenableFuture<ReplayPosition> future) 
+                                   throws IOException {
 
         this.metadata = metadata;
         this.file = file;
         this.fileSize = size;
-        this.replayPosition = replayPosition;
+        this.future = future;
     }
 
     /**

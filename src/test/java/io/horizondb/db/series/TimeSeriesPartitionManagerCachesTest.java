@@ -36,6 +36,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import static io.horizondb.db.utils.TimeUtils.getTime;
@@ -353,7 +354,7 @@ public class TimeSeriesPartitionManagerCachesTest {
                                                                  .setByte(2, 6)
                                                                  .build();
 
-            daxPartition.write(recordIterator, newFuture());
+            daxPartition.write(recordIterator, Futures.immediateFuture(new ReplayPosition(0, 0)));
 
             PartitionId cacPartitionId = new PartitionId("test", "CAC40", partitionStart);
 
@@ -419,6 +420,7 @@ public class TimeSeriesPartitionManagerCachesTest {
 
             daxPartition = null;
 
+            partitionManager.sync();
             System.gc();
 
             daxPartition = caches.getPartitionForRead(daxPartitionId, daxDefinition);

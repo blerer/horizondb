@@ -15,11 +15,12 @@
  */
 package io.horizondb.db.series;
 
-import java.io.IOException;
-import java.util.concurrent.ExecutionException;
-
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.files.SeekableFileDataInput;
+
+import java.io.IOException;
+
+import com.google.common.util.concurrent.ListenableFuture;
 
 /**
  * A time series element.
@@ -30,13 +31,11 @@ import io.horizondb.io.files.SeekableFileDataInput;
 interface TimeSeriesElement {
 
     /**
-     * Returns the replay position associated to the last record of this element.
+     * Returns the commit log future returning the replay position associated to the last record of this element.
      * 
-     * @return the replay position associated to the last record of this element.
-     * @throws InterruptedException if the thread has been interrupted
-     * @throws ExecutionException if the write has resulted in an exception
+     * @return the commit log future returning the replay position associated to the last record of this element.
      */
-    ReplayPosition getReplayPosition() throws InterruptedException, ExecutionException;
+    ListenableFuture<ReplayPosition> getFuture();
 
     /**
      * Returns a new input that can be used to read the data of this element.

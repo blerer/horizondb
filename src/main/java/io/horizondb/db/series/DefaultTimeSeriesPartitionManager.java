@@ -140,20 +140,14 @@ public final class DefaultTimeSeriesPartitionManager extends AbstractComponent i
     @Override
     public void save(TimeSeriesPartition partition) throws IOException {
 
-        PartitionId id = partition.getId();
-        TimeSeriesPartitionMetaData metaData = partition.getMetaData();
-
-        this.logger.debug("saving partition {} with meta data: {}", id, metaData);
-
-        this.btree.insert(id, metaData);
+        this.flushManager.savePartition(partition, this.btree);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public TimeSeriesPartition
-            getPartitionForRead(PartitionId partitionId, TimeSeriesDefinition definition) throws IOException {
+    public TimeSeriesPartition getPartitionForRead(PartitionId partitionId, TimeSeriesDefinition definition) throws IOException {
 
         return getPartition(partitionId, definition);
     }
@@ -162,8 +156,10 @@ public final class DefaultTimeSeriesPartitionManager extends AbstractComponent i
      * {@inheritDoc}
      */
     @Override
-    public TimeSeriesPartition
-            getPartitionForWrite(PartitionId partitionId, TimeSeriesDefinition definition) throws IOException {
+    public TimeSeriesPartition getPartitionForWrite(PartitionId partitionId, 
+                                                    TimeSeriesDefinition definition)
+                                                    throws IOException {
+        
         return getPartition(partitionId, definition);
     }
 

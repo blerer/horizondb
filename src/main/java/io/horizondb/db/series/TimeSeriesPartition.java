@@ -174,14 +174,16 @@ public final class TimeSeriesPartition implements TimeSeriesElement {
      * Returns the meta data of this partition.
      * 
      * @return the meta data of this partition.
+     * @throws ExecutionException if a problem occurred when writing the data to the commit log
+     * @throws InterruptedException if the thread was interrupted
      */
-    public TimeSeriesPartitionMetaData getMetaData() {
+    public TimeSeriesPartitionMetaData getMetaData() throws InterruptedException, ExecutionException {
 
         TimeSeriesFile file = this.elements.get().getFile();
 
         return TimeSeriesPartitionMetaData.newBuilder(this.timeRange)
                                           .fileSize(file.size())
-                                          .replayPosition(file.getReplayPosition())
+                                          .replayPosition(file.getFuture().get())
                                           .build();
     }
 
@@ -276,11 +278,11 @@ public final class TimeSeriesPartition implements TimeSeriesElement {
      * {@inheritDoc}
      */
     @Override
-    public ReplayPosition getReplayPosition() throws InterruptedException, ExecutionException {
+    public ListenableFuture<ReplayPosition> getFuture() {
 
         TimeSeriesElements elementList = this.elements.get();
 
-        return elementList.getLast().getReplayPosition();
+        return elementList.getLast().getFuture();
     }
 
     /**
