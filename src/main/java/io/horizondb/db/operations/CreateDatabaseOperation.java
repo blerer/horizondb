@@ -29,7 +29,7 @@ import java.io.IOException;
  * 
  * @author Benjamin
  */
-public final class CreateDatabaseOperation implements Operation {
+final class CreateDatabaseOperation implements Operation {
 
     /**
      * {@inheritDoc}

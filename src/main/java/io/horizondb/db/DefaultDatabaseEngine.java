@@ -20,12 +20,7 @@ import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.db.databases.DatabaseManager;
 import io.horizondb.db.databases.DatabaseManagerCache;
 import io.horizondb.db.databases.DefaultDatabaseManager;
-import io.horizondb.db.operations.BulkWriteOperation;
-import io.horizondb.db.operations.CreateDatabaseOperation;
-import io.horizondb.db.operations.CreateTimeSeriesOperation;
-import io.horizondb.db.operations.GetDatabaseOperation;
-import io.horizondb.db.operations.GetTimeSeriesOperation;
-import io.horizondb.db.operations.QueryOperation;
+import io.horizondb.db.operations.Operations;
 import io.horizondb.db.series.DefaultTimeSeriesManager;
 import io.horizondb.db.series.DefaultTimeSeriesPartitionManager;
 import io.horizondb.db.series.TimeSeriesManager;
@@ -40,8 +35,6 @@ import io.horizondb.model.protocol.Msgs;
 import io.horizondb.model.protocol.OpCode;
 
 import java.io.IOException;
-import java.util.EnumMap;
-import java.util.Map;
 import java.util.concurrent.Future;
 
 import com.codahale.metrics.MetricRegistry;
@@ -56,11 +49,6 @@ public class DefaultDatabaseEngine extends AbstractComponent implements Database
     private final CommitLog commitLog;
 
     private final DatabaseManager databaseManager;
-
-    /**
-     * The mapping between the operation code and the action to execute.
-     */
-    private final Map<OpCode, Operation> operations;
 
     /**
      * The builder used to build the operation context.
@@ -82,14 +70,6 @@ public class DefaultDatabaseEngine extends AbstractComponent implements Database
         this.contextBuilder = OperationContext.newBuilder(this.databaseManager);
 
         this.commitLog = new CommitLog(configuration, this);
-
-        this.operations = new EnumMap<>(OpCode.class);
-        this.operations.put(OpCode.CREATE_DATABASE, new CreateDatabaseOperation());
-        this.operations.put(OpCode.GET_DATABASE, new GetDatabaseOperation());
-        this.operations.put(OpCode.CREATE_TIMESERIES, new CreateTimeSeriesOperation());
-        this.operations.put(OpCode.GET_TIMESERIES, new GetTimeSeriesOperation());
-        this.operations.put(OpCode.BULK_WRITE, new BulkWriteOperation());
-        this.operations.put(OpCode.QUERY, new QueryOperation());
     }
 
     /**
@@ -173,7 +153,7 @@ public class DefaultDatabaseEngine extends AbstractComponent implements Database
 
         try {
 
-            Operation operation = this.operations.get(opCode);
+            Operation operation = Operations.getOperationFor(opCode);
 
             if (operation == null) {
 

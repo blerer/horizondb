@@ -31,7 +31,7 @@ import java.io.IOException;
  * 
  * @author Benjamin
  */
-public class BulkWriteOperation implements Operation {
+final class BulkWriteOperation implements Operation {
 
     /**
      * {@inheritDoc}

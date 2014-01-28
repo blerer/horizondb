@@ -30,7 +30,7 @@ import java.io.IOException;
  * 
  * @author Benjamin
  */
-public final class GetDatabaseOperation implements Operation {
+final class GetDatabaseOperation implements Operation {
 
     /**
      * {@inheritDoc}

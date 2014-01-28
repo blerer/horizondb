@@ -30,7 +30,7 @@ import java.io.IOException;
  * 
  * @author Benjamin
  */
-public final class CreateTimeSeriesOperation implements Operation {
+final class CreateTimeSeriesOperation implements Operation {
 
     /**
      * {@inheritDoc}

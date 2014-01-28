@@ -31,7 +31,7 @@ import java.io.IOException;
  * @author Benjamin
  * 
  */
-public class QueryOperation implements Operation {
+final class QueryOperation implements Operation {
 
     /**
      * {@inheritDoc}

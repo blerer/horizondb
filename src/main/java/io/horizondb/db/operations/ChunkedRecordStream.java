@@ -36,7 +36,7 @@ import static io.horizondb.io.files.FileUtils.ONE_KB;
  * @author Benjamin
  * 
  */
-public final class ChunkedRecordStream implements ChunkedInput<Msg<DataChunkPayload>> {
+final class ChunkedRecordStream implements ChunkedInput<Msg<DataChunkPayload>> {
 
     /**
      * The default buffer size.
