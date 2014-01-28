@@ -44,7 +44,7 @@ import static com.codahale.metrics.MetricRegistry.name;
 import static org.apache.commons.lang.Validate.notNull;
 
 /**
- * Manages the flush of the time series partitions.
+ * Manages the flush of data to the disk.
  * 
  * @author Benjamin
  * 
@@ -180,20 +180,25 @@ final class FlushManager extends AbstractComponent {
      */
     @Override
     protected void doShutdown() throws InterruptedException {
+        
+        sync(); // We need to sync first because flush tasks will cause the submit of new runnable through the 
+                // savePartition method. Without sync those new task will be rejected by the executor which is
+                // in terminating mode.
         shutdownAndAwaitForTermination(this.executor, this.configuration.getShutdownWaitingTimeInSeconds());
     }
 
     /**
      * Blocks until all the flush tasks previously submitted have been completed.
-     * <p>
-     * This method is implemented for testing purpose.
-     * </p>
      * 
-     * @throws Exception if a problem occurs while synchronizing.
+     * @throws InterruptedException if the thread has been interrupted.
      */
-    void sync() throws Exception {
+    void sync() throws InterruptedException {
 
-        this.executor.submit(new SyncTask()).get();
+        try {
+            this.executor.submit(new SyncTask()).get();
+        } catch (ExecutionException e) {
+            // do nothing
+        }
     }
 
     /**
