@@ -65,16 +65,16 @@ public final class TimeSeries {
 
         TimeSeriesPartition partition = this.partitionManager.getPartitionForWrite(partitionId, this.definition);
 
-        BinaryTimeSeriesRecordIterator recordSet = new BinaryTimeSeriesRecordIterator(this.definition, buffer);
+        BinaryTimeSeriesRecordIterator iterator = new BinaryTimeSeriesRecordIterator(this.definition, buffer);
 
-        partition.write(recordSet, context.getFuture());
-
+        partition.write(iterator, context.getFuture());
     }
 
     /**
-     * @param partition
-     * @param timeRange
-     * @throws IOException
+     * Returns the records of this time series that belong to the specified time range.
+     * 
+     * @param timeRange the time range for which the data must be read
+     * @throws IOException if an I/O problem occurs
      */
     public RecordIterator read(TimeRange timeRange) throws IOException {
 

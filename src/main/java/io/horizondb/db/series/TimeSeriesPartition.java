@@ -17,8 +17,10 @@ package io.horizondb.db.series;
 
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
+import io.horizondb.db.commitlog.CommitLog;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.files.SeekableFileDataInput;
+import io.horizondb.model.ErrorCodes;
 import io.horizondb.model.PartitionId;
 import io.horizondb.model.TimeRange;
 import io.horizondb.model.core.RecordIterator;
@@ -54,6 +56,11 @@ public final class TimeSeriesPartition implements TimeSeriesElement {
      * The logger.
      */
     private final Logger logger = LoggerFactory.getLogger(getClass());
+    
+    /**
+     * The database configuration.
+     */
+    private final Configuration configuration;
 
     /**
      * The partitions manager.
@@ -96,15 +103,16 @@ public final class TimeSeriesPartition implements TimeSeriesElement {
      * @throws IOException if an I/O problem occurs while creating this partition
      */
     public TimeSeriesPartition(TimeSeriesPartitionManager manager,
-            Configuration configuration,
-            TimeSeriesDefinition definition,
-            TimeSeriesPartitionMetaData metadata) throws IOException {
+                               Configuration configuration,
+                               TimeSeriesDefinition definition,
+                               TimeSeriesPartitionMetaData metadata) throws IOException {
 
         notNull(manager, "the manager parameter must not be null.");
         notNull(configuration, "the configuration parameter must not be null.");
         notNull(definition, "the definition parameter must not be null.");
         notNull(metadata, "the metadata parameter must not be null.");
 
+        this.configuration = configuration;
         this.manager = manager;
         this.timeRange = metadata.getRange();
         this.definition = definition;
@@ -134,15 +142,20 @@ public final class TimeSeriesPartition implements TimeSeriesElement {
      * @param future the commit log future
      * @throws IOException if an I/O problem occurs.
      * @throws HorizonDBException if the record set is invalid.
+     * @throws InterruptedException if the commit log thread was interrupted
      */
     public synchronized void write(RecordIterator iterator, 
                                    ListenableFuture<ReplayPosition> future) 
-                                           throws IOException, HorizonDBException {
+                                           throws IOException, 
+                                                  HorizonDBException {
 
         this.logger.debug("writing records to partition {}", getId());
 
         TimeSeriesElements oldElements = this.elements.get();
         TimeSeriesElements newElements = oldElements.write(this.allocator, iterator, future);
+ 
+        waitForCommitLogWriteIfNeeded(future);
+        
         this.elements.set(newElements);
 
         notifyMemoryUsageListenersIfNeeded(oldElements.getMemoryUsage(), newElements.getMemoryUsage());
@@ -154,6 +167,46 @@ public final class TimeSeriesPartition implements TimeSeriesElement {
             this.logger.debug("a memTimeSeries of partition {} is full => triggering flush", getId());
 
             this.manager.flush(this);
+        }
+    }
+
+    /**
+     * Waits for the commit log to flush the data to the disk if the sync mode is batch
+     * 
+     * @param future the commit log future
+     * @throws HorizonDBException if a problem occurs while writing to the commit log
+     */
+    private void waitForCommitLogWriteIfNeeded(ListenableFuture<ReplayPosition> future) throws HorizonDBException {
+        
+        if (this.configuration.getCommitLogSyncMode() == CommitLog.SyncMode.BATCH) {
+            
+            waitForCommitLogWrite(future);
+        }
+    }
+
+    /**
+     * Wait for the specified future to complete.
+     * 
+     * @param future the future
+     * @throws HorizonDBException if an error occurs
+     */
+    private static void waitForCommitLogWrite(ListenableFuture<ReplayPosition> future) throws HorizonDBException {
+        try {
+            
+            future.get();
+            
+        } catch (ExecutionException e) {
+
+            throw new HorizonDBException(ErrorCodes.INTERNAL_ERROR, 
+                                         "an internal error has occured: ",
+                                         e.getCause());
+        } catch (InterruptedException e) {
+            
+            Thread.currentThread().interrupt();
+            
+            throw new HorizonDBException(ErrorCodes.INTERNAL_ERROR, 
+                                         "an internal error has occured: ",
+                                         e.getCause());
         }
     }
 
