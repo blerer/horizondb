@@ -18,6 +18,7 @@ package io.horizondb.db.databases;
 import io.horizondb.db.AbstractComponent;
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
+import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.db.metrics.CacheMetrics;
 import io.horizondb.db.metrics.PrefixFilter;
 import io.horizondb.model.schema.DatabaseDefinition;
@@ -30,6 +31,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.CacheStats;
 import com.google.common.cache.LoadingCache;
+import com.google.common.util.concurrent.ListenableFuture;
 
 /**
  * Decorator that add caching functionalities to a <code>DatabaseManager</code>
@@ -117,8 +119,12 @@ public final class DatabaseManagerCache extends AbstractComponent implements Dat
      * {@inheritDoc}
      */
     @Override
-    public void createDatabase(DatabaseDefinition definition, boolean throwExceptionIfExists) throws IOException, HorizonDBException {
-        this.manager.createDatabase(definition, throwExceptionIfExists);
+    public void createDatabase(DatabaseDefinition definition, 
+                               ListenableFuture<ReplayPosition> future, 
+                               boolean throwExceptionIfExists) 
+                                       throws IOException, HorizonDBException {
+        
+        this.manager.createDatabase(definition, future, throwExceptionIfExists);
     }
 
     /**

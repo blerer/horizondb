@@ -17,12 +17,6 @@ package io.horizondb.db;
 
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.db.databases.DatabaseManager;
-import io.horizondb.model.ErrorCodes;
-
-import java.util.concurrent.ExecutionException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -33,11 +27,6 @@ import com.google.common.util.concurrent.ListenableFuture;
  * 
  */
 public final class OperationContext {
-
-    /**
-     * The logger.
-     */
-    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     /**
      * The database manager.
@@ -79,39 +68,6 @@ public final class OperationContext {
      */
     public ListenableFuture<ReplayPosition> getFuture() {
         return this.future;
-    }
-
-    /**
-     * Waits for the commit log to flush the message data to the disk if it did not happened yet.</p>
-     * 
-     * @return the replay position for the operation or null if the operation is not a mutation.
-     * @throws HorizonDBException if a problem occurs while trying to retrieve the replay position.
-     */
-    public ReplayPosition waitForCommitLogFlush() throws HorizonDBException {
-
-        if (this.future == null) {
-
-            return null;
-        }
-
-        try {
-
-            return this.future.get();
-
-        } catch (InterruptedException e) {
-
-            Thread.currentThread().interrupt();
-
-            this.logger.error("The replay position could not be retrieved.", e);
-
-            throw new HorizonDBException(ErrorCodes.INTERNAL_ERROR, "An internal error has occured.");
-
-        } catch (ExecutionException e) {
-
-            this.logger.error("The replay position could not be retrieved.", e.getCause());
-
-            throw new HorizonDBException(ErrorCodes.INTERNAL_ERROR, "An internal error has occured.");
-        }
     }
 
     /**

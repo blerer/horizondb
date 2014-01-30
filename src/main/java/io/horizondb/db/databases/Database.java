@@ -17,6 +17,7 @@ package io.horizondb.db.databases;
 
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
+import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.db.series.TimeSeries;
 import io.horizondb.db.series.TimeSeriesManager;
 import io.horizondb.model.schema.DatabaseDefinition;
@@ -25,6 +26,8 @@ import io.horizondb.model.schema.TimeSeriesDefinition;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+
+import com.google.common.util.concurrent.ListenableFuture;
 
 /**
  * @author Benjamin
@@ -92,14 +95,18 @@ public final class Database {
      * Creates the specified time series.
      * 
      * @param definition the time series definition.
+     * @param future the commit log future
      * @param throwExceptionIfExists <code>true</code> if an exception must be thrown if the time series already exists.
      * @throws IOException if an I/O problem occurs while creating the time series.
      * @throws HorizonDBException if a time series with the same name already exists.
      */
-    public void createTimeSeries(TimeSeriesDefinition definition, boolean throwExceptionIfExists) throws IOException,
-                                                                                                 HorizonDBException {
+    public void createTimeSeries(TimeSeriesDefinition definition, 
+                                 ListenableFuture<ReplayPosition> future, 
+                                 boolean throwExceptionIfExists) 
+                                         throws IOException,
+                                                HorizonDBException {
 
-        this.timeSeriesManager.createTimeSeries(definition, throwExceptionIfExists);
+        this.timeSeriesManager.createTimeSeries(definition, future, throwExceptionIfExists);
     }
 
     /**

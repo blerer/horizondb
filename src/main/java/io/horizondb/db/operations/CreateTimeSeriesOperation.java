@@ -42,7 +42,7 @@ final class CreateTimeSeriesOperation implements Operation {
 
         Database database = context.getDatabaseManager().getDatabase(payload.getDatabaseName());
 
-        database.createTimeSeries(payload.getDefinition(), !context.isReplay());
+        database.createTimeSeries(payload.getDefinition(), context.getFuture(), !context.isReplay());
 
         return Msgs.newCreateTimeSeriesResponse(request);
     }

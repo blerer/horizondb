@@ -18,6 +18,7 @@ package io.horizondb.db.series;
 import io.horizondb.db.AbstractComponent;
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
+import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.db.metrics.CacheMetrics;
 import io.horizondb.db.metrics.PrefixFilter;
 import io.horizondb.model.schema.TimeSeriesDefinition;
@@ -30,6 +31,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.CacheStats;
 import com.google.common.cache.LoadingCache;
+import com.google.common.util.concurrent.ListenableFuture;
 
 /**
  * Decorator that add caching functionalities to a <code>TimeSeriesManager</code>
@@ -117,9 +119,9 @@ public final class TimeSeriesManagerCache extends AbstractComponent implements T
      * {@inheritDoc}
      */
     @Override
-    public void createTimeSeries(TimeSeriesDefinition definition, boolean throwExceptionIfExists) throws IOException,
+    public void createTimeSeries(TimeSeriesDefinition definition, ListenableFuture<ReplayPosition> future, boolean throwExceptionIfExists) throws IOException,
                                                                                                  HorizonDBException {
-        this.manager.createTimeSeries(definition, throwExceptionIfExists);
+        this.manager.createTimeSeries(definition, future, throwExceptionIfExists);
     }
 
     /**

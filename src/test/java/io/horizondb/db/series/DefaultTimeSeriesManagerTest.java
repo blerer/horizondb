@@ -17,6 +17,7 @@ package io.horizondb.db.series;
 
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
+import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.files.FileUtils;
 import io.horizondb.model.ErrorCodes;
 import io.horizondb.model.schema.DatabaseDefinition;
@@ -33,6 +34,9 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 
 /**
  * @author Benjamin
@@ -69,6 +73,8 @@ public class DefaultTimeSeriesManagerTest {
     @Test
     public void testCreateTimeSeries() throws IOException, InterruptedException, HorizonDBException {
 
+        ListenableFuture<ReplayPosition> future = Futures.immediateFuture(new ReplayPosition(0, 0));
+        
         TimeSeriesManager manager = new DefaultTimeSeriesManager(this.partitionManager, this.configuration);
 
         RecordTypeDefinition quote = RecordTypeDefinition.newBuilder("Quote")
@@ -87,7 +93,7 @@ public class DefaultTimeSeriesManagerTest {
 
         manager.start();
 
-        manager.createTimeSeries(definition, true);
+        manager.createTimeSeries(definition, future, true);
 
         manager.getTimeSeries("test", "DAX");
 
@@ -118,6 +124,8 @@ public class DefaultTimeSeriesManagerTest {
 
         TimeSeriesManager manager = new DefaultTimeSeriesManager(this.partitionManager, this.configuration);
 
+        ListenableFuture<ReplayPosition> future = Futures.immediateFuture(new ReplayPosition(0, 0));
+        
         manager.start();
 
         try {
@@ -136,14 +144,14 @@ public class DefaultTimeSeriesManagerTest {
                                                                 .addRecordType(quote)
                                                                 .build();
 
-            manager.createTimeSeries(definition, true);
+            manager.createTimeSeries(definition, future, true);
 
             TimeSeriesDefinition definition2 = databaseDefinition.newTimeSeriesDefinitionBuilder("dax")
                                                                  .timeUnit(TimeUnit.NANOSECONDS)
                                                                  .addRecordType(quote)
                                                                  .build();
 
-            manager.createTimeSeries(definition2, true);
+            manager.createTimeSeries(definition2, future, true);
             Assert.fail();
 
         } catch (HorizonDBException e) {
@@ -158,6 +166,8 @@ public class DefaultTimeSeriesManagerTest {
     public void testCreateTimeSeriesWithExistingTimeSeriesAndThrowExceptionFalse() throws IOException,
                                                                                   InterruptedException,
                                                                                   HorizonDBException {
+        
+        ListenableFuture<ReplayPosition> future = Futures.immediateFuture(new ReplayPosition(0, 0));
         
         TimeSeriesManager manager = new DefaultTimeSeriesManager(this.partitionManager, this.configuration);
 
@@ -177,14 +187,14 @@ public class DefaultTimeSeriesManagerTest {
                                                             .addRecordType(quote)
                                                             .build();
 
-        manager.createTimeSeries(definition, true);
+        manager.createTimeSeries(definition, future, true);
 
         TimeSeriesDefinition definition2 = databaseDefinition.newTimeSeriesDefinitionBuilder("dax")
                                                              .timeUnit(TimeUnit.NANOSECONDS)
                                                              .addRecordType(quote)
                                                              .build();
 
-        manager.createTimeSeries(definition2, false);
+        manager.createTimeSeries(definition2, future, false);
         manager.shutdown();
     }
 }

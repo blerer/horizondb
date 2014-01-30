@@ -20,7 +20,6 @@ import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.commitlog.CommitLog;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.files.SeekableFileDataInput;
-import io.horizondb.model.ErrorCodes;
 import io.horizondb.model.PartitionId;
 import io.horizondb.model.TimeRange;
 import io.horizondb.model.core.RecordIterator;
@@ -154,7 +153,7 @@ public final class TimeSeriesPartition implements TimeSeriesElement {
         TimeSeriesElements oldElements = this.elements.get();
         TimeSeriesElements newElements = oldElements.write(this.allocator, iterator, future);
  
-        waitForCommitLogWriteIfNeeded(future);
+        CommitLog.waitForCommitLogWriteIfNeeded(this.configuration, future);
         
         this.elements.set(newElements);
 
@@ -167,46 +166,6 @@ public final class TimeSeriesPartition implements TimeSeriesElement {
             this.logger.debug("a memTimeSeries of partition {} is full => triggering flush", getId());
 
             this.manager.flush(this);
-        }
-    }
-
-    /**
-     * Waits for the commit log to flush the data to the disk if the sync mode is batch
-     * 
-     * @param future the commit log future
-     * @throws HorizonDBException if a problem occurs while writing to the commit log
-     */
-    private void waitForCommitLogWriteIfNeeded(ListenableFuture<ReplayPosition> future) throws HorizonDBException {
-        
-        if (this.configuration.getCommitLogSyncMode() == CommitLog.SyncMode.BATCH) {
-            
-            waitForCommitLogWrite(future);
-        }
-    }
-
-    /**
-     * Wait for the specified future to complete.
-     * 
-     * @param future the future
-     * @throws HorizonDBException if an error occurs
-     */
-    private static void waitForCommitLogWrite(ListenableFuture<ReplayPosition> future) throws HorizonDBException {
-        try {
-            
-            future.get();
-            
-        } catch (ExecutionException e) {
-
-            throw new HorizonDBException(ErrorCodes.INTERNAL_ERROR, 
-                                         "an internal error has occured: ",
-                                         e.getCause());
-        } catch (InterruptedException e) {
-            
-            Thread.currentThread().interrupt();
-            
-            throw new HorizonDBException(ErrorCodes.INTERNAL_ERROR, 
-                                         "an internal error has occured: ",
-                                         e.getCause());
         }
     }
 

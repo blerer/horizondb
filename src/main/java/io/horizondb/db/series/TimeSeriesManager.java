@@ -17,9 +17,12 @@ package io.horizondb.db.series;
 
 import io.horizondb.db.Component;
 import io.horizondb.db.HorizonDBException;
+import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
+
+import com.google.common.util.concurrent.ListenableFuture;
 
 public interface TimeSeriesManager extends Component {
 
@@ -27,11 +30,12 @@ public interface TimeSeriesManager extends Component {
      * Creates the specified time series.
      * 
      * @param definition the time series definition.
+     * @param future the commit log future
      * @param throwExceptionIfExists <code>true</code> if an exception must be thrown if the time series already exists.
      * @throws IOException if an I/O problem occurs while creating the time series.
      * @throws HorizonDBException if a time series with the same name already exists.
      */
-    void createTimeSeries(TimeSeriesDefinition definition, boolean throwExceptionIfExists) throws IOException,
+    void createTimeSeries(TimeSeriesDefinition definition, ListenableFuture<ReplayPosition> future, boolean throwExceptionIfExists) throws IOException,
                                                                                           HorizonDBException;
 
     /**

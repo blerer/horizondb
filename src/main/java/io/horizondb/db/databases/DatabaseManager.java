@@ -17,9 +17,12 @@ package io.horizondb.db.databases;
 
 import io.horizondb.db.Component;
 import io.horizondb.db.HorizonDBException;
+import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.model.schema.DatabaseDefinition;
 
 import java.io.IOException;
+
+import com.google.common.util.concurrent.ListenableFuture;
 
 /**
  * Databases manager.
@@ -33,12 +36,15 @@ public interface DatabaseManager extends Component {
      * Creates the database with the specified definition.
      * 
      * @param definition the database definition.
+     * @param future the commit log write future
      * @param throwExceptionIfExists <code>true</code> if an exception must be thrown if the database already exists.
      * @throws IOException if an I/O problem occurs while creating the database.
      * @throws HorizonDBException if a database with the same name already exists and throwExceptionIfExists is
      * <code>true</code>.
      */
-    void createDatabase(DatabaseDefinition definition, boolean throwExceptionIfExists) throws IOException, HorizonDBException;
+    void createDatabase(DatabaseDefinition definition, 
+                        ListenableFuture<ReplayPosition> future, 
+                        boolean throwExceptionIfExists) throws IOException, HorizonDBException;
 
     /**
      * Returns the database with the specified name if it exists.

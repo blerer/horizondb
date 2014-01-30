@@ -18,10 +18,13 @@ package io.horizondb.db.commitlog;
 import io.horizondb.db.AbstractComponent;
 import io.horizondb.db.Configuration;
 import io.horizondb.db.DatabaseEngine;
+import io.horizondb.db.HorizonDBException;
 import io.horizondb.io.ReadableBuffer;
+import io.horizondb.model.ErrorCodes;
 
 import java.io.IOException;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 
 import org.apache.commons.lang.Validate;
 
@@ -108,6 +111,49 @@ public final class CommitLog extends AbstractComponent {
         return this.executor.executeWrite(new WriteTask(bytes));
     }
 
+    /**
+     * Waits for the commit log to flush the data to the disk if the sync mode is batch
+     * 
+     * @param configuration the database configuration
+     * @param future the commit log future
+     * @throws HorizonDBException if a problem occurs while writing to the commit log
+     */
+    public static void waitForCommitLogWriteIfNeeded(Configuration configuration, 
+                                                     ListenableFuture<ReplayPosition> future) 
+                                                             throws HorizonDBException {
+        
+        if (configuration.getCommitLogSyncMode() != CommitLog.SyncMode.BATCH) {
+            
+            waitForCommitLogWrite(future);
+        }
+    }
+
+    /**
+     * Wait for the specified future to complete.
+     * 
+     * @param future the future
+     * @throws HorizonDBException if an error occurs
+     */
+    public static void waitForCommitLogWrite(ListenableFuture<ReplayPosition> future) throws HorizonDBException {
+        try {
+            
+            future.get();
+            
+        } catch (ExecutionException e) {
+
+            throw new HorizonDBException(ErrorCodes.INTERNAL_ERROR, 
+                                         "an internal error has occured: ",
+                                         e.getCause());
+        } catch (InterruptedException e) {
+            
+            Thread.currentThread().interrupt();
+            
+            throw new HorizonDBException(ErrorCodes.INTERNAL_ERROR, 
+                                         "an internal error has occured: ",
+                                         e.getCause());
+        }
+    }
+    
     /**
      * {@inheritDoc}
      */

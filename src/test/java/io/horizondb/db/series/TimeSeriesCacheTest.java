@@ -17,6 +17,7 @@ package io.horizondb.db.series;
 
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
+import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.files.FileUtils;
 import io.horizondb.model.ErrorCodes;
 import io.horizondb.model.schema.DatabaseDefinition;
@@ -35,6 +36,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.cache.CacheStats;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import static org.junit.Assert.assertEquals;
 
@@ -75,6 +78,8 @@ public class TimeSeriesCacheTest {
 
         TimeSeriesManager manager = EasyMock.createMock(TimeSeriesManager.class);
 
+        ListenableFuture<ReplayPosition> future = Futures.immediateFuture(new ReplayPosition(0, 0));
+        
         RecordTypeDefinition quote = RecordTypeDefinition.newBuilder("Quote")
                                                          .addDecimalField("bestBid")
                                                          .addDecimalField("bestAsk")
@@ -90,7 +95,7 @@ public class TimeSeriesCacheTest {
                                                             .build();
 
         manager.start();
-        manager.createTimeSeries(definition, true);
+        manager.createTimeSeries(definition, future, true);
         TimeSeries series = new TimeSeries(this.partitionManager, definition);
         EasyMock.expect(manager.getTimeSeries(new TimeSeriesId("test", "dax"))).andReturn(series);
         manager.shutdown();
@@ -100,7 +105,7 @@ public class TimeSeriesCacheTest {
         TimeSeriesManagerCache cache = new TimeSeriesManagerCache(this.configuration, manager);
         cache.start();
 
-        cache.createTimeSeries(definition, true);
+        cache.createTimeSeries(definition, future, true);
 
         TimeSeries firstCall = cache.getTimeSeries("test", "DAX");
 
@@ -128,6 +133,8 @@ public class TimeSeriesCacheTest {
     @Test
     public void testGetTimeSeriesWithUnknownTimeSeries() throws IOException, HorizonDBException, InterruptedException {
 
+        ListenableFuture<ReplayPosition> future = Futures.immediateFuture(new ReplayPosition(0, 0));
+        
         TimeSeriesManager manager = EasyMock.createMock(TimeSeriesManager.class);
 
         RecordTypeDefinition quote = RecordTypeDefinition.newBuilder("Quote")
@@ -148,7 +155,7 @@ public class TimeSeriesCacheTest {
                 .andThrow(new HorizonDBException(ErrorCodes.UNKNOWN_TIMESERIES, "boom"));
 
         manager.start();
-        manager.createTimeSeries(definition, true);
+        manager.createTimeSeries(definition, future, true);
         TimeSeries series = new TimeSeries(this.partitionManager, definition);
         EasyMock.expect(manager.getTimeSeries(new TimeSeriesId("test", "dax"))).andReturn(series);
         manager.shutdown();
@@ -168,7 +175,7 @@ public class TimeSeriesCacheTest {
             Assert.assertEquals(ErrorCodes.UNKNOWN_TIMESERIES, e.getCode());
         }
 
-        cache.createTimeSeries(definition, true);
+        cache.createTimeSeries(definition, future, true);
 
         cache.getTimeSeries("test", "DAX");
 
@@ -191,6 +198,8 @@ public class TimeSeriesCacheTest {
                                                             HorizonDBException,
                                                             InterruptedException {
 
+        ListenableFuture<ReplayPosition> future = Futures.immediateFuture(new ReplayPosition(0, 0));
+        
         TimeSeriesManager manager = EasyMock.createMock(TimeSeriesManager.class);
 
         RecordTypeDefinition quote = RecordTypeDefinition.newBuilder("Quote")
@@ -207,8 +216,8 @@ public class TimeSeriesCacheTest {
                                                             .addRecordType(quote)
                                                             .build();
         manager.start();
-        manager.createTimeSeries(definition, true);
-        manager.createTimeSeries(definition, true);
+        manager.createTimeSeries(definition, future, true);
+        manager.createTimeSeries(definition, future, true);
         EasyMock.expectLastCall().andThrow(new HorizonDBException(ErrorCodes.DUPLICATE_TIMESERIES, "boom"));
         manager.shutdown();
 
@@ -219,8 +228,8 @@ public class TimeSeriesCacheTest {
 
         try {
 
-            cache.createTimeSeries(definition, true);
-            cache.createTimeSeries(definition, true);
+            cache.createTimeSeries(definition, future, true);
+            cache.createTimeSeries(definition, future, true);
             Assert.fail();
 
         } catch (HorizonDBException e) {

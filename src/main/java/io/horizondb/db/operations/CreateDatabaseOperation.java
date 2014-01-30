@@ -39,8 +39,10 @@ final class CreateDatabaseOperation implements Operation {
 
         CreateDatabaseRequestPayload payload = Msgs.getPayload(request);
 
-        context.getDatabaseManager().createDatabase(payload.getDefinition(), !context.isReplay());
-
+        context.getDatabaseManager().createDatabase(payload.getDefinition(), 
+                                                    context.getFuture(), 
+                                                    !context.isReplay());
+        
         return Msgs.newCreateDatabaseResponse(request);
     }
 }
