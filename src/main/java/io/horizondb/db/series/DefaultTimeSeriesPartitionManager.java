@@ -218,7 +218,7 @@ public final class DefaultTimeSeriesPartitionManager extends AbstractComponent i
                                                   .build();
         }
 
-        return new TimeSeriesPartition(this, this.configuration, definition, metadata);
+        return new TimeSeriesPartition(this, this.configuration, partitionId.getDatabaseName(), definition, metadata);
     }
 
     /**

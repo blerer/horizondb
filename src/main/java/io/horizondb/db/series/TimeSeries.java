@@ -32,6 +32,11 @@ import java.io.IOException;
  */
 public final class TimeSeries {
 
+    /**
+     * The database name.
+     */
+    private final String databaseName;
+    
     private final TimeSeriesDefinition definition;
 
     /**
@@ -42,8 +47,9 @@ public final class TimeSeries {
     /**
      * @param definition
      */
-    public TimeSeries(TimeSeriesPartitionManager partitionManager, TimeSeriesDefinition definition) {
+    public TimeSeries(String databaseName, TimeSeriesPartitionManager partitionManager, TimeSeriesDefinition definition) {
 
+        this.databaseName = databaseName;
         this.partitionManager = partitionManager;
         this.definition = definition;
     }
@@ -59,8 +65,8 @@ public final class TimeSeries {
     public void write(OperationContext context, TimeRange partitionTimeRange, ReadableBuffer buffer) throws IOException,
                                                                                                HorizonDBException {
 
-        PartitionId partitionId = new PartitionId(this.definition.getDatabaseName(),
-                                                  this.definition.getSeriesName(),
+        PartitionId partitionId = new PartitionId(this.databaseName,
+                                                  this.definition.getName(),
                                                   partitionTimeRange.getStart());
 
         TimeSeriesPartition partition = this.partitionManager.getPartitionForWrite(partitionId, this.definition);
@@ -80,8 +86,8 @@ public final class TimeSeries {
 
         TimeRange partitionTimeRange = this.definition.getPartitionTimeRange(timeRange.getStart());
         
-        PartitionId partitionId = new PartitionId(this.definition.getDatabaseName(), 
-                                                  this.definition.getSeriesName(), 
+        PartitionId partitionId = new PartitionId(this.databaseName, 
+                                                  this.definition.getName(), 
                                                   partitionTimeRange.getStart());
         
         TimeSeriesPartition partition = this.partitionManager.getPartitionForRead(partitionId,

@@ -94,19 +94,22 @@ public final class Database {
     /**
      * Creates the specified time series.
      * 
-     * @param definition the time series definition.
+     * @param timeSeriesDefinition the time series definition.
      * @param future the commit log future
      * @param throwExceptionIfExists <code>true</code> if an exception must be thrown if the time series already exists.
      * @throws IOException if an I/O problem occurs while creating the time series.
      * @throws HorizonDBException if a time series with the same name already exists.
      */
-    public void createTimeSeries(TimeSeriesDefinition definition, 
+    public void createTimeSeries(TimeSeriesDefinition timeSeriesDefinition, 
                                  ListenableFuture<ReplayPosition> future, 
                                  boolean throwExceptionIfExists) 
                                          throws IOException,
                                                 HorizonDBException {
 
-        this.timeSeriesManager.createTimeSeries(definition, future, throwExceptionIfExists);
+        this.timeSeriesManager.createTimeSeries(this.definition.getName(), 
+                                                timeSeriesDefinition, 
+                                                future, 
+                                                throwExceptionIfExists);
     }
 
     /**

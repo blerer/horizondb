@@ -103,7 +103,12 @@ public class TimeSeriesPartitionTest {
         this.manager = EasyMock.createMock(TimeSeriesPartitionManager.class);
         this.listener = EasyMock.createMock(MemoryUsageListener.class);
 
-        this.partition = new TimeSeriesPartition(this.manager, configuration, this.def, metadata);
+        this.partition = new TimeSeriesPartition(this.manager, 
+                                                 configuration, 
+                                                 databaseDefinition.getName(), 
+                                                 this.def, 
+                                                 metadata);
+        
         this.partition.addMemoryUsageListener(this.listener);
     }
 

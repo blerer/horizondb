@@ -71,16 +71,18 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
      * Opens the time series file.
      * 
      * @param configuration the database configuration
+     * @param databaseName the database name
      * @param definition the time series definition
      * @param partitionMetadata the partition meta data
      * @return the time series file.
      * @throws IOException if an I/O problem occurs while opening the file.
      */
     public static TimeSeriesFile open(Configuration configuration,
+                                      String databaseName,
                                       TimeSeriesDefinition definition,
                                       TimeSeriesPartitionMetaData partitionMetadata) throws IOException {
 
-        Path path = getFilePath(configuration, definition, partitionMetadata);
+        Path path = getFilePath(configuration, databaseName, definition, partitionMetadata);
 
         RandomAccessDataFile file = RandomAccessDataFile.open(path, false, partitionMetadata.getFileSize());
 
@@ -94,8 +96,8 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
 
         } else {
 
-            fileMetaData = new FileMetaData(definition.getDatabaseName(),
-                                            definition.getSeriesName(),
+            fileMetaData = new FileMetaData(databaseName,
+                                            definition.getName(),
                                             partitionMetadata.getRange());
         }
 
@@ -221,16 +223,18 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
      * Returns the path to the data file.
      * 
      * @param configuration the database configuration
+     * @param databaseName the database name
      * @param definition the time series definition
      * @param partitionMetadata the partition meta data
      * @return the path to the data file
      */
     private static Path getFilePath(Configuration configuration,
+                                    String databaseName,
                                     TimeSeriesDefinition definition,
                                     TimeSeriesPartitionMetaData partitionMetadata) {
 
         Path dataDirectory = configuration.getDataDirectory();
-        Path databaseDirectory = dataDirectory.resolve(definition.getDatabaseName());
+        Path databaseDirectory = dataDirectory.resolve(databaseName);
 
         return databaseDirectory.resolve(filename(definition, partitionMetadata));
     }
@@ -244,7 +248,7 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
      */
     private static String filename(TimeSeriesDefinition definition, TimeSeriesPartitionMetaData partitionMetadata) {
 
-        return new StringBuilder().append(definition.getSeriesName())
+        return new StringBuilder().append(definition.getName())
                                   .append('-')
                                   .append(partitionMetadata.getRange().getStart())
                                   .append(".ts")

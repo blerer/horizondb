@@ -151,20 +151,21 @@ public final class DefaultTimeSeriesManager extends AbstractComponent implements
      * {@inheritDoc}
      */
     @Override
-    public void createTimeSeries(TimeSeriesDefinition definition, 
+    public void createTimeSeries(String databaseName,
+                                 TimeSeriesDefinition definition, 
                                  ListenableFuture<ReplayPosition> future, 
                                  boolean throwExceptionIfExists) 
                                          throws IOException, 
                                                 HorizonDBException {
 
-        TimeSeriesId id = new TimeSeriesId(definition.getDatabaseName(), definition.getSeriesName());
+        TimeSeriesId id = new TimeSeriesId(databaseName, definition.getName());
 
         Names.checkTimeSeriesName(id.getSeriesName());
 
         if (!this.btree.insertIfAbsent(id, definition) && throwExceptionIfExists) {
 
             throw new HorizonDBException(ErrorCodes.DUPLICATE_TIMESERIES, "Duplicate time series name "
-                    + definition.getSeriesName() + " in database " + definition.getDatabaseName());
+                    + definition.getName() + " in database " + databaseName);
         }
         
         CommitLog.waitForCommitLogWriteIfNeeded(this.configuration, future);
@@ -192,7 +193,7 @@ public final class DefaultTimeSeriesManager extends AbstractComponent implements
                     + " does not exists within the database " + id.getDatabaseName() + ".");
         }
 
-        return new TimeSeries(this.partitionManager, definition);
+        return new TimeSeries(id.getDatabaseName(), this.partitionManager, definition);
     }
 
     /**

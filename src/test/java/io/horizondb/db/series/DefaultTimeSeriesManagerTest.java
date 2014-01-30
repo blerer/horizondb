@@ -93,7 +93,7 @@ public class DefaultTimeSeriesManagerTest {
 
         manager.start();
 
-        manager.createTimeSeries(definition, future, true);
+        manager.createTimeSeries("test", definition, future, true);
 
         manager.getTimeSeries("test", "DAX");
 
@@ -144,14 +144,14 @@ public class DefaultTimeSeriesManagerTest {
                                                                 .addRecordType(quote)
                                                                 .build();
 
-            manager.createTimeSeries(definition, future, true);
+            manager.createTimeSeries("test", definition, future, true);
 
             TimeSeriesDefinition definition2 = databaseDefinition.newTimeSeriesDefinitionBuilder("dax")
                                                                  .timeUnit(TimeUnit.NANOSECONDS)
                                                                  .addRecordType(quote)
                                                                  .build();
 
-            manager.createTimeSeries(definition2, future, true);
+            manager.createTimeSeries("test", definition2, future, true);
             Assert.fail();
 
         } catch (HorizonDBException e) {
@@ -187,14 +187,14 @@ public class DefaultTimeSeriesManagerTest {
                                                             .addRecordType(quote)
                                                             .build();
 
-        manager.createTimeSeries(definition, future, true);
+        manager.createTimeSeries("test", definition, future, true);
 
         TimeSeriesDefinition definition2 = databaseDefinition.newTimeSeriesDefinitionBuilder("dax")
                                                              .timeUnit(TimeUnit.NANOSECONDS)
                                                              .addRecordType(quote)
                                                              .build();
 
-        manager.createTimeSeries(definition2, future, false);
+        manager.createTimeSeries("test", definition2, future, false);
         manager.shutdown();
     }
 }

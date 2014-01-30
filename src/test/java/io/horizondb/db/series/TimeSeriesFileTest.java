@@ -69,6 +69,8 @@ public class TimeSeriesFileTest {
      */
     private Path testDirectory;
 
+    private DatabaseDefinition databaseDefinition;
+    
     private TimeSeriesDefinition definition;
 
     private Configuration configuration;
@@ -90,9 +92,9 @@ public class TimeSeriesFileTest {
 
         Files.createDirectory(this.testDirectory.resolve("test"));
 
-        DatabaseDefinition databaseDefinition = new DatabaseDefinition("test");
+        this.databaseDefinition = new DatabaseDefinition("test");
 
-        this.definition = databaseDefinition.newTimeSeriesDefinitionBuilder("test")
+        this.definition = this.databaseDefinition.newTimeSeriesDefinitionBuilder("test")
                                             .timeUnit(TimeUnit.NANOSECONDS)
                                             .addRecordType(recordTypeDefinition)
                                             .build();
@@ -106,6 +108,7 @@ public class TimeSeriesFileTest {
     public void tearDown() throws Exception {
 
         this.definition = null;
+        this.databaseDefinition = null;
         FileUtils.forceDelete(this.testDirectory);
         this.testDirectory = null;
     }
@@ -132,8 +135,8 @@ public class TimeSeriesFileTest {
                                                                     .setByte(2, 1)
                                                                     .build();
 
-        FileMetaData fileMetaData = new FileMetaData(this.definition.getDatabaseName(),
-                                                     this.definition.getSeriesName(),
+        FileMetaData fileMetaData = new FileMetaData(this.databaseDefinition.getName(),
+                                                     this.definition.getName(),
                                                      this.metadata.getRange());
 
         Buffer buffer = Buffers.allocate(fileMetaData.computeSerializedSize()
@@ -145,7 +148,10 @@ public class TimeSeriesFileTest {
         
         memTimeSeries = memTimeSeries.write(allocator, iterator, Futures.immediateFuture(new ReplayPosition(1, 0)));
 
-        try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, this.definition, this.metadata)) {
+        try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, 
+                                                       this.databaseDefinition.getName(), 
+                                                       this.definition, 
+                                                       this.metadata)) {
 
             file.append(asList((TimeSeriesElement) memTimeSeries));
 
@@ -174,8 +180,8 @@ public class TimeSeriesFileTest {
                                                                                .setByte(2, 1)
                                                                                .build();
 
-        FileMetaData fileMetaData = new FileMetaData(this.definition.getDatabaseName(),
-                                                     this.definition.getSeriesName(),
+        FileMetaData fileMetaData = new FileMetaData(this.databaseDefinition.getName(),
+                                                     this.definition.getName(),
                                                      this.metadata.getRange());
 
         Buffer buffer = Buffers.allocate(fileMetaData.computeSerializedSize() + RecordUtils.computeSerializedSize(records));
@@ -185,7 +191,10 @@ public class TimeSeriesFileTest {
         
         memTimeSeries = memTimeSeries.write(allocator, iterator, Futures.immediateFuture(new ReplayPosition(1, 0)));
 
-        try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, this.definition, this.metadata)) {
+        try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, 
+                                                       this.databaseDefinition.getName(), 
+                                                       this.definition, 
+                                                       this.metadata)) {
 
             file.append(asList((TimeSeriesElement) memTimeSeries));
             file.append(asList((TimeSeriesElement) memTimeSeries));
@@ -227,8 +236,8 @@ public class TimeSeriesFileTest {
                                                                                 .setByte(2, 3)
                                                                                 .build();
 
-        FileMetaData fileMetaData = new FileMetaData(this.definition.getDatabaseName(),
-                                                     this.definition.getSeriesName(),
+        FileMetaData fileMetaData = new FileMetaData(this.databaseDefinition.getName(),
+                                                     this.definition.getName(),
                                                      this.metadata.getRange());
 
         Buffer buffer = Buffers.allocate(fileMetaData.computeSerializedSize()
@@ -250,7 +259,10 @@ public class TimeSeriesFileTest {
         
         memTimeSeries2 = memTimeSeries2.write(allocator, iterator2, Futures.immediateFuture(replayPosition));
 
-        try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, this.definition, this.metadata)) {
+        try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, 
+                                                       this.databaseDefinition.getName(), 
+                                                       this.definition, 
+                                                       this.metadata)) {
 
             file.append(Arrays.<TimeSeriesElement> asList(memTimeSeries, memTimeSeries2));
 
@@ -291,8 +303,8 @@ public class TimeSeriesFileTest {
                                                                                .setByte(2, 3)
                                                                                .build();
 
-        FileMetaData fileMetaData = new FileMetaData(this.definition.getDatabaseName(),
-                                                     this.definition.getSeriesName(),
+        FileMetaData fileMetaData = new FileMetaData(this.databaseDefinition.getName(),
+                                                     this.definition.getName(),
                                                      this.metadata.getRange());
 
         Buffer buffer = Buffers.allocate(fileMetaData.computeSerializedSize() 
@@ -316,7 +328,10 @@ public class TimeSeriesFileTest {
         
         memTimeSeries2 = memTimeSeries2.write(allocator, iterator2, Futures.immediateFuture(replayPosition));
 
-        try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, this.definition, this.metadata)) {
+        try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, 
+                                                       this.databaseDefinition.getName(), 
+                                                       this.definition, 
+                                                       this.metadata)) {
 
             file.append(Arrays.<TimeSeriesElement> asList(memTimeSeries))
                 .append(Arrays.<TimeSeriesElement> asList(memTimeSeries2));
@@ -353,7 +368,10 @@ public class TimeSeriesFileTest {
         
         memTimeSeries = memTimeSeries.write(allocator, iterator, Futures.immediateFuture(new ReplayPosition(1, 0)));
 
-        try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, this.definition, this.metadata)) {
+        try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, 
+                                                       this.databaseDefinition.getName(),
+                                                       this.definition, 
+                                                       this.metadata)) {
 
             try (SeekableFileDataInput input = file.append(Arrays.<TimeSeriesElement> asList(memTimeSeries)).newInput()) {
 
@@ -366,7 +384,10 @@ public class TimeSeriesFileTest {
     @Test
     public void testNewInputWithEmptyFile() throws IOException {
 
-        try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, this.definition, this.metadata)) {
+        try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, 
+                                                       this.databaseDefinition.getName(), 
+                                                       this.definition, 
+                                                       this.metadata)) {
 
             try (SeekableFileDataInput input = file.newInput()) {
 

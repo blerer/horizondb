@@ -119,9 +119,13 @@ public final class TimeSeriesManagerCache extends AbstractComponent implements T
      * {@inheritDoc}
      */
     @Override
-    public void createTimeSeries(TimeSeriesDefinition definition, ListenableFuture<ReplayPosition> future, boolean throwExceptionIfExists) throws IOException,
-                                                                                                 HorizonDBException {
-        this.manager.createTimeSeries(definition, future, throwExceptionIfExists);
+    public void createTimeSeries(String databaseName, 
+                                 TimeSeriesDefinition definition, 
+                                 ListenableFuture<ReplayPosition> future, 
+                                 boolean throwExceptionIfExists) 
+                                         throws IOException, HorizonDBException {
+        
+        this.manager.createTimeSeries(databaseName, definition, future, throwExceptionIfExists);
     }
 
     /**

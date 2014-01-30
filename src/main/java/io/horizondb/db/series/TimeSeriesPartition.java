@@ -40,6 +40,8 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
+import static org.apache.commons.lang.Validate.notEmpty;
+
 import static org.apache.commons.lang.Validate.notNull;
 
 /**
@@ -60,6 +62,11 @@ public final class TimeSeriesPartition implements TimeSeriesElement {
      * The database configuration.
      */
     private final Configuration configuration;
+    
+    /**
+     * The database name.
+     */
+    private final String databaseName;
 
     /**
      * The partitions manager.
@@ -97,27 +104,31 @@ public final class TimeSeriesPartition implements TimeSeriesElement {
      * 
      * @param manager the manager that created this time series partition
      * @param configuration the database configuration
+     * @param databaseName the database name
      * @param definition the time series definition
      * @param metadata the meta data of this partition
      * @throws IOException if an I/O problem occurs while creating this partition
      */
     public TimeSeriesPartition(TimeSeriesPartitionManager manager,
                                Configuration configuration,
+                               String databaseName,
                                TimeSeriesDefinition definition,
                                TimeSeriesPartitionMetaData metadata) throws IOException {
 
         notNull(manager, "the manager parameter must not be null.");
         notNull(configuration, "the configuration parameter must not be null.");
+        notEmpty(databaseName, "the databaseName parameter must not be empty.");
         notNull(definition, "the definition parameter must not be null.");
         notNull(metadata, "the metadata parameter must not be null.");
 
         this.configuration = configuration;
         this.manager = manager;
         this.timeRange = metadata.getRange();
+        this.databaseName = databaseName;
         this.definition = definition;
         this.allocator = new SlabAllocator(configuration.getMemTimeSeriesSize());
 
-        TimeSeriesElement file = TimeSeriesFile.open(configuration, definition, metadata);
+        TimeSeriesElement file = TimeSeriesFile.open(configuration, databaseName, definition, metadata);
 
         this.elements.set(new TimeSeriesElements(configuration, definition, file));
     }
@@ -129,8 +140,8 @@ public final class TimeSeriesPartition implements TimeSeriesElement {
      */
     public PartitionId getId() {
 
-        return new PartitionId(this.definition.getDatabaseName(),
-                               this.definition.getSeriesName(),
+        return new PartitionId(this.databaseName,
+                               this.definition.getName(),
                                this.timeRange.getStart());
     }
 

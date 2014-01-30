@@ -29,13 +29,15 @@ public interface TimeSeriesManager extends Component {
     /**
      * Creates the specified time series.
      * 
+     * @param databaseName the database name.
      * @param definition the time series definition.
      * @param future the commit log future
      * @param throwExceptionIfExists <code>true</code> if an exception must be thrown if the time series already exists.
      * @throws IOException if an I/O problem occurs while creating the time series.
      * @throws HorizonDBException if a time series with the same name already exists.
      */
-    void createTimeSeries(TimeSeriesDefinition definition, 
+    void createTimeSeries(String databaseName, 
+                          TimeSeriesDefinition definition, 
                           ListenableFuture<ReplayPosition> future, 
                           boolean throwExceptionIfExists) 
                                   throws IOException,
