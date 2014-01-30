@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.horizondb.db.utils.concurrent;
+package io.horizondb.db.util.concurrent;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;

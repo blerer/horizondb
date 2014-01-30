@@ -48,7 +48,8 @@ import org.junit.Test;
 
 import com.google.common.util.concurrent.Futures;
 
-import static io.horizondb.db.utils.TimeUtils.getTime;
+import static io.horizondb.db.util.TimeUtils.getTime;
+
 import static java.util.Arrays.asList;
 
 public class TimeSeriesFileTest {

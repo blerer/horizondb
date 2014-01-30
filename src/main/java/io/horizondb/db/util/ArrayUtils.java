@@ -13,32 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.horizondb.db.utils.concurrent;
-
-import java.lang.Thread.UncaughtExceptionHandler;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+package io.horizondb.db.util;
 
 /**
- * <code>UncaughtExceptionHandler</code> that logs all the <code>RuntimeException</code> that it receive.
+ * Utility methods for working with <code>Arrays</code>.
  * 
  * @author Benjamin
  * 
  */
-public final class LoggingUncaughtExceptionHandler implements UncaughtExceptionHandler {
+public final class ArrayUtils extends org.apache.commons.lang.ArrayUtils {
 
     /**
-     * The class logger.
+     * Creates an arrays containing the specified elements.
+     * 
+     * @param elements the elements of the arrays.
+     * @return an arrays containing the specified elements.
      */
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    @SafeVarargs
+    public static final <E> E[] toArray(E... elements) {
+
+        return elements;
+    }
 
     /**
-     * {@inheritDoc}
+     * Must not be instantiated.
      */
-    @Override
-    public void uncaughtException(Thread t, Throwable e) {
-
-        this.logger.error("Thread " + t.getName() + " terminated with the following Exception: ", e);
+    private ArrayUtils() {
     }
 }

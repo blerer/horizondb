@@ -41,7 +41,8 @@ import org.junit.Test;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
-import static io.horizondb.db.utils.TimeUtils.getTime;
+import static io.horizondb.db.util.TimeUtils.getTime;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;

@@ -20,8 +20,8 @@ import io.horizondb.db.Configuration;
 import io.horizondb.db.btree.BTree;
 import io.horizondb.db.metrics.PrefixFilter;
 import io.horizondb.db.metrics.ThreadPoolExecutorMetrics;
-import io.horizondb.db.utils.concurrent.NamedThreadFactory;
-import io.horizondb.db.utils.concurrent.SyncTask;
+import io.horizondb.db.util.concurrent.NamedThreadFactory;
+import io.horizondb.db.util.concurrent.SyncTask;
 import io.horizondb.model.PartitionId;
 
 import java.io.IOException;
@@ -38,7 +38,8 @@ import org.slf4j.LoggerFactory;
 
 import com.codahale.metrics.MetricRegistry;
 
-import static io.horizondb.db.utils.concurrent.ExecutorsUtils.shutdownAndAwaitForTermination;
+import static io.horizondb.db.util.concurrent.ExecutorsUtils.shutdownAndAwaitForTermination;
+
 
 import static com.codahale.metrics.MetricRegistry.name;
 import static org.apache.commons.lang.Validate.notNull;

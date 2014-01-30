@@ -13,32 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.horizondb.db.utils;
+package io.horizondb.db.util.concurrent;
 
-import java.text.ParsePosition;
-import java.text.SimpleDateFormat;
+import java.lang.Thread.UncaughtExceptionHandler;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
+ * <code>UncaughtExceptionHandler</code> that logs all the <code>RuntimeException</code> that it receive.
+ * 
  * @author Benjamin
  * 
  */
-public final class TimeUtils {
+public final class LoggingUncaughtExceptionHandler implements UncaughtExceptionHandler {
 
     /**
-     * Returns the time in milliseconds corresponding to the specified {@link String} (format:
-     * "yyyy.MM.dd HH:mm:ss.SSS").
-     * 
-     * @param dateAsText the date/time to convert in milliseconds
-     * @return the time in milliseconds corresponding to the specified {@link String}.
+     * The class logger.
      */
-    public static long getTime(String dateAsText) {
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
-        SimpleDateFormat format = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss.SSS");
-        return format.parse(dateAsText, new ParsePosition(0)).getTime();
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void uncaughtException(Thread t, Throwable e) {
+
+        this.logger.error("Thread " + t.getName() + " terminated with the following Exception: ", e);
     }
-
-    private TimeUtils() {
-
-    }
-
 }

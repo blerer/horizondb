@@ -20,8 +20,8 @@ import io.horizondb.db.commitlog.CommitLog.FlushTask;
 import io.horizondb.db.commitlog.CommitLog.WriteTask;
 import io.horizondb.db.metrics.PrefixFilter;
 import io.horizondb.db.metrics.ThreadPoolExecutorMetrics;
-import io.horizondb.db.utils.concurrent.ExecutorsUtils;
-import io.horizondb.db.utils.concurrent.NamedThreadFactory;
+import io.horizondb.db.util.concurrent.ExecutorsUtils;
+import io.horizondb.db.util.concurrent.NamedThreadFactory;
 
 import java.util.LinkedList;
 import java.util.Queue;

@@ -32,7 +32,8 @@ import org.apache.commons.lang.builder.ToStringStyle;
 
 import com.google.common.collect.Iterables;
 
-import static io.horizondb.db.utils.ArrayUtils.toArray;
+import static io.horizondb.db.util.ArrayUtils.toArray;
+
 
 /**
  * An internal node of a BTree.

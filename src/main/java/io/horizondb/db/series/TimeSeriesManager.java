@@ -35,8 +35,11 @@ public interface TimeSeriesManager extends Component {
      * @throws IOException if an I/O problem occurs while creating the time series.
      * @throws HorizonDBException if a time series with the same name already exists.
      */
-    void createTimeSeries(TimeSeriesDefinition definition, ListenableFuture<ReplayPosition> future, boolean throwExceptionIfExists) throws IOException,
-                                                                                          HorizonDBException;
+    void createTimeSeries(TimeSeriesDefinition definition, 
+                          ListenableFuture<ReplayPosition> future, 
+                          boolean throwExceptionIfExists) 
+                                  throws IOException,
+                                         HorizonDBException;
 
     /**
      * Returns the time series of the specified database with the specified name if it exists.

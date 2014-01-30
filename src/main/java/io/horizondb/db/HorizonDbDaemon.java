@@ -15,7 +15,7 @@
  */
 package io.horizondb.db;
 
-import io.horizondb.db.utils.concurrent.LoggingUncaughtExceptionHandler;
+import io.horizondb.db.util.concurrent.LoggingUncaughtExceptionHandler;
 import io.horizondb.model.ErrorCodes;
 
 import java.io.IOException;

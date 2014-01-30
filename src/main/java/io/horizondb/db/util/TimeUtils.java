@@ -13,31 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.horizondb.db.utils;
+package io.horizondb.db.util;
+
+import java.text.ParsePosition;
+import java.text.SimpleDateFormat;
 
 /**
- * Utility methods for working with <code>Arrays</code>.
- * 
  * @author Benjamin
  * 
  */
-public final class ArrayUtils extends org.apache.commons.lang.ArrayUtils {
+public final class TimeUtils {
 
     /**
-     * Creates an arrays containing the specified elements.
+     * Returns the time in milliseconds corresponding to the specified {@link String} (format:
+     * "yyyy.MM.dd HH:mm:ss.SSS").
      * 
-     * @param elements the elements of the arrays.
-     * @return an arrays containing the specified elements.
+     * @param dateAsText the date/time to convert in milliseconds
+     * @return the time in milliseconds corresponding to the specified {@link String}.
      */
-    @SafeVarargs
-    public static final <E> E[] toArray(E... elements) {
+    public static long getTime(String dateAsText) {
 
-        return elements;
+        SimpleDateFormat format = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss.SSS");
+        return format.parse(dateAsText, new ParsePosition(0)).getTime();
     }
 
-    /**
-     * Must not be instantiated.
-     */
-    private ArrayUtils() {
+    private TimeUtils() {
+
     }
+
 }

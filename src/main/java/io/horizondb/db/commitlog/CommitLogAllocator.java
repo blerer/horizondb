@@ -20,9 +20,9 @@ import io.horizondb.db.Configuration;
 import io.horizondb.db.DatabaseEngine;
 import io.horizondb.db.metrics.PrefixFilter;
 import io.horizondb.db.metrics.ThreadPoolExecutorMetrics;
-import io.horizondb.db.utils.concurrent.ExecutorsUtils;
-import io.horizondb.db.utils.concurrent.NamedThreadFactory;
-import io.horizondb.db.utils.concurrent.SyncTask;
+import io.horizondb.db.util.concurrent.ExecutorsUtils;
+import io.horizondb.db.util.concurrent.NamedThreadFactory;
+import io.horizondb.db.util.concurrent.SyncTask;
 
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
