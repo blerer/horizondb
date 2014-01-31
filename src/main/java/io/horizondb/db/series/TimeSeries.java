@@ -17,6 +17,8 @@ package io.horizondb.db.series;
 
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.OperationContext;
+import io.horizondb.db.commitlog.ReplayPosition;
+import io.horizondb.db.util.concurrent.FutureUtils;
 import io.horizondb.io.ReadableBuffer;
 import io.horizondb.model.PartitionId;
 import io.horizondb.model.TimeRange;
@@ -70,9 +72,20 @@ public final class TimeSeries {
                                                   partitionTimeRange.getStart());
 
         TimeSeriesPartition partition = this.partitionManager.getPartitionForWrite(partitionId, this.definition);
-
+            
+        if (context.isReplay()) {
+            
+            final ReplayPosition currentReplayPosition = FutureUtils.safeGet(context.getFuture());
+            final ReplayPosition partitionReplayPosition = FutureUtils.safeGet(partition.getFuture());
+            
+            if (!currentReplayPosition.isAfter(partitionReplayPosition)) {
+                
+                return;
+            }
+        }
+        
         BinaryTimeSeriesRecordIterator iterator = new BinaryTimeSeriesRecordIterator(this.definition, buffer);
-
+        
         partition.write(iterator, context.getFuture());
     }
 

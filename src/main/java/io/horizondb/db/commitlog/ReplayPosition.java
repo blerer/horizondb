@@ -169,6 +169,18 @@ public final class ReplayPosition implements Comparable<ReplayPosition>, Seriali
     }
 
     /**
+     * Returns <code>true</code> if this <code>ReplayPosition</code> is after the specified one.
+     * 
+     * @param replayPosition the other replay position
+     * @return <code>true</code> if this <code>ReplayPosition</code> is after the specified one, <code>false</code>
+     * otherwise
+     */
+    public boolean isAfter(ReplayPosition replayPosition) {
+        
+        return this.compareTo(replayPosition) > 0;
+    }
+    
+    /**
      * {@inheritDoc}
      */
     @Override
