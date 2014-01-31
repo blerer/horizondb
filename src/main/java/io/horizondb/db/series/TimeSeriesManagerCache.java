@@ -24,13 +24,13 @@ import io.horizondb.db.metrics.PrefixFilter;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
 import com.codahale.metrics.MetricRegistry;
+import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
 import com.google.common.cache.CacheStats;
-import com.google.common.cache.LoadingCache;
 import com.google.common.util.concurrent.ListenableFuture;
 
 /**
@@ -54,7 +54,7 @@ public final class TimeSeriesManagerCache extends AbstractComponent implements T
     /**
      * The time series cache.
      */
-    private LoadingCache<TimeSeriesId, TimeSeries> cache;
+    private Cache<TimeSeriesId, TimeSeries> cache;
 
     /**
      * Creates a <code>TimeSeriesManagerCache</code> to cache the time series returned by the specified manager.
@@ -79,14 +79,7 @@ public final class TimeSeriesManagerCache extends AbstractComponent implements T
         this.cache = CacheBuilder.newBuilder()
                                  .maximumSize(this.configuration.getTimeSeriesCacheMaximumSize())
                                  .recordStats()
-                                 .build(new CacheLoader<TimeSeriesId, TimeSeries>() {
-
-                                     @Override
-                                     public TimeSeries load(TimeSeriesId id) throws Exception {
-
-                                         return TimeSeriesManagerCache.this.manager.getTimeSeries(id);
-                                     }
-                                 });
+                                 .build();
     }
 
     /**
@@ -140,11 +133,20 @@ public final class TimeSeriesManagerCache extends AbstractComponent implements T
      * {@inheritDoc}
      */
     @Override
-    public TimeSeries getTimeSeries(TimeSeriesId id) throws IOException, HorizonDBException {
+    public TimeSeries getTimeSeries(final TimeSeriesId id) throws IOException, HorizonDBException {
 
         try {
 
-            return this.cache.get(id);
+            return this.cache.get(id, new Callable<TimeSeries>() {
+
+                /**
+                 * {@inheritDoc}
+                 */
+                @Override
+                public TimeSeries call() throws Exception {
+                    return TimeSeriesManagerCache.this.manager.getTimeSeries(id);
+                }
+            });
 
         } catch (ExecutionException e) {
 

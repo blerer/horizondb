@@ -103,11 +103,11 @@ public final class DefaultTimeSeriesPartitionManager extends AbstractComponent i
         }
 
         Path partitionFile = systemDirectory.resolve(PARTITIONS_FILENAME);
-
-        this.nodeManager = OnDiskNodeManager.newBuilder(MetricRegistry.name(getName(), "bTree"),
-                                                        partitionFile,
-                                                        PartitionMetaDataNodeWriter.FACTORY,
-                                                        PartitionMetaDataNodeReader.FACTORY).build();
+        
+        this.nodeManager = new OnDiskNodeManager<>(MetricRegistry.name(getName(), "bTree"),
+                                                   partitionFile,
+                                                   PartitionMetaDataNodeWriter.FACTORY,
+                                                   PartitionMetaDataNodeReader.FACTORY);
 
         this.btree = new BTree<>(this.nodeManager, BRANCHING_FACTOR);
 

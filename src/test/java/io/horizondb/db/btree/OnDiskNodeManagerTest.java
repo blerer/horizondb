@@ -67,22 +67,20 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testSingleInsertionWithOnlyARootNode() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
 
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(2, "B");
         }
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
 
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
@@ -94,11 +92,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testInsertionWithOnlyARootNode() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(2, "B");
@@ -107,11 +104,10 @@ public class OnDiskNodeManagerTest {
             btree.insert(1, "A");
         }
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             assertLeafNodeContains(btree.getRoot(), 1, "A", 2, "B", 3, "C", 4, "D");
@@ -122,11 +118,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testInsertingExistingKeyAndOnlyARootNode() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 4);
 
             btree.insert(2, "B");
@@ -140,11 +135,10 @@ public class OnDiskNodeManagerTest {
             assertLeafNodeContains(btree.getRoot(), 1, "A", 2, "B", 3, "C");
         }
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             assertLeafNodeContains(btree.getRoot(), 1, "A", 2, "B", 3, "C");
@@ -155,11 +149,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testGetWithOnlyARootNode() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
 
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
@@ -169,11 +162,10 @@ public class OnDiskNodeManagerTest {
             btree.insert(1, "A");
         }
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
             assertEquals("C", btree.get(3));
             assertEquals("B", btree.get(2));
@@ -186,11 +178,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testInsertionAfterRestartWithOnlyARootNode() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(5, "E");
@@ -200,11 +191,10 @@ public class OnDiskNodeManagerTest {
             assertLeafNodeContains(btree.getRoot(), 1, "A", 3, "C", 5, "E");
         }
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
             btree.insert(2, "B");
 
@@ -216,11 +206,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testDeletionWithOnlyARootNode() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(2, "B");
@@ -249,11 +238,10 @@ public class OnDiskNodeManagerTest {
             assertLeafNodeEmpty(btree.getRoot());
         }
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             assertLeafNodeEmpty(btree.getRoot());
@@ -264,11 +252,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testDeletionAfterRestartWithOnlyARootNode() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(2, "B");
@@ -293,11 +280,10 @@ public class OnDiskNodeManagerTest {
             assertLeafNodeContains(btree.getRoot(), 4, "D");
         }
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.delete(4);
@@ -310,11 +296,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testInsertionWithExistingKeyAndInternalNodes() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(2, "B");
@@ -326,11 +311,10 @@ public class OnDiskNodeManagerTest {
             btree.insert(6, "E");
         }
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             assertInternalNode(btree.getRoot(), 1, 3);
@@ -346,11 +330,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testInsertionWithRootNodeSplit() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(2, "B");
@@ -360,11 +343,10 @@ public class OnDiskNodeManagerTest {
             btree.insert(6, "E");
         }
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             assertInternalNode(btree.getRoot(), 1, 3);
@@ -380,11 +362,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testInsertionWithRootNodeSplitAfterRestart() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(2, "B");
@@ -393,11 +374,10 @@ public class OnDiskNodeManagerTest {
             btree.insert(1, "A");
         }
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(6, "E");
@@ -415,11 +395,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testDeletionWithInternalNode() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(2, "B");
@@ -431,11 +410,10 @@ public class OnDiskNodeManagerTest {
             btree.delete(4);
         }
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             assertInternalNode(btree.getRoot(), 1, 3);
@@ -451,11 +429,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testGetWithOneInternalNode() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
 
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
@@ -478,11 +455,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testGetWithOneInternalNodeAfterRestart() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
 
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
@@ -493,11 +469,10 @@ public class OnDiskNodeManagerTest {
             btree.insert(5, "E");
         }
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
 
             BTree<Integer, String> btree = new BTree<>(manager, 4);
 
@@ -514,11 +489,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testDeletionWithInternalNodeAfterRestart() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(2, "B");
@@ -528,11 +502,10 @@ public class OnDiskNodeManagerTest {
             btree.insert(6, "E");
         }
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.delete(4);
@@ -550,11 +523,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testDeletionOfFirstKeyOfLeafNode() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(2, "B");
@@ -566,11 +538,10 @@ public class OnDiskNodeManagerTest {
             btree.delete(3);
         }
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             assertInternalNode(btree.getRoot(), 1, 4);
@@ -586,11 +557,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testDeletionOfFirstKeyOfLeafNodeAfterRestart() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(2, "B");
@@ -600,11 +570,10 @@ public class OnDiskNodeManagerTest {
             btree.insert(6, "E");
         }
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.delete(3);
@@ -622,11 +591,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testInsertionWithRootNodeSplitAndBranchingFactor4() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 4);
 
             btree.insert(2, "B");
@@ -635,11 +603,10 @@ public class OnDiskNodeManagerTest {
             btree.insert(1, "A");
         }
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 4);
 
             assertInternalNode(btree.getRoot(), 1, 3);
@@ -655,11 +622,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testInsertionOnLeftLeafNode() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(2, "B");
@@ -671,11 +637,10 @@ public class OnDiskNodeManagerTest {
             btree.insert(1, "A");
         }
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             assertInternalNode(btree.getRoot(), 1, 4);
@@ -691,11 +656,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testInsertionOnRightLeafNode() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(2, "B");
@@ -706,11 +670,10 @@ public class OnDiskNodeManagerTest {
 
             btree.insert(7, "G");
         }
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             assertInternalNode(btree.getRoot(), 2, 4);
@@ -726,11 +689,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testInsertionOnRightLeafNodeWithSplit() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(2, "B");
@@ -743,11 +705,10 @@ public class OnDiskNodeManagerTest {
             btree.insert(9, "I");
         }
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             assertInternalNode(btree.getRoot(), 2, 4, 6);
@@ -764,11 +725,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testInsertionOnLeftLeafNodeWithSplit() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(2, "B");
@@ -783,11 +743,10 @@ public class OnDiskNodeManagerTest {
 
         }
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             assertInternalNode(btree.getRoot(), 1, 3, 6);
@@ -804,11 +763,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testInsertionOnLeafNodeWithLeafAndParentFull() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(1, "A");
@@ -832,11 +790,10 @@ public class OnDiskNodeManagerTest {
             btree.insert(18, "R");
         }
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             assertInternalNode(btree.getRoot(), 1, 10);
@@ -865,11 +822,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testInsertionOnLeafNodeWithLeafAndParentFullAfterRestart() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(1, "A");
@@ -891,11 +847,10 @@ public class OnDiskNodeManagerTest {
             btree.insert(17, "Q");
         }
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(18, "R");
@@ -926,11 +881,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testInsertWith3LevelDepth() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 3);
 
             btree.insert(1, "A");
@@ -955,11 +909,10 @@ public class OnDiskNodeManagerTest {
             btree.insert(13, "M");
         }
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 3);
 
             assertInternalNode(btree.getRoot(), 1, 8, 14);
@@ -1028,11 +981,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testInsertionOnLeafNodeWithLeafFullAndParentNot() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(1, "A");
@@ -1059,11 +1011,10 @@ public class OnDiskNodeManagerTest {
             btree.insert(12, "L");
         }
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             assertInternalNode(btree.getRoot(), 1, 8, 15);
@@ -1100,11 +1051,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testInsertWithInternalNodeSplitWithParentNotFull() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(1, "A");
@@ -1134,11 +1084,10 @@ public class OnDiskNodeManagerTest {
             btree.insert(30, "DD");
             btree.insert(31, "EE");
         }
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             assertInternalNode(btree.getRoot(), 1, 15, 25);
@@ -1175,11 +1124,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testInsertAfterRestartWithInternalNodeSplitWithParentNotFull() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(1, "A");
@@ -1202,11 +1150,10 @@ public class OnDiskNodeManagerTest {
             btree.insert(25, "Y");
             btree.insert(18, "S");
         }
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(26, "Z");
@@ -1250,11 +1197,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testDeletingKeysWhichAreWithinTheRoot() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(1, "A");
@@ -1281,11 +1227,10 @@ public class OnDiskNodeManagerTest {
             btree.delete(1);
         }
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             assertInternalNode(btree.getRoot(), 2, 17);
@@ -1314,11 +1259,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testDeletionWithInternalNodeRebalancingFromTheRightNode() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(1, "A");
@@ -1356,11 +1300,10 @@ public class OnDiskNodeManagerTest {
             btree.delete(5);
         }
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             assertInternalNode(btree.getRoot(), 1, 14, 21);
@@ -1398,11 +1341,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testDeletionAfterRestartWithInternalNodeRebalancingFromTheRightNode() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(1, "A");
@@ -1434,11 +1376,10 @@ public class OnDiskNodeManagerTest {
             btree.insert(19, "S");
         }
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.delete(25);
@@ -1481,11 +1422,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testDeleteWithInternalNodeRebalancingFromTheLeftNode() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(1, "A");
@@ -1522,11 +1462,10 @@ public class OnDiskNodeManagerTest {
             btree.delete(22);
         }
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             assertInternalNode(btree.getRoot(), 1, 10, 18);
@@ -1563,11 +1502,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testDeletionOfKeyFromLeafNodeWithRedistributionOnRightNode() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(1, "A");
@@ -1585,11 +1523,10 @@ public class OnDiskNodeManagerTest {
             btree.delete(5);
         }
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             assertInternalNode(btree.getRoot(), 1, 6, 8);
@@ -1606,11 +1543,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testDeletionOfKeyFromLeafNodeWithFirstKeyDeletedAndRedistribution() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(1, "A");
@@ -1629,11 +1565,10 @@ public class OnDiskNodeManagerTest {
 
         }
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             assertInternalNode(btree.getRoot(), 1, 6, 8);
@@ -1650,11 +1585,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testDeletionOfKeyAfterRestartFromLeafNodeWithFirstKeyDeletedAndRedistribution() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(1, "A");
@@ -1670,11 +1604,10 @@ public class OnDiskNodeManagerTest {
 
         }
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.delete(4);
@@ -1694,11 +1627,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testDeletionOfKeyFromLeafNodeWithRedistributionOnLeftNode() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(1, "A");
@@ -1716,11 +1648,10 @@ public class OnDiskNodeManagerTest {
             btree.delete(9);
         }
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             assertInternalNode(btree.getRoot(), 1, 4, 7);
@@ -1737,11 +1668,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testDeletionOfKeyFromLeafNodeWithMergeOnTheRight() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(1, "A");
@@ -1760,11 +1690,10 @@ public class OnDiskNodeManagerTest {
             btree.delete(1);
         }
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             assertInternalNode(btree.getRoot(), 2, 7);
@@ -1780,11 +1709,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testDeletionOfKeyFromLeafNodeWithMergeOnTheLeft() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(1, "A");
@@ -1803,11 +1731,10 @@ public class OnDiskNodeManagerTest {
             btree.delete(4);
         }
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             assertInternalNode(btree.getRoot(), 1, 6);
@@ -1823,11 +1750,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testDeletionOfKeyFromLeafNodeWithMergeAndNoRightNode() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(1, "A");
@@ -1846,11 +1772,10 @@ public class OnDiskNodeManagerTest {
             btree.delete(7);
         }
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             assertInternalNode(btree.getRoot(), 1, 3);
@@ -1866,11 +1791,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testDeletionOfKeyAfterRestartFromLeafNodeWithMergeAndNoRightNode() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(1, "A");
@@ -1884,11 +1808,10 @@ public class OnDiskNodeManagerTest {
             btree.insert(6, "F");
         }
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.delete(4);
@@ -1909,11 +1832,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testDeletionWithLeafNodeMergeAndInternalNodeMerge() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(1, "A");
@@ -1939,11 +1861,10 @@ public class OnDiskNodeManagerTest {
             btree.delete(10);
         }
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             assertInternalNode(btree.getRoot(), 1, 6, 8, 11, 15);
@@ -1962,11 +1883,10 @@ public class OnDiskNodeManagerTest {
     @SuppressWarnings({ "boxing" })
     public void testDeletionAfterRestartWithLeafNodeMergeAndInternalNodeMerge() throws IOException {
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.insert(1, "A");
@@ -1988,11 +1908,10 @@ public class OnDiskNodeManagerTest {
             btree.insert(17, "Q");
         }
 
-        try (OnDiskNodeManager<Integer, String> manager = OnDiskNodeManager.newBuilder("test",
-                                                                                       this.testFile,
-                                                                                       IntegerAndStringNodeWriter.FACTORY,
-                                                                                       IntegerAndStringNodeReader.FACTORY)
-                                                                           .build()) {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
             btree.delete(12);

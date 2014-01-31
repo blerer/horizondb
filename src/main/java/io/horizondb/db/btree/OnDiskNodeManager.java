@@ -15,30 +15,18 @@
  */
 package io.horizondb.db.btree;
 
-import io.horizondb.db.metrics.CacheMetrics;
 import io.horizondb.db.metrics.Monitorable;
-import io.horizondb.db.metrics.PrefixFilter;
 import io.horizondb.io.files.RandomAccessDataFile;
 import io.horizondb.io.files.SeekableFileDataOutput;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.concurrent.ExecutionException;
 
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
 
 import com.codahale.metrics.MetricRegistry;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-
-import static com.codahale.metrics.MetricRegistry.name;
-
-import static org.apache.commons.lang.Validate.notEmpty;
-
-import static org.apache.commons.lang.Validate.notNull;
 
 /**
  * @author Benjamin
@@ -69,13 +57,59 @@ public final class OnDiskNodeManager<K extends Comparable<K>, V> implements Clos
     /**
      * The cache used to reduce disk read.
      */
-    private final LoadingCache<NodeProxy<K, V>, Node<K, V>> cache;
+    private final NodeCache<K, V> cache;
 
     /**
      * The current root node.
      */
     private Node<K, V> root;
 
+    /**
+     * Creates a new <code>OnDiskNodeManager</code> instance.
+     * 
+     * @param name the name of this component
+     * @param path the file path
+     * @param writerFactory the writer factory
+     * @param readerFactory the reader factory
+     * @throws IOException if an I/O problem occurs while opening the file.
+     */
+    public OnDiskNodeManager(String name, 
+                             Path path, 
+                             NodeWriterFactory<K, V> writerFactory, 
+                             NodeReaderFactory<K, V> readerFactory) 
+                                     throws IOException {
+
+        this(name, path, writerFactory, readerFactory, new NodeCache<K, V>("NoopCache", 0));
+    }
+    
+    /**
+     * Creates a new <code>OnDiskNodeManager</code> instance.
+     * 
+     * @param name the name of this component
+     * @param path the file path
+     * @param writerFactory the writer factory
+     * @param readerFactory the reader factory
+     * @param cache the node cache
+     * @throws IOException if an I/O problem occurs while opening the file.
+     */
+    public OnDiskNodeManager(String name, 
+                             Path path, 
+                             NodeWriterFactory<K, V> writerFactory, 
+                             NodeReaderFactory<K, V> readerFactory,
+                             NodeCache<K, V> cache) throws IOException {
+
+        this.name = name;
+        this.file = RandomAccessDataFile.open(path, true);
+
+        SeekableFileDataOutput output = this.file.getOutput();
+        output.seek(this.file.size());
+
+        this.writer = writerFactory.newWriter(output);
+        this.reader = readerFactory.newReader(this.file.newInput());
+        
+        this.cache = cache;
+    }
+    
     /**
      * {@inheritDoc}
      */
@@ -90,7 +124,7 @@ public final class OnDiskNodeManager<K extends Comparable<K>, V> implements Clos
     @Override
     public void register(MetricRegistry registry) {
 
-        registry.registerAll(new CacheMetrics(name(getName(), "nodeCache"), this.cache));
+        
     }
 
     /**
@@ -98,7 +132,7 @@ public final class OnDiskNodeManager<K extends Comparable<K>, V> implements Clos
      */
     @Override
     public void unregister(MetricRegistry registry) {
-        registry.removeMatching(new PrefixFilter(getName()));
+        
     }
 
     /**
@@ -222,14 +256,9 @@ public final class OnDiskNodeManager<K extends Comparable<K>, V> implements Clos
      * @return the node associated to the specified proxy.
      * @throws IOException if the node cannot be read.
      */
-    public Node<K, V> loadNode(NodeProxy<K, V> proxy) throws IOException {
+    public Node<K, V> loadNode(final NodeProxy<K, V> proxy) throws IOException {
 
-        try {
-            return this.cache.get(proxy);
-
-        } catch (ExecutionException e) {
-            throw new IOException(e.getCause());
-        }
+        return this.cache.get(proxy, this.reader);
     }
 
     /**
@@ -239,129 +268,5 @@ public final class OnDiskNodeManager<K extends Comparable<K>, V> implements Clos
     public String toString() {
 
         return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE).append("file", this.file).toString();
-    }
-
-    /**
-     * Creates a new <code>Builder</code> instance.
-     * 
-     * @param name the name of this component
-     * @param path the file path
-     * @param writerFactory the writer factory
-     * @param readerFactory the reader factory
-     * @return a new <code>Builder</code> instance.
-     */
-    public static <K extends Comparable<K>, V> Builder<K, V> newBuilder(String name,
-                                                                        Path path,
-                                                                        NodeWriterFactory<K, V> writerFactory,
-                                                                        NodeReaderFactory<K, V> readerFactory) {
-
-        return new Builder<>(name, path, writerFactory, readerFactory);
-    }
-
-    /**
-     * Creates a new <code>OnDiskNodeManager</code> instance using the specified builder.
-     * 
-     * @throws IOException if an I/O problem occurs while opening the file.
-     * @throws InterruptedException if the thread is interrupted.
-     */
-    private OnDiskNodeManager(Builder<K, V> builder) throws IOException {
-
-        this.name = builder.name;
-        this.file = RandomAccessDataFile.open(builder.path, true);
-
-        SeekableFileDataOutput output = this.file.getOutput();
-        output.seek(this.file.size());
-
-        this.writer = builder.writerFactory.newWriter(output);
-        this.reader = builder.readerFactory.newReader(this.file.newInput());
-
-        this.cache = CacheBuilder.newBuilder()
-                                 .maximumSize(builder.cacheSize)
-                                 .recordStats()
-                                 .build(new CacheLoader<NodeProxy<K, V>, Node<K, V>>() {
-
-                                     @Override
-                                     public Node<K, V> load(NodeProxy<K, V> proxy) throws Exception {
-
-                                         return OnDiskNodeManager.this.reader.readNode(proxy.getBTree(),
-                                                                                       proxy.getPosition());
-                                     }
-                                 });
-    }
-
-    public static final class Builder<K extends Comparable<K>, V> {
-
-        /**
-         * The component name;
-         */
-        private final String name;
-
-        /**
-         * The file used to store the B+Tree and the data.
-         */
-        private final Path path;
-
-        /**
-         * The writer factory.
-         */
-        private final NodeWriterFactory<K, V> writerFactory;
-
-        /**
-         * The reader factory.
-         */
-        private final NodeReaderFactory<K, V> readerFactory;
-
-        /**
-         * The maximum size of the cache.
-         */
-        private long cacheSize;
-
-        /**
-         * Builds a new <code>OnDiskNodeManager</code> instance.
-         * 
-         * @return a new <code>OnDiskNodeManager</code> instance.
-         * @throws IOException if an I/O problem occurs while opening the file.
-         */
-        public OnDiskNodeManager<K, V> build() throws IOException {
-
-            return new OnDiskNodeManager<>(this);
-        }
-
-        /**
-         * Sets the maximum cache size.
-         * 
-         * @param size the maximum size of the cache.
-         * @return this builder.
-         */
-        public Builder<K, V> cacheSize(long size) {
-
-            this.cacheSize = size;
-            return this;
-        }
-
-        /**
-         * Creates a new <code>Builder</code> that will store the data on the specified file.
-         * 
-         * @param name the component name
-         * @param path the file path
-         * @param writerFactory the writer factory
-         * @param readerFactory the reader factory
-         */
-        private Builder(String name,
-                Path path,
-                NodeWriterFactory<K, V> writerFactory,
-                NodeReaderFactory<K, V> readerFactory) {
-
-            notEmpty(name, "the name parameter must not be empty.");
-            notNull(path, "the path parameter must not be null.");
-            notNull(writerFactory, "the writerFactory parameter must not be null.");
-            notNull(readerFactory, "the readerFactory parameter must not be null.");
-
-            this.name = name;
-            this.path = path;
-            this.writerFactory = writerFactory;
-            this.readerFactory = readerFactory;
-        }
-
     }
 }

@@ -129,10 +129,10 @@ public final class DefaultDatabaseManager extends AbstractComponent implements D
 
         Path databasesFile = systemDirectory.resolve(DATABASES_FILENAME);
 
-        this.nodeManager = OnDiskNodeManager.newBuilder(MetricRegistry.name(getName(), "bTree"),
-                                                        databasesFile,
-                                                        DatabaseDefinitionNodeWriter.FACTORY,
-                                                        DatabaseDefinitionNodeReader.FACTORY).build();
+        this.nodeManager = new OnDiskNodeManager<>(MetricRegistry.name(getName(), "bTree"),
+                                                   databasesFile,
+                                                   DatabaseDefinitionNodeWriter.FACTORY,
+                                                   DatabaseDefinitionNodeReader.FACTORY);
 
         this.btree = new BTree<>(this.nodeManager, BRANCHING_FACTOR);
 

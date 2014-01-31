@@ -111,10 +111,10 @@ public final class DefaultTimeSeriesManager extends AbstractComponent implements
 
         Path timeSeriesFile = systemDirectory.resolve(TIMESERIES_FILENAME);
 
-        this.nodeManager = OnDiskNodeManager.newBuilder(MetricRegistry.name(getName(), "bTree"),
-                                                        timeSeriesFile,
-                                                        TimeSeriesDefinitionNodeWriter.FACTORY,
-                                                        TimeSeriesDefinitionNodeReader.FACTORY).build();
+        this.nodeManager = new OnDiskNodeManager<>(MetricRegistry.name(getName(), "bTree"),
+                                                   timeSeriesFile,
+                                                   TimeSeriesDefinitionNodeWriter.FACTORY,
+                                                   TimeSeriesDefinitionNodeReader.FACTORY);
 
         this.btree = new BTree<>(this.nodeManager, BRANCHING_FACTOR);
 
