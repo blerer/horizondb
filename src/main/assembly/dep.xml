@@ -22,7 +22,14 @@
         <include>*.jar</include>
       </includes>
     </fileSet>
-      <fileSet>
+    <fileSet>
+      <directory>src/main/scripts/</directory>
+      <outputDirectory>/bin</outputDirectory>
+      <includes>
+        <include>*.bat</include>
+      </includes>
+    </fileSet>
+    <fileSet>
       <directory>src/main/config/</directory>
       <outputDirectory>/conf</outputDirectory>
       <includes>
