@@ -34,7 +34,7 @@ set JAVA_OPTS=-Xms1G^
  -XX:CMSInitiatingOccupancyFraction=75^
  -XX:+UseCMSInitiatingOccupancyOnly
 
-set CLASSPATH="HORIZONDB_HOME%\conf"
+set CLASSPATH="%HORIZONDB_HOME%\conf"
 
 for %%i in ("%HORIZONDB_HOME%\lib\*.jar") do call :append "%%i"
 goto :runDaemon
