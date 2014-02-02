@@ -19,7 +19,6 @@ import io.horizondb.db.util.concurrent.LoggingUncaughtExceptionHandler;
 import io.horizondb.model.ErrorCodes;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -39,6 +38,11 @@ import static org.apache.commons.lang.SystemUtils.JAVA_VM_NAME;
  * 
  */
 public final class HorizonDbDaemon {
+
+    /**
+     * The name of the configuration file.
+     */
+    private static final String CONFIGURATION_FILE = "horizondb-config.properties";
 
     /**
      * The class logger.
@@ -182,20 +186,16 @@ public final class HorizonDbDaemon {
     }
 
     /**
-     * Loads the configuration from the classpath.
+     * Loads the configuration from the class path.
      * 
      * @return the loaded configuration
      * @throws IOException if an I/O problem occurs while loading the configuration
      * @throws HorizonDBException if the configuration is invalid
      */
-    private Configuration loadConfiguration() throws IOException, HorizonDBException {
+    private static Configuration loadConfiguration() throws IOException, HorizonDBException {
 
         ConfigurationLoader loader = new PropertiesFileConfigurationLoader();
 
-        try (InputStream input = this.getClass().getResourceAsStream("horizondb-config.properties")) {
-
-            return loader.loadConfigurationFrom(input);
-        }
+        return loader.loadConfigurationFromClasspath(CONFIGURATION_FILE);
     }
-
 }

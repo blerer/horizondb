@@ -27,7 +27,7 @@ import java.io.InputStream;
 public interface ConfigurationLoader {
 
     /**
-     * Loads the database configuration.
+     * Loads the database configuration from the specified input stream.
      * 
      * @param input the input stream containing the configuration information.
      * @return the database configuration
@@ -35,4 +35,14 @@ public interface ConfigurationLoader {
      * @throws HorizonDBException if the configuration is invalid
      */
     Configuration loadConfigurationFrom(InputStream input) throws IOException, HorizonDBException;
+    
+    /**
+     * Loads the database configuration from the specified file within the classpath.
+     * 
+     * @param filename the name of the configuration file.
+     * @return the database configuration
+     * @throws IOException if an I/O problem occurs while reading the input
+     * @throws HorizonDBException if the configuration is invalid
+     */
+    Configuration loadConfigurationFromClasspath(String filename) throws IOException, HorizonDBException;
 }

@@ -16,7 +16,6 @@
 package io.horizondb.db;
 
 import java.io.IOException;
-import java.io.InputStream;
 
 import org.junit.Test;
 
@@ -25,14 +24,12 @@ import org.junit.Test;
  * 
  */
 public class PropertiesFileConfigurationLoaderTest {
-
+    
     @Test
-    public void testLoadConfigurationFrom() throws IOException, HorizonDBException {
-
-        InputStream input = PropertiesFileConfigurationLoaderTest.class.getResourceAsStream("horizondb-config.properties");
+    public void testLoadConfigurationFromClassPath() throws IOException, HorizonDBException {
 
         PropertiesFileConfigurationLoader loader = new PropertiesFileConfigurationLoader();
 
-        loader.loadConfigurationFrom(input);
+        Configuration configuration = loader.loadConfigurationFromClasspath("horizondb-config.properties");
     }
 }

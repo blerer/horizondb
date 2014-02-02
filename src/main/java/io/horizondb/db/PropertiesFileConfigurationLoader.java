@@ -71,6 +71,31 @@ final class PropertiesFileConfigurationLoader implements ConfigurationLoader {
 
         return builder.build();
     }
+    
+    /**    
+     * {@inheritDoc}
+     */
+    @Override
+    public Configuration loadConfigurationFromClasspath(String filename) throws IOException, HorizonDBException {
+        
+        InputStream in = getClassLoader().getResourceAsStream(filename);
+        
+        if (in == null) {
+            
+            throw new IllegalStateException("The '" + filename + "' file cannot be found within the classpath.");
+        }
+        
+        return loadConfigurationFrom(in);
+    }
+
+    /**
+     * Returns the <code>ClassLoader</code> that has been used to load this class.
+     * 
+     * @return the <code>ClassLoader</code> that has been used to load this class.
+     */
+    private ClassLoader getClassLoader() {
+        return this.getClass().getClassLoader();
+    }
 
     /**
      * Sets the specified property on the specified builder.
