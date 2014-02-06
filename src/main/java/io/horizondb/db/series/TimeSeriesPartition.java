@@ -176,10 +176,24 @@ public final class TimeSeriesPartition implements TimeSeriesElement {
 
             this.logger.debug("a memTimeSeries of partition {} is full => triggering flush", getId());
 
-            this.manager.flush(this);
+            scheduleFlush();
         }
     }
 
+    /**
+     * Schedules the flush of this partition. 
+     */
+    void scheduleFlush() {
+        this.manager.flush(this);
+    }
+
+    /**
+     * Schedules the force flush of this partition. 
+     */
+    void scheduleForceFlush() {
+        this.manager.forceFlush(this);
+    }
+    
     /**
      * Returns a <code>RecordIterator</code> containing the data from the specified time range.
      * 

@@ -18,6 +18,7 @@ package io.horizondb.db.series;
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.commitlog.ReplayPosition;
+import io.horizondb.db.util.concurrent.FutureUtils;
 import io.horizondb.io.Buffer;
 import io.horizondb.io.buffers.CompositeBuffer;
 import io.horizondb.io.files.SeekableFileDataInput;
@@ -62,9 +63,14 @@ final class MemTimeSeries implements TimeSeriesElement {
     private final TimeSeriesRecord[] lastRecords;
 
     /**
+     * The future associated to the first write.
+     */
+    private final ListenableFuture<ReplayPosition> firstFuture;
+    
+    /**
      * The future associated to the latest write.
      */
-    private final ListenableFuture<ReplayPosition> future;
+    private final ListenableFuture<ReplayPosition> lastFuture;
 
     /**
      * The range of the regions used by this <code>MemTimeSeries</code>.
@@ -80,6 +86,7 @@ final class MemTimeSeries implements TimeSeriesElement {
              new TimeSeriesRecord[definition.getNumberOfRecordTypes()],
              new CompositeBuffer(),
              null,
+             null,
              null);
     }
 
@@ -89,7 +96,7 @@ final class MemTimeSeries implements TimeSeriesElement {
     @Override
     public ListenableFuture<ReplayPosition> getFuture() {
 
-        return this.future;
+        return this.lastFuture;
     }
 
     /**
@@ -115,7 +122,12 @@ final class MemTimeSeries implements TimeSeriesElement {
             write(allocator, copy, buffer, iterator.next());
         }
 
-        return new MemTimeSeries(this.configuration, copy, buffer, future, getNewRegionRange(allocator));
+        return new MemTimeSeries(this.configuration, 
+                                 copy, 
+                                 buffer, 
+                                 getFirstFuture(future), 
+                                 future, 
+                                 getNewRegionRange(allocator));
     }
 
     /**
@@ -146,6 +158,16 @@ final class MemTimeSeries implements TimeSeriesElement {
         return this.regionRange;
     }
 
+    /**
+     * Returns the ID of the first commit log segment which contains data of this <code>MemTimeSeries</code>.
+     * 
+     * @return the ID of the first commit log segment which contains data of this <code>MemTimeSeries</code>.
+     */
+    public long getFirstCommitLogSegmentId() {
+        
+        return FutureUtils.safeGet(this.firstFuture).getSegment(); 
+    }
+    
     /**
      * Writes the specified record data to the specified buffer.
      * 
@@ -246,6 +268,22 @@ final class MemTimeSeries implements TimeSeriesElement {
 
         return getGreatestTimestamp(this.lastRecords);
     }
+    
+    /**
+     * Returns the future of the first set of records written to this <code>MemTimeSeries</code>.
+     * 
+     * @param future the future of the last record set written
+     * @return the future of the first set of records written to this <code>MemTimeSeries</code>
+     */
+    private ListenableFuture<ReplayPosition> getFirstFuture(ListenableFuture<ReplayPosition> future) {
+
+        if (this.firstFuture == null) {
+            
+            return future;
+        }
+        
+        return this.firstFuture;
+    }
 
     /**
      * Returns the greatest timestamp of the specified records.
@@ -311,13 +349,15 @@ final class MemTimeSeries implements TimeSeriesElement {
     private MemTimeSeries(Configuration configuration,
             TimeSeriesRecord[] lastRecords,
             CompositeBuffer buffer,
-            ListenableFuture<ReplayPosition> future,
+            ListenableFuture<ReplayPosition> firstFuture,
+            ListenableFuture<ReplayPosition> lastFuture,
             Range<Integer> regionRange) {
 
         this.configuration = configuration;
         this.lastRecords = lastRecords;
         this.compositeBuffer = buffer;
-        this.future = future;
+        this.firstFuture = firstFuture;
+        this.lastFuture = lastFuture;
         this.regionRange = regionRange;
     }
 }
