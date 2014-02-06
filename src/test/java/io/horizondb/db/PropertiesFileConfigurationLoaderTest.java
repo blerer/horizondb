@@ -30,6 +30,6 @@ public class PropertiesFileConfigurationLoaderTest {
 
         PropertiesFileConfigurationLoader loader = new PropertiesFileConfigurationLoader();
 
-        Configuration configuration = loader.loadConfigurationFromClasspath("horizondb-config.properties");
+        loader.loadConfigurationFromClasspath("horizondb-config.properties");
     }
 }
