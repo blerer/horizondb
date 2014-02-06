@@ -19,7 +19,8 @@ import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.ReadableBuffer;
 
 import java.io.IOException;
-import java.util.concurrent.Future;
+
+import com.google.common.util.concurrent.ListenableFuture;
 
 /**
  * @author Benjamin
@@ -27,19 +28,29 @@ import java.util.concurrent.Future;
  */
 public interface DatabaseEngine extends Component {
 
+    /**
+     * Executes the operation requested by the specified message 
+     *  
+     * @param buffer the message in its binary form
+     * @return the message response
+     */
     Object execute(ReadableBuffer buffer);
 
     /**
-     * @param id
-     * @return
+     * Flush to the disk all the data that have not been persisted yet and that come from the 
+     * segment with the specified ID.
+     * 
+     * @param id the segment id
+     * @return the future representing the completion of the task
      */
-    Future<Boolean> forceFlush(long id);
+    ListenableFuture<Boolean> forceFlush(long id);
 
     /**
-     * @param replayPosition
-     * @param bytes
-     * @throws IOException
+     * Replays the specified message. 
+     * 
+     * @param replayPosition the replay position associated with the message
+     * @param buffer the message in its binary form
+     * @throws IOException if an I/O problem occurs during the replay
      */
-    void replay(ReplayPosition replayPosition, ReadableBuffer bytes) throws IOException;
-
+    void replay(ReplayPosition replayPosition, ReadableBuffer buffer) throws IOException;
 }

@@ -35,10 +35,10 @@ import io.horizondb.model.protocol.Msgs;
 import io.horizondb.model.protocol.OpCode;
 
 import java.io.IOException;
-import java.util.concurrent.Future;
 
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 
 /**
  * @author Benjamin
@@ -180,8 +180,8 @@ public class DefaultDatabaseEngine extends AbstractComponent implements Database
      * {@inheritDoc}
      */
     @Override
-    public Future<Boolean> forceFlush(long id) {
-        // TODO Auto-generated method stub
+    public ListenableFuture<Boolean> forceFlush(long id) {
+
         return null;
     }
 

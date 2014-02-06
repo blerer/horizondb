@@ -21,12 +21,13 @@ import io.horizondb.io.files.FileUtils;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.Future;
 
 import org.easymock.EasyMock;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.google.common.util.concurrent.ListenableFuture;
 
 import static io.horizondb.io.files.FileUtils.ONE_KB;
 import static io.horizondb.test.AssertCollections.assertIterableContains;
@@ -88,7 +89,7 @@ public class CommitLogAllocatorTest {
 
         long id = IdFactory.nextId();
 
-        Future<Boolean> forceFlushFuture = EasyMock.createMock(Future.class);
+        ListenableFuture<Boolean> forceFlushFuture = EasyMock.createMock(ListenableFuture.class);
 
         EasyMock.expect(forceFlushFuture.get()).andReturn(Boolean.TRUE).anyTimes();
         EasyMock.expect(this.databaseEngine.forceFlush(id + 1)).andReturn(forceFlushFuture);
