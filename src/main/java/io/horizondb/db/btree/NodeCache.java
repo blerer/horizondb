@@ -28,7 +28,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
 /**
- * Cache used by the <code>OnDiskNodeManagers</code> to reduce the number of disk read 
+ * Cache used by the <code>OnDiskNodeManagers</code> to reduce the number of disk read. 
  * 
  * @author Benjamin
  *

@@ -18,19 +18,14 @@ package io.horizondb.db.databases;
 import io.horizondb.db.AbstractComponent;
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
+import io.horizondb.db.cache.ValueLoader;
 import io.horizondb.db.commitlog.ReplayPosition;
-import io.horizondb.db.metrics.CacheMetrics;
-import io.horizondb.db.metrics.PrefixFilter;
 import io.horizondb.model.schema.DatabaseDefinition;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutionException;
 
 import com.codahale.metrics.MetricRegistry;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
 import com.google.common.cache.CacheStats;
-import com.google.common.cache.LoadingCache;
 import com.google.common.util.concurrent.ListenableFuture;
 
 /**
@@ -47,14 +42,9 @@ public final class DatabaseManagerCache extends AbstractComponent implements Dat
     private final DatabaseManager manager;
 
     /**
-     * The database configuration.
-     */
-    private final Configuration configuration;
-
-    /**
      * The database cache.
      */
-    private LoadingCache<String, Database> cache;
+    private final DatabaseCache cache;
 
     /**
      * Creates a <code>TimeSeriesManagerCache</code> to cache the databases returned by the specified manager.
@@ -64,7 +54,7 @@ public final class DatabaseManagerCache extends AbstractComponent implements Dat
      */
     public DatabaseManagerCache(Configuration configuration, DatabaseManager manager) {
 
-        this.configuration = configuration;
+        this.cache = new DatabaseCache(configuration);
         this.manager = manager;
     }
 
@@ -75,18 +65,7 @@ public final class DatabaseManagerCache extends AbstractComponent implements Dat
     protected void doStart() throws IOException, InterruptedException {
 
         this.manager.start();
-
-        this.cache = CacheBuilder.newBuilder()
-                                 .maximumSize(this.configuration.getDatabaseCacheMaximumSize())
-                                 .recordStats()
-                                 .build(new CacheLoader<String, Database>() {
-
-                                     @Override
-                                     public Database load(String name) throws Exception {
-
-                                         return DatabaseManagerCache.this.manager.getDatabase(name);
-                                     }
-                                 });
+        this.cache.start();
     }
 
     /**
@@ -95,7 +74,7 @@ public final class DatabaseManagerCache extends AbstractComponent implements Dat
     @Override
     public void register(MetricRegistry registry) {
         this.manager.register(registry);
-        registry.registerAll(new CacheMetrics(getName(), this.cache));
+        this.cache.register(registry);
     }
 
     /**
@@ -104,7 +83,7 @@ public final class DatabaseManagerCache extends AbstractComponent implements Dat
     @Override
     public void unregister(MetricRegistry registry) {
         this.manager.unregister(registry);
-        registry.removeMatching(new PrefixFilter(getName()));
+        this.cache.unregister(registry);
     }
 
     /**
@@ -113,6 +92,7 @@ public final class DatabaseManagerCache extends AbstractComponent implements Dat
     @Override
     protected void doShutdown() throws InterruptedException {
         this.manager.shutdown();
+        this.cache.shutdown();
     }
 
     /**
@@ -134,22 +114,13 @@ public final class DatabaseManagerCache extends AbstractComponent implements Dat
     public Database getDatabase(String name) throws IOException, HorizonDBException {
 
         String lowerCaseName = name.toLowerCase();
-
-        try {
-
-            return this.cache.get(lowerCaseName);
-
-        } catch (ExecutionException e) {
-
-            Throwable cause = e.getCause();
-
-            if (cause instanceof HorizonDBException) {
-
-                throw (HorizonDBException) cause;
+        return this.cache.get(lowerCaseName, new ValueLoader<String, Database>() {
+            
+            @Override
+            public Database loadValue(String key) throws IOException, HorizonDBException {
+                return DatabaseManagerCache.this.manager.getDatabase(key);
             }
-
-            throw new IOException(cause);
-        }
+        });
     }
 
     /**

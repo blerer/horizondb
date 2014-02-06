@@ -23,12 +23,13 @@ import io.horizondb.io.files.FileUtils;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.Future;
 
 import org.easymock.EasyMock;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.google.common.util.concurrent.ListenableFuture;
 
 import static io.horizondb.db.commitlog.CommitLogSegment.LOG_OVERHEAD_SIZE;
 import static io.horizondb.io.files.FileUtils.ONE_KB;
@@ -168,7 +169,7 @@ public class CommitLogTest {
         position += (fourthBuffer.readableBytes() + LOG_OVERHEAD_SIZE);
         ReplayPosition fourthPosition = new ReplayPosition(thirdSegment, position);
 
-        Future<Boolean> future = EasyMock.createMock(Future.class);
+        ListenableFuture<Boolean> future = EasyMock.createMock(ListenableFuture.class);
 
         EasyMock.expect(this.databaseEngine.forceFlush(firstSegment)).andReturn(future);
         EasyMock.expect(future.get()).andReturn(Boolean.TRUE);
