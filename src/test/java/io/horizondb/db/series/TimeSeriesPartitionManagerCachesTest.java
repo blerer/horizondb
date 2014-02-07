@@ -16,6 +16,7 @@
 package io.horizondb.db.series;
 
 import io.horizondb.db.Configuration;
+import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.files.FileUtils;
 import io.horizondb.model.PartitionId;
@@ -76,7 +77,7 @@ public class TimeSeriesPartitionManagerCachesTest {
     }
 
     @Test
-    public void testGlobalCacheWithWriteAndRead() throws InterruptedException, IOException {
+    public void testGlobalCacheWithWriteAndRead() throws InterruptedException, IOException, HorizonDBException {
 
         DefaultTimeSeriesPartitionManager partitionManager = new DefaultTimeSeriesPartitionManager(this.configuration);
 
@@ -148,7 +149,7 @@ public class TimeSeriesPartitionManagerCachesTest {
     }
 
     @Test
-    public void testGlobalCacheWeakReferencesWithRead() throws InterruptedException, IOException {
+    public void testGlobalCacheWeakReferencesWithRead() throws InterruptedException, IOException, HorizonDBException  {
 
         DefaultTimeSeriesPartitionManager partitionManager = new DefaultTimeSeriesPartitionManager(this.configuration);
 
@@ -224,7 +225,7 @@ public class TimeSeriesPartitionManagerCachesTest {
     }
 
     @Test
-    public void testGlobalCacheWithReadAndWrite() throws InterruptedException, IOException {
+    public void testGlobalCacheWithReadAndWrite() throws InterruptedException, IOException, HorizonDBException  {
 
         DefaultTimeSeriesPartitionManager partitionManager = new DefaultTimeSeriesPartitionManager(this.configuration);
 

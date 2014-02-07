@@ -15,20 +15,10 @@
  */
 package io.horizondb.db.cache;
 
-import io.horizondb.db.AbstractComponent;
 import io.horizondb.db.Configuration;
-import io.horizondb.db.HorizonDBException;
-import io.horizondb.db.metrics.CacheMetrics;
-import io.horizondb.db.metrics.PrefixFilter;
 
-import java.io.IOException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-
-import com.codahale.metrics.MetricRegistry;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheStats;
 
 /**
  * Base class for <code>Cache</code> implementation with multilevel.
@@ -36,24 +26,12 @@ import com.google.common.cache.CacheStats;
  * @author Benjamin
  * 
  */
-public abstract class AbstractMultilevelCache<K, V> 
-extends AbstractComponent 
-implements io.horizondb.db.cache.Cache<K, V> {
-
-    /**
-     * The database configuration.
-     */
-    private final Configuration configuration;
+public abstract class AbstractMultilevelCache<K, V> extends AbstractCache<K, V> {
 
     /**
      * The second level cache.
      */
     private final io.horizondb.db.cache.Cache<K, V> secondLevelCache;
-    
-    /**
-     * The actual cache.
-     */
-    private Cache<K, V> cache;
 
     /**
      * Creates a <code>AbstractCache</code>.
@@ -64,7 +42,7 @@ implements io.horizondb.db.cache.Cache<K, V> {
     public AbstractMultilevelCache(Configuration configuration, 
                                    io.horizondb.db.cache.Cache<K, V> secondLevelCache) {
 
-        this.configuration = configuration;
+        super(configuration);
         this.secondLevelCache = secondLevelCache;
     }
 
@@ -72,91 +50,17 @@ implements io.horizondb.db.cache.Cache<K, V> {
      * {@inheritDoc}
      */
     @Override
-    protected void doStart() throws IOException, InterruptedException {
-
-        this.cache = newBuilder(this.configuration).build();
-    }
-
-    /**
-     * Creates a new builder for 
-     * @return
-     */
-    protected abstract CacheBuilder<K, V> newBuilder(Configuration configuration);
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void register(MetricRegistry registry) {
-        registry.registerAll(new CacheMetrics(getName(), this.cache));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void unregister(MetricRegistry registry) {
-        registry.removeMatching(new PrefixFilter(getName()));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void doShutdown() throws InterruptedException {
-
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public V get(final K key, final ValueLoader<K, V> loader) throws IOException, HorizonDBException {
-
-        checkRunning();
+    protected V doGet(final K key, final ValueLoader<K, V> loader) throws ExecutionException {
         
-        try {
-
-            return this.cache.get(key, new Callable<V>() {
-                
-                /**
-                 * {@inheritDoc}
-                 */
-                @Override
-                public V call() throws Exception {
-                    return AbstractMultilevelCache.this.secondLevelCache.get(key, loader);
-                }
-            });
-
-        } catch (ExecutionException e) {
-
-            Throwable cause = e.getCause();
-
-            if (cause instanceof HorizonDBException) {
-
-                throw (HorizonDBException) cause;
+        return doGet(key, new Callable<V>() {
+            
+            /**
+             * {@inheritDoc}
+             */
+            @Override
+            public V call() throws Exception {
+                return AbstractMultilevelCache.this.secondLevelCache.get(key, loader);
             }
-
-            throw new IOException(cause);
-        }
-    }
-
-    /**
-     * Returns the cache statistics.
-     * 
-     * @return the cache statistics.
-     */
-    CacheStats stats() {
-
-        return this.cache.stats();
-    }
-
-    /**
-     * Returns the cache size.
-     * 
-     * @return the cache size.
-     */
-    long size() {
-        return this.cache.size();
+        });
     }
 }

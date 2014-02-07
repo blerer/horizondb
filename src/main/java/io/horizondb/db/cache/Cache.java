@@ -31,6 +31,14 @@ import io.horizondb.db.HorizonDBException;
 public interface Cache<K, V> extends Component {
 
     /**
+     * Puts the specified entry in the cache.
+     * 
+     * @param key the entry key
+     * @param value the entry value
+     */
+    void put(K key, V value);
+    
+    /**
      * Returns the value associated to the specified key. If the key is not present in the cache the value will be 
      * loaded using the specified <code>ValueLoader</code>.  
      * 
@@ -41,4 +49,10 @@ public interface Cache<K, V> extends Component {
      * @throws HorizonDBException if a problem occurs
      */
     V get(K key, ValueLoader<K, V> loader) throws IOException, HorizonDBException;
+    
+    /**
+     * Invalidates the entry with the specified key.
+     * @param key the entry key
+     */
+    void invalidate(K key);
 }

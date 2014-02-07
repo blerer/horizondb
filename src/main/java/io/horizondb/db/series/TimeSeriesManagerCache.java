@@ -18,18 +18,13 @@ package io.horizondb.db.series;
 import io.horizondb.db.AbstractComponent;
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
+import io.horizondb.db.cache.ValueLoader;
 import io.horizondb.db.commitlog.ReplayPosition;
-import io.horizondb.db.metrics.CacheMetrics;
-import io.horizondb.db.metrics.PrefixFilter;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 
 import com.codahale.metrics.MetricRegistry;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheStats;
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -47,14 +42,9 @@ public final class TimeSeriesManagerCache extends AbstractComponent implements T
     private final TimeSeriesManager manager;
 
     /**
-     * The database configuration.
-     */
-    private final Configuration configuration;
-
-    /**
      * The time series cache.
      */
-    private Cache<TimeSeriesId, TimeSeries> cache;
+    private TimeSeriesCache cache;
 
     /**
      * Creates a <code>TimeSeriesManagerCache</code> to cache the time series returned by the specified manager.
@@ -64,8 +54,8 @@ public final class TimeSeriesManagerCache extends AbstractComponent implements T
      */
     public TimeSeriesManagerCache(Configuration configuration, TimeSeriesManager manager) {
 
-        this.configuration = configuration;
         this.manager = manager;
+        this.cache = new TimeSeriesCache(configuration);
     }
 
     /**
@@ -75,11 +65,7 @@ public final class TimeSeriesManagerCache extends AbstractComponent implements T
     protected void doStart() throws IOException, InterruptedException {
 
         this.manager.start();
-
-        this.cache = CacheBuilder.newBuilder()
-                                 .maximumSize(this.configuration.getTimeSeriesCacheMaximumSize())
-                                 .recordStats()
-                                 .build();
+        this.cache.start();
     }
 
     /**
@@ -88,7 +74,7 @@ public final class TimeSeriesManagerCache extends AbstractComponent implements T
     @Override
     public void register(MetricRegistry registry) {
         this.manager.register(registry);
-        registry.registerAll(new CacheMetrics(getName(), this.cache));
+        this.cache.register(registry);
     }
 
     /**
@@ -97,7 +83,7 @@ public final class TimeSeriesManagerCache extends AbstractComponent implements T
     @Override
     public void unregister(MetricRegistry registry) {
         this.manager.unregister(registry);
-        registry.removeMatching(new PrefixFilter(getName()));
+        this.cache.unregister(registry);
     }
 
     /**
@@ -105,6 +91,7 @@ public final class TimeSeriesManagerCache extends AbstractComponent implements T
      */
     @Override
     protected void doShutdown() throws InterruptedException {
+        this.cache.shutdown();
         this.manager.shutdown();
     }
 
@@ -133,32 +120,15 @@ public final class TimeSeriesManagerCache extends AbstractComponent implements T
      * {@inheritDoc}
      */
     @Override
-    public TimeSeries getTimeSeries(final TimeSeriesId id) throws IOException, HorizonDBException {
+    public TimeSeries getTimeSeries(TimeSeriesId id) throws IOException, HorizonDBException {
 
-        try {
+        return this.cache.get(id, new ValueLoader<TimeSeriesId, TimeSeries>() {
 
-            return this.cache.get(id, new Callable<TimeSeries>() {
-
-                /**
-                 * {@inheritDoc}
-                 */
-                @Override
-                public TimeSeries call() throws Exception {
-                    return TimeSeriesManagerCache.this.manager.getTimeSeries(id);
-                }
-            });
-
-        } catch (ExecutionException e) {
-
-            Throwable cause = e.getCause();
-
-            if (cause instanceof HorizonDBException) {
-
-                throw (HorizonDBException) cause;
+            @Override
+            public TimeSeries loadValue(TimeSeriesId key) throws IOException, HorizonDBException {
+                return TimeSeriesManagerCache.this.manager.getTimeSeries(key);
             }
-
-            throw new IOException(cause);
-        }
+        });
     }
 
     /**

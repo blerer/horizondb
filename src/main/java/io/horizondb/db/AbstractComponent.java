@@ -86,7 +86,7 @@ public abstract class AbstractComponent implements Component {
         if (!this.status.compareAndSet(Status.RUNNING, Status.SHUTTING_DOWN)) {
 
             throw new IllegalStateException("component " + getName()
-                    + "is not in a running state so it cannot be shutdown");
+                    + " is not in a running state so it cannot be shutdown");
         }
 
         try {

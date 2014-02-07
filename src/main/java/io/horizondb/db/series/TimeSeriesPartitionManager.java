@@ -45,8 +45,7 @@ public interface TimeSeriesPartitionManager extends Component {
      * @throws IOException if an I/O problem occurs while retrieving the partition.
      * @throws HorizonDBException if a problem occurs.
      */
-            TimeSeriesPartition
-            getPartitionForRead(PartitionId partitionId, TimeSeriesDefinition seriesDefinition) throws IOException;
+    TimeSeriesPartition getPartitionForRead(PartitionId partitionId, TimeSeriesDefinition seriesDefinition) throws IOException, HorizonDBException;
 
     /**
      * Returns the partition with the specified ID from the specified time series for write access.
@@ -57,8 +56,8 @@ public interface TimeSeriesPartitionManager extends Component {
      * @throws IOException if an I/O problem occurs while retrieving the partition.
      * @throws HorizonDBException if a problem occurs.
      */
-            TimeSeriesPartition
-            getPartitionForWrite(PartitionId partitionId, TimeSeriesDefinition seriesDefinition) throws IOException;
+    TimeSeriesPartition getPartitionForWrite(PartitionId partitionId, TimeSeriesDefinition seriesDefinition) throws IOException,
+                                                                                                            HorizonDBException;
 
     /**
      * Flush the specified partition.

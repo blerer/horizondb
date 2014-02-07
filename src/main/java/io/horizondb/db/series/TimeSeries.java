@@ -94,8 +94,9 @@ public final class TimeSeries {
      * 
      * @param timeRange the time range for which the data must be read
      * @throws IOException if an I/O problem occurs
+     * @throws HorizonDBException if another problem occurs
      */
-    public RecordIterator read(TimeRange timeRange) throws IOException {
+    public RecordIterator read(TimeRange timeRange) throws IOException, HorizonDBException {
 
         TimeRange partitionTimeRange = this.definition.getPartitionTimeRange(timeRange.getStart());
         

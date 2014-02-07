@@ -22,6 +22,7 @@ import io.horizondb.db.metrics.CacheMetrics;
 import io.horizondb.db.metrics.PrefixFilter;
 
 import java.io.IOException;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
 import com.codahale.metrics.MetricRegistry;
@@ -61,23 +62,9 @@ public abstract class AbstractCache<K, V> extends AbstractComponent implements i
      * {@inheritDoc}
      */
     @Override
-    protected void doStart() throws IOException, InterruptedException {
-
-        this.cache = newBuilder(this.configuration).build();
-    }
-
-    /**
-     * Creates a new builder for the Guava Cache used internally.
-     * @return a new builder for the Guava Cache used internally.
-     */
-    protected abstract CacheBuilder<Object, Object> newBuilder(Configuration configuration);
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public final void register(MetricRegistry registry) {
         registry.registerAll(new CacheMetrics(getName(), this.cache));
+        onRegister(registry);
     }
 
     /**
@@ -88,12 +75,12 @@ public abstract class AbstractCache<K, V> extends AbstractComponent implements i
         registry.removeMatching(new PrefixFilter(getName()));
     }
 
-    /**
+    /**    
      * {@inheritDoc}
      */
     @Override
-    protected void doShutdown() throws InterruptedException {
-
+    public void put(K key, V value) {
+        this.cache.put(key, value);
     }
 
     /**
@@ -106,7 +93,11 @@ public abstract class AbstractCache<K, V> extends AbstractComponent implements i
         
         try {
 
-            return this.cache.get(key, new CallableAdaptor<>(key, loader));
+            final V value = doGet(key, loader);
+            
+            afterLoad(value);
+            
+            return value;
 
         } catch (ExecutionException e) {
 
@@ -119,6 +110,14 @@ public abstract class AbstractCache<K, V> extends AbstractComponent implements i
 
             throw new IOException(cause);
         }
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void invalidate(K key) {
+        this.cache.invalidate(key);
     }
 
     /**
@@ -138,5 +137,71 @@ public abstract class AbstractCache<K, V> extends AbstractComponent implements i
      */
     public final long size() {
         return this.cache.size();
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void doStart() throws IOException, InterruptedException {
+
+        this.cache = newBuilder(this.configuration).build();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void doShutdown() {
+        this.cache.invalidateAll();
+    }
+    
+    /**
+     * Creates a new builder for the Guava Cache used internally.
+     * @return a new builder for the Guava Cache used internally.
+     */
+    protected abstract CacheBuilder<? super K, ? super V> newBuilder(Configuration configuration);
+    
+    /**
+     * Performs the get operation.
+     * 
+     * @param key the value key
+     * @param loader the loader that will be used to load the value if the key is not present within the cache
+     * @return the value associated to the specified key
+     * @throws ExecutionException if a problem occurs while retrieving the value
+     */
+    protected V doGet(K key, ValueLoader<K, V> loader) throws ExecutionException {
+        
+        return doGet(key, new CallableAdaptor<>(key, loader));
+    }
+    
+    /**
+     * Performs the get operation.
+     * 
+     * @param key the value key
+     * @param callable the <code>Callable</code> that will be used to load the value if the key is not present within the cache
+     * @return the value associated to the specified key
+     * @throws ExecutionException if a problem occurs while retrieving the value
+     */
+    protected final V doGet(K key, Callable<V> callable) throws ExecutionException {
+        
+        return this.cache.get(key, callable);
+    }  
+
+    /**
+     * Allows a sub-classes to perform operations on a loaded value before returning it.
+     *  
+     * @param value the loaded value
+     */
+    protected void afterLoad(V value) {
+
+    }
+    
+    /**
+     * Allows sub-classes to register more meters if they need to.
+     * @param registry the <code>MetricRegistry</code>
+     */
+    protected void onRegister(MetricRegistry registry) {
+
     }
 }
