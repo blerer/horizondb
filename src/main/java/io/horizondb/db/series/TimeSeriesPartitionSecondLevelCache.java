@@ -31,7 +31,7 @@ import com.google.common.cache.CacheBuilder;
  * 
  */
 @ThreadSafe
-public final class TimeSeriesPartitionSecondLevelCache extends AbstractCache<PartitionId, TimeSeriesPartition> {
+final class TimeSeriesPartitionSecondLevelCache extends AbstractCache<PartitionId, TimeSeriesPartition> {
 
     /**
      * Creates a second level cache for the time series partition.

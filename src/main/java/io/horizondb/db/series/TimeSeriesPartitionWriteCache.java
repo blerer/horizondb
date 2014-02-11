@@ -39,7 +39,7 @@ import com.google.common.cache.Weigher;
  * 
  */
 @ThreadSafe
-public final class TimeSeriesPartitionWriteCache extends AbstractMultilevelCache<PartitionId, TimeSeriesPartition> {
+final class TimeSeriesPartitionWriteCache extends AbstractMultilevelCache<PartitionId, TimeSeriesPartition> {
 
     /**
      * The listener used to track the memory usage change.

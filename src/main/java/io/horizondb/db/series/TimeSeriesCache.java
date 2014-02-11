@@ -26,7 +26,7 @@ import com.google.common.cache.CacheBuilder;
  * @author Benjamin
  * 
  */
-public final class TimeSeriesCache extends AbstractCache<TimeSeriesId, TimeSeries> {
+final class TimeSeriesCache extends AbstractCache<TimeSeriesId, TimeSeries> {
 
     /**
      * Creates a <code>TimeSeriesCache</code> to cache the time series.

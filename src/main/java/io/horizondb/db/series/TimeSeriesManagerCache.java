@@ -64,8 +64,7 @@ public final class TimeSeriesManagerCache extends AbstractComponent implements T
     @Override
     protected void doStart() throws IOException, InterruptedException {
 
-        this.manager.start();
-        this.cache.start();
+        start(this.manager, this.cache);
     }
 
     /**
@@ -73,8 +72,8 @@ public final class TimeSeriesManagerCache extends AbstractComponent implements T
      */
     @Override
     public void register(MetricRegistry registry) {
-        this.manager.register(registry);
-        this.cache.register(registry);
+        
+        register(registry, this.manager, this.cache);
     }
 
     /**
@@ -82,8 +81,8 @@ public final class TimeSeriesManagerCache extends AbstractComponent implements T
      */
     @Override
     public void unregister(MetricRegistry registry) {
-        this.manager.unregister(registry);
-        this.cache.unregister(registry);
+        
+        unregister(registry, this.cache, this.manager);
     }
 
     /**
@@ -91,8 +90,7 @@ public final class TimeSeriesManagerCache extends AbstractComponent implements T
      */
     @Override
     protected void doShutdown() throws InterruptedException {
-        this.cache.shutdown();
-        this.manager.shutdown();
+        shutdown(this.cache, this.manager);
     }
 
     /**

@@ -64,8 +64,7 @@ public final class DatabaseManagerCache extends AbstractComponent implements Dat
     @Override
     protected void doStart() throws IOException, InterruptedException {
 
-        this.manager.start();
-        this.cache.start();
+        start(this.manager, this.cache);
     }
 
     /**
@@ -73,8 +72,8 @@ public final class DatabaseManagerCache extends AbstractComponent implements Dat
      */
     @Override
     public void register(MetricRegistry registry) {
-        this.manager.register(registry);
-        this.cache.register(registry);
+        
+        register(registry, this.manager, this.cache);
     }
 
     /**
@@ -82,8 +81,8 @@ public final class DatabaseManagerCache extends AbstractComponent implements Dat
      */
     @Override
     public void unregister(MetricRegistry registry) {
-        this.manager.unregister(registry);
-        this.cache.unregister(registry);
+        
+        unregister(registry, this.cache, this.manager);
     }
 
     /**
@@ -91,8 +90,8 @@ public final class DatabaseManagerCache extends AbstractComponent implements Dat
      */
     @Override
     protected void doShutdown() throws InterruptedException {
-        this.manager.shutdown();
-        this.cache.shutdown();
+        
+        shutdown(this.cache, this.manager);
     }
 
     /**
@@ -114,6 +113,7 @@ public final class DatabaseManagerCache extends AbstractComponent implements Dat
     public Database getDatabase(String name) throws IOException, HorizonDBException {
 
         String lowerCaseName = name.toLowerCase();
+        
         return this.cache.get(lowerCaseName, new ValueLoader<String, Database>() {
             
             @Override

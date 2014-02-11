@@ -19,20 +19,9 @@ import io.horizondb.db.AbstractComponent;
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.Names;
-import io.horizondb.db.btree.AbstractNodeReader;
-import io.horizondb.db.btree.AbstractNodeWriter;
-import io.horizondb.db.btree.BTree;
-import io.horizondb.db.btree.NodeReader;
-import io.horizondb.db.btree.NodeReaderFactory;
-import io.horizondb.db.btree.NodeWriter;
-import io.horizondb.db.btree.NodeWriterFactory;
-import io.horizondb.db.btree.OnDiskNodeManager;
+import io.horizondb.db.btree.BTreeFile;
 import io.horizondb.db.commitlog.CommitLog;
 import io.horizondb.db.commitlog.ReplayPosition;
-import io.horizondb.io.ByteReader;
-import io.horizondb.io.ByteWriter;
-import io.horizondb.io.files.FileDataOutput;
-import io.horizondb.io.files.SeekableFileDataInput;
 import io.horizondb.model.ErrorCodes;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
@@ -74,12 +63,7 @@ public final class DefaultTimeSeriesManager extends AbstractComponent implements
     /**
      * The B+Tree in which are stored the time series meta data.
      */
-    private BTree<TimeSeriesId, TimeSeriesDefinition> btree;
-
-    /**
-     * The B+Tree node manager.
-     */
-    private OnDiskNodeManager<TimeSeriesId, TimeSeriesDefinition> nodeManager;
+    private BTreeFile<TimeSeriesId, TimeSeriesDefinition> btree;
 
     /**
      * Creates a new <code>DefaultTimeSeriesManager</code> that will used the specified configuration.
@@ -111,12 +95,11 @@ public final class DefaultTimeSeriesManager extends AbstractComponent implements
 
         Path timeSeriesFile = systemDirectory.resolve(TIMESERIES_FILENAME);
 
-        this.nodeManager = new OnDiskNodeManager<>(MetricRegistry.name(getName(), "bTree"),
-                                                   timeSeriesFile,
-                                                   TimeSeriesDefinitionNodeWriter.FACTORY,
-                                                   TimeSeriesDefinitionNodeReader.FACTORY);
-
-        this.btree = new BTree<>(this.nodeManager, BRANCHING_FACTOR);
+        this.btree = new BTreeFile<>(MetricRegistry.name(getClass(), "BTree"),
+                                     timeSeriesFile, 
+                                     BRANCHING_FACTOR, 
+                                     TimeSeriesId.getParser(), 
+                                     TimeSeriesDefinition.getParser());
 
         this.partitionManager.start();
     }
@@ -126,7 +109,7 @@ public final class DefaultTimeSeriesManager extends AbstractComponent implements
      */
     @Override
     public void register(MetricRegistry registry) {
-        this.nodeManager.register(registry);
+        this.btree.register(registry);
     }
 
     /**
@@ -134,7 +117,7 @@ public final class DefaultTimeSeriesManager extends AbstractComponent implements
      */
     @Override
     public void unregister(MetricRegistry registry) {
-        this.nodeManager.unregister(registry);
+        this.btree.unregister(registry);
     }
 
     /**
@@ -144,7 +127,7 @@ public final class DefaultTimeSeriesManager extends AbstractComponent implements
     protected void doShutdown() throws InterruptedException {
 
         this.partitionManager.shutdown();
-        this.nodeManager.close();
+        this.btree.close();
     }
 
     /**
@@ -194,117 +177,5 @@ public final class DefaultTimeSeriesManager extends AbstractComponent implements
         }
 
         return new TimeSeries(id.getDatabaseName(), this.partitionManager, definition);
-    }
-
-    /**
-     * <code>NodeWriter</code> for the <code>TimeSeriesDefinition</code>.
-     * 
-     */
-    private static class TimeSeriesDefinitionNodeWriter extends AbstractNodeWriter<TimeSeriesId, TimeSeriesDefinition> {
-
-        /**
-         * The <code>NodeWriter</code> factory.
-         */
-        public static final NodeWriterFactory<TimeSeriesId, TimeSeriesDefinition> FACTORY = new NodeWriterFactory<TimeSeriesId, TimeSeriesDefinition>() {
-
-            /**
-             * {@inheritDoc}
-             */
-            @Override
-            public NodeWriter<TimeSeriesId, TimeSeriesDefinition> newWriter(FileDataOutput output) throws IOException {
-                return new TimeSeriesDefinitionNodeWriter(output);
-            }
-        };
-
-        /**
-         * Creates a new <code>DatabaseMetaDataNodeWriter</code> that write to the specified output.
-         * 
-         * @param output the output used by the writer.
-         * @throws IOException if an I/O problem occurs.
-         */
-        public TimeSeriesDefinitionNodeWriter(FileDataOutput output) throws IOException {
-            super(output);
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        protected int computeKeySize(TimeSeriesId id) {
-            return id.computeSerializedSize();
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        protected int computeValueSize(TimeSeriesDefinition metadata) {
-            return metadata.computeSerializedSize();
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        protected void writeKey(ByteWriter writer, TimeSeriesId id) throws IOException {
-            writer.writeObject(id);
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        protected void writeValue(ByteWriter writer, TimeSeriesDefinition metadata) throws IOException {
-            writer.writeObject(metadata);
-        }
-    }
-
-    /**
-     * <code>NodeReader</code> for the <code>TimeSeriesDefinition</code>.
-     * 
-     */
-    private static final class TimeSeriesDefinitionNodeReader extends
-            AbstractNodeReader<TimeSeriesId, TimeSeriesDefinition> {
-
-        /**
-         * The <code>NodeReader</code> factory.
-         */
-        public static final NodeReaderFactory<TimeSeriesId, TimeSeriesDefinition> FACTORY = new NodeReaderFactory<TimeSeriesId, TimeSeriesDefinition>() {
-
-            /**
-             * {@inheritDoc}
-             */
-            @Override
-            public NodeReader<TimeSeriesId, TimeSeriesDefinition>
-                    newReader(SeekableFileDataInput input) throws IOException {
-                return new TimeSeriesDefinitionNodeReader(input);
-            }
-        };
-
-        /**
-         * Creates a new <code>TimeSeriesDefinitionNodeReader</code> that read from the specified input.
-         * 
-         * @param input the input used by the reader.
-         * @throws IOException if an I/O problem occurs.
-         */
-        public TimeSeriesDefinitionNodeReader(SeekableFileDataInput input) throws IOException {
-            super(input);
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        protected TimeSeriesDefinition readValue(ByteReader reader) throws IOException {
-            return TimeSeriesDefinition.parseFrom(reader);
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        protected TimeSeriesId readKey(ByteReader reader) throws IOException {
-            return TimeSeriesId.parseFrom(reader);
-        }
     }
 }

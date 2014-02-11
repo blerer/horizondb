@@ -30,7 +30,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.google.common.cache.CacheStats;
 
 /**
- * Decorator that add caching functionalities to a <code>PartitionManager</code>
+ * Decorator that add caching functionalities to a <code>TimeSeriesPartitionManager</code>
  * 
  * @author Benjamin
  * 
@@ -70,9 +70,7 @@ public final class TimeSeriesPartitionManagerCaches extends AbstractComponent im
         this.manager = manager;
 
         this.globalCache = new TimeSeriesPartitionSecondLevelCache(configuration);
-
         this.readCache = new TimeSeriesPartitionReadCache(configuration, this.globalCache);
-
         this.writeCache = new TimeSeriesPartitionWriteCache(configuration, this.globalCache);
     }
 
@@ -82,10 +80,7 @@ public final class TimeSeriesPartitionManagerCaches extends AbstractComponent im
     @Override
     protected void doStart() throws IOException, InterruptedException {
 
-        this.manager.start();
-        this.globalCache.start();
-        this.readCache.start();
-        this.writeCache.start();
+        start(this.manager, this.globalCache, this.readCache, this.writeCache);
     }
 
     /**
@@ -94,10 +89,7 @@ public final class TimeSeriesPartitionManagerCaches extends AbstractComponent im
     @Override
     public void register(MetricRegistry registry) {
 
-        this.manager.register(registry);
-        this.globalCache.register(registry);
-        this.readCache.register(registry);
-        this.writeCache.register(registry);
+        register(registry, this.manager, this.globalCache, this.readCache, this.writeCache);
     }
 
     /**
@@ -105,10 +97,8 @@ public final class TimeSeriesPartitionManagerCaches extends AbstractComponent im
      */
     @Override
     public void unregister(MetricRegistry registry) {
-        this.manager.unregister(registry);
-        this.globalCache.unregister(registry);
-        this.readCache.unregister(registry);
-        this.writeCache.unregister(registry);
+        
+        unregister(registry, this.writeCache, this.readCache, this.globalCache, this.manager);
     }
 
     /**
@@ -117,10 +107,7 @@ public final class TimeSeriesPartitionManagerCaches extends AbstractComponent im
     @Override
     protected void doShutdown() throws InterruptedException {
 
-        this.writeCache.shutdown();
-        this.readCache.shutdown();
-        this.globalCache.shutdown();
-        this.manager.shutdown();
+        shutdown(this.writeCache, this.readCache, this.globalCache, this.manager);
     }
 
     /**

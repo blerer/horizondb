@@ -30,7 +30,7 @@ import com.google.common.cache.CacheBuilder;
  * 
  */
 @ThreadSafe
-public final class TimeSeriesPartitionReadCache extends AbstractMultilevelCache<PartitionId, TimeSeriesPartition> {
+final class TimeSeriesPartitionReadCache extends AbstractMultilevelCache<PartitionId, TimeSeriesPartition> {
 
     /**
      * Creates a <code>TimeSeriesPartitionReadCache</code> that get values from the specified cache if it does not 

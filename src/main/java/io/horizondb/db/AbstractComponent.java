@@ -15,6 +15,8 @@
  */
 package io.horizondb.db;
 
+import io.horizondb.db.metrics.Monitorable;
+
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -114,6 +116,35 @@ public abstract class AbstractComponent implements Component {
     }
 
     /**
+     * Starts the specified set of components in the specified order.
+     * 
+     * @param components the components to start
+     * @throws IOException if one of the components throws an <code>IOException</code> while starting
+     * @throws InterruptedException if one of the components throws an <code>InterruptedException</code> while starting
+     */
+    protected static final void start(Component... components) throws IOException, InterruptedException {
+        
+        for (Component component : components) {
+            
+            component.start();
+        }
+    }
+    
+    /**
+     * Shutdown the specified set of components in the specified order.
+     * 
+     * @param components the components to shutdown
+     * @throws InterruptedException if one of the components throws an <code>InterruptedException</code> while starting
+     */
+    protected static final void shutdown(Component... components) throws InterruptedException {
+        
+        for (Component component : components) {
+            
+            component.shutdown();
+        }
+    }
+    
+    /**
      * Checks if the component is running and throw an <code>IllegalStateException</code> if it is not.
      * 
      * @throws IllegalStateException if the component is not in a running state.
@@ -122,6 +153,32 @@ public abstract class AbstractComponent implements Component {
 
         if (!isRunning()) {
             throw new IllegalStateException("The " + getName() + " component is not in a running state.");
+        }
+    }
+    
+    /**
+     * Register the specified set of components in the specified order.
+     * 
+     * @param monitorables the components to monitor
+     */
+    protected static final void register(MetricRegistry registry, Monitorable... monitorables) {
+        
+        for (Monitorable monitorable : monitorables) {
+            
+            monitorable.register(registry);
+        }
+    }
+    
+    /**
+     * Unregister the specified set of components in the specified order.
+     * 
+     * @param monitorables the components to unregister
+     */
+    protected static final void unregister(MetricRegistry registry, Monitorable... monitorables) {
+        
+        for (Monitorable monitorable : monitorables) {
+            
+            monitorable.unregister(registry);
         }
     }
 

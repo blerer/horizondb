@@ -26,7 +26,7 @@ import com.google.common.cache.CacheBuilder;
  * @author Benjamin
  * 
  */
-public final class DatabaseCache extends AbstractCache<String, Database> {
+final class DatabaseCache extends AbstractCache<String, Database> {
 
     /**
      * Creates a <code>DatabaseCache</code> to cache the databases.
