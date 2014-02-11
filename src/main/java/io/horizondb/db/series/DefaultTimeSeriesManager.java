@@ -109,7 +109,7 @@ public final class DefaultTimeSeriesManager extends AbstractComponent implements
      */
     @Override
     public void register(MetricRegistry registry) {
-        this.btree.register(registry);
+        register(registry, this.btree, this.partitionManager);
     }
 
     /**
@@ -117,7 +117,7 @@ public final class DefaultTimeSeriesManager extends AbstractComponent implements
      */
     @Override
     public void unregister(MetricRegistry registry) {
-        this.btree.unregister(registry);
+        unregister(registry, this.partitionManager, this.btree);
     }
 
     /**

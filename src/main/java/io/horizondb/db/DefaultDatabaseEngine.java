@@ -46,8 +46,14 @@ import com.google.common.util.concurrent.ListenableFuture;
  */
 public class DefaultDatabaseEngine extends AbstractComponent implements DatabaseEngine {
 
+    /**
+     * The commit log.
+     */
     private final CommitLog commitLog;
 
+    /**
+     * The database manager.
+     */
     private final DatabaseManager databaseManager;
 
     /**
@@ -66,10 +72,9 @@ public class DefaultDatabaseEngine extends AbstractComponent implements Database
 
         this.databaseManager = new DatabaseManagerCache(configuration, new DefaultDatabaseManager(configuration,
                                                                                                   seriesManager));
-
-        this.contextBuilder = OperationContext.newBuilder(this.databaseManager);
-
         this.commitLog = new CommitLog(configuration, this);
+        
+        this.contextBuilder = OperationContext.newBuilder(this.databaseManager);
     }
 
     /**
@@ -78,8 +83,7 @@ public class DefaultDatabaseEngine extends AbstractComponent implements Database
     @Override
     public void register(MetricRegistry registry) {
 
-        this.databaseManager.register(registry);
-        this.commitLog.register(registry);
+        register(registry, this.databaseManager, this.commitLog);
     }
 
     /**
@@ -88,8 +92,7 @@ public class DefaultDatabaseEngine extends AbstractComponent implements Database
     @Override
     public void unregister(MetricRegistry registry) {
 
-        this.commitLog.unregister(registry);
-        this.databaseManager.unregister(registry);
+        unregister(registry, this.commitLog, this.databaseManager);
     }
 
     /**
@@ -98,8 +101,7 @@ public class DefaultDatabaseEngine extends AbstractComponent implements Database
     @Override
     protected void doStart() throws IOException, InterruptedException {
 
-        this.databaseManager.start();
-        this.commitLog.start();
+        start(this.databaseManager, this.commitLog);
 
         this.contextBuilder.replay(false);
     }
@@ -110,8 +112,7 @@ public class DefaultDatabaseEngine extends AbstractComponent implements Database
     @Override
     protected void doShutdown() throws InterruptedException {
 
-        this.commitLog.shutdown();
-        this.databaseManager.shutdown();
+        shutdown(this.commitLog, this.databaseManager);
     }
 
     /**

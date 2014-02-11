@@ -103,7 +103,8 @@ public final class DefaultDatabaseManager extends AbstractComponent implements D
      */
     @Override
     public void register(MetricRegistry registry) {
-        this.nodeManager.register(registry);
+        
+        register(registry, this.nodeManager, this.timeSeriesManager);
     }
 
     /**
@@ -111,7 +112,7 @@ public final class DefaultDatabaseManager extends AbstractComponent implements D
      */
     @Override
     public void unregister(MetricRegistry registry) {
-        this.nodeManager.unregister(registry);
+        unregister(registry, this.timeSeriesManager, this.nodeManager);
     }
 
     /**
@@ -146,7 +147,6 @@ public final class DefaultDatabaseManager extends AbstractComponent implements D
     protected void doShutdown() throws InterruptedException {
 
         this.timeSeriesManager.shutdown();
-
         this.nodeManager.close();
     }
 
