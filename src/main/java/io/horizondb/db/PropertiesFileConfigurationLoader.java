@@ -113,7 +113,7 @@ final class PropertiesFileConfigurationLoader implements ConfigurationLoader {
 
             method.invoke(builder, toType(propertyName, value.trim(), method.getParameterTypes()[0]));
 
-        } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+        } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NullPointerException e) {
 
             throw new HorizonDBException(ErrorCodes.INVALID_CONFIGURATION, "The configuration property: "
                     + propertyName + " does not exists.");

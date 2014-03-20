@@ -83,7 +83,7 @@ final class TimeSeriesPartitionWriteCache extends AbstractMultilevelCache<Partit
         return CacheBuilder.newBuilder()
                 
                 .maximumWeight(configuration.getMaximumMemoryUsageByMemTimeSeries())
-                .expireAfterAccess(configuration.getMemTimeSeriesLifeTime(),
+                .expireAfterAccess(configuration.getMemTimeSeriesIdleTimeInSeconds(),
                                    TimeUnit.SECONDS)
                 .weigher(new Weigher<PartitionId, TimeSeriesPartition>() {
 

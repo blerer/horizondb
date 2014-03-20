@@ -1,6 +1,4 @@
 /**
- * Copyright 2013 Benjamin Lerer
- * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,6 +15,7 @@ package io.horizondb.db;
 
 import io.horizondb.db.commitlog.CommitLog;
 import io.horizondb.db.commitlog.CommitLog.SyncMode;
+import io.netty.util.internal.PlatformDependent;
 
 import java.nio.file.Path;
 
@@ -24,7 +23,6 @@ import javax.annotation.concurrent.Immutable;
 
 import org.apache.commons.lang.Validate;
 
-import static io.horizondb.io.files.FileUtils.ONE_GB;
 import static io.horizondb.io.files.FileUtils.ONE_KB;
 import static io.horizondb.io.files.FileUtils.ONE_MB;
 
@@ -103,9 +101,9 @@ public final class Configuration {
     private final long maximumMemoryUsageByMemTimeSeries;
 
     /**
-     * The time in second after which a <code>MemTimeSeries</code> must be flushed to the disk.
+     * The idle time in second after which a <code>MemTimeSeries</code> must be flushed to the disk.
      */
-    private final long memTimeSeriesLifeTimeInSecond;
+    private final long memTimeSeriesIdleTimeInSecond;
 
     /**
      * The concurrency level used for the caches.
@@ -140,7 +138,7 @@ public final class Configuration {
         this.memTimeSeriesSize = builder.memTimeSeriesSize;
         this.shutdownWaitingTimeInSeconds = builder.shutdownWaitingTimeInSeconds;
         this.maximumMemoryUsageByMemTimeSeries = builder.maximumMemoryUsageByMemTimeSeries;
-        this.memTimeSeriesLifeTimeInSecond = builder.memTimeSeriesLifeTimeInSecond;
+        this.memTimeSeriesIdleTimeInSecond = builder.memTimeSeriesIdleTimeInSecond;
         this.timeSeriesCacheMaximumSize = builder.timeSeriesCacheMaximumSize;
         this.cachesConcurrencyLevel = builder.cachesConcurrencyLevel;
     }
@@ -259,8 +257,8 @@ public final class Configuration {
      * 
      * @return the maximum amount of memory that can be used by the time series.
      */
-    public long getMemTimeSeriesLifeTime() {
-        return this.memTimeSeriesLifeTimeInSecond;
+    public long getMemTimeSeriesIdleTimeInSeconds() {
+        return this.memTimeSeriesIdleTimeInSecond;
     }
 
     /**
@@ -309,14 +307,9 @@ public final class Configuration {
         private static final int DEFAULT_CACHES_CONCURRENCY_LEVEL = 4;
 
         /**
-         * The default lifetime of the <code>MemTimeSeries</code>.
+         * The default idle time of a <code>MemTimeSerie</code> before it must be flushed to the disk.
          */
-        private static final int DEFAULT_MEMTIMESERIES_LIFETIME = 2 * 60 * 60;
-
-        /**
-         * The maximum amount memory that can be used by the <code>MemTimeSeries</code>.
-         */
-        private static final int DEFAULT_MAX_MEMORY_USAGE_BY_TIMESERIES = 512 * ONE_MB;
+        private static final int DEFAULT_MEMTIMESERIES_IDLE_TIME_IN_SECOND = 2 * 60 * 60;
 
         /**
          * The default maximum size of the time series cache.
@@ -326,22 +319,12 @@ public final class Configuration {
         /**
          * The default size of the in memory time series.
          */
-        private static final int DEFAULT_MEMTIMESERIES_SIZE = 128 * ONE_KB;
+        private static final int DEFAULT_MEMTIMESERIES_SIZE = ONE_MB;
 
         /**
          * The port by default.
          */
         private static final int DEFAULT_PORT = 8553;
-
-        /**
-         * The default size of the commit log segments.
-         */
-        private static final int DEFAULT_SEGMENT_SIZE = ONE_GB;
-
-        /**
-         * The default number of segments.
-         */
-        private static final int DEFAULT_MAX_NUMBER_OF_SEGMENTS = 8;
 
         /**
          * The default period of time in millisecond at which the commit-log will flush the data to the disk.
@@ -386,12 +369,12 @@ public final class Configuration {
         /**
          * The maximum number of commit log segments.
          */
-        private int maximumNumberOfCommitLogSegments = DEFAULT_MAX_NUMBER_OF_SEGMENTS;
+        private int maximumNumberOfCommitLogSegments = getDefaultMaximumNumberOfSegments();
 
         /**
          * The size in bytes of the commit log segments.
          */
-        private long commitLogSegmentSize = DEFAULT_SEGMENT_SIZE;
+        private long commitLogSegmentSize = getDefaultSegmentSize();
 
         /**
          * The period of time in milliseconds at which the commit log will flush data to the disk.
@@ -422,12 +405,12 @@ public final class Configuration {
         /**
          * The maximum amount of memory in bytes that is allowed to be used by the <code>MemTimeSeries</code>.
          */
-        private long maximumMemoryUsageByMemTimeSeries = DEFAULT_MAX_MEMORY_USAGE_BY_TIMESERIES;
+        private long maximumMemoryUsageByMemTimeSeries = getDefaultMaxMemoryUsageByMemTimeSeries();
 
         /**
-         * The time in second after which a <code>MemTimeSeries</code> must be flushed to the disk.
+         * The time in second after which an idle <code>MemTimeSeries</code> must be flushed to the disk.
          */
-        private long memTimeSeriesLifeTimeInSecond = DEFAULT_MEMTIMESERIES_LIFETIME;
+        private long memTimeSeriesIdleTimeInSecond = DEFAULT_MEMTIMESERIES_IDLE_TIME_IN_SECOND;
 
         /**
          * The concurrency level used for the caches.
@@ -641,13 +624,13 @@ public final class Configuration {
         /**
          * Specify the time in second after which a <code>MemTimeSeries</code> must be flushed to the disk.
          * 
-         * @param memTimeSeriesLifeTimeInSecond the time in second after which a <code>MemTimeSeries</code> must be
+         * @param memTimeSeriesIdleTimeInSecond the time in second after which a <code>MemTimeSeries</code> must be
          * flushed to the disk.
          * @return this <code>Builder</code>.
          */
-        public Builder memTimeSeriesLifeTimeInSecond(int memTimeSeriesLifeTimeInSecond) {
+        public Builder memTimeSeriesIdleTimeInSecond(int memTimeSeriesIdleTimeInSecond) {
 
-            this.memTimeSeriesLifeTimeInSecond = memTimeSeriesLifeTimeInSecond;
+            this.memTimeSeriesIdleTimeInSecond = memTimeSeriesIdleTimeInSecond;
             return this;
         }
 
@@ -677,6 +660,48 @@ public final class Configuration {
          * Must not be instantiated.
          */
         private Builder() {
+        }
+        
+        /**
+         * Returns the default size for the commit log segments.
+         * 
+         * @return the default size for the commit log segments.
+         */
+        private static int getDefaultSegmentSize() {
+            
+            if (PlatformDependent.bitMode() == 32) {
+                
+                return 8 * ONE_MB;
+            }
+            
+            return 32 * ONE_MB;
+        }
+        
+        /**
+         * Returns the default maximum number of commit log segments.
+         * 
+         * @return the default maximum number of commit log segments.
+         */
+        private static int getDefaultMaximumNumberOfSegments() {
+            
+            if (PlatformDependent.bitMode() == 32) {
+                
+                return 4;
+            }
+            
+            return 32;
+        }
+        
+        /**
+         * Return the default amount of memory that can be used by all the memory time series.
+         * 
+         * @return the default amount of memory that can be used by all the memory time series.
+         */
+        private static long getDefaultMaxMemoryUsageByMemTimeSeries() {
+            
+            long maxMemory = Runtime.getRuntime().maxMemory();
+            
+            return maxMemory / 4;
         }
     }
 }
