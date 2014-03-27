@@ -68,7 +68,7 @@ public final class TimeSeries {
 
         PartitionId partitionId = new PartitionId(this.databaseName,
                                                   this.definition.getName(),
-                                                  partitionTimeRange.getStart());
+                                                  partitionTimeRange);
 
         TimeSeriesPartition partition = this.partitionManager.getPartitionForWrite(partitionId, this.definition);
             
@@ -101,7 +101,7 @@ public final class TimeSeries {
         
         PartitionId partitionId = new PartitionId(this.databaseName, 
                                                   this.definition.getName(), 
-                                                  partitionTimeRange.getStart());
+                                                  partitionTimeRange);
         
         TimeSeriesPartition partition = this.partitionManager.getPartitionForRead(partitionId,
                                                                                   this.definition);

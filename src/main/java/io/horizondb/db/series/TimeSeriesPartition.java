@@ -136,7 +136,7 @@ public final class TimeSeriesPartition implements Comparable<TimeSeriesPartition
         
         this.id = new PartitionId(this.databaseName,
                                   this.definition.getName(),
-                                  this.timeRange.getStart());
+                                  this.timeRange);
         
         this.allocator = new SlabAllocator(configuration.getMemTimeSeriesSize());
 

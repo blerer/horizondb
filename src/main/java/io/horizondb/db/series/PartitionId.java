@@ -1,6 +1,4 @@
 /**
- * Copyright 2013 Benjamin Lerer
- * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,6 +18,7 @@ import io.horizondb.io.ByteWriter;
 import io.horizondb.io.encoding.VarInts;
 import io.horizondb.io.serialization.Parser;
 import io.horizondb.io.serialization.Serializable;
+import io.horizondb.model.TimeRange;
 
 import java.io.IOException;
 
@@ -28,8 +27,6 @@ import javax.annotation.concurrent.Immutable;
 import org.apache.commons.lang.builder.CompareToBuilder;
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
-import org.apache.commons.lang.builder.ToStringBuilder;
-import org.apache.commons.lang.builder.ToStringStyle;
 
 /**
  * ID used to identify uniquely a time series partition.
@@ -53,7 +50,7 @@ final class PartitionId implements Comparable<PartitionId>, Serializable {
 
             return new PartitionId(VarInts.readString(reader),
                                    VarInts.readString(reader),
-                                   VarInts.readUnsignedLong(reader));
+                                   TimeRange.parseFrom(reader));
         }
     };
 
@@ -68,22 +65,22 @@ final class PartitionId implements Comparable<PartitionId>, Serializable {
     private final String seriesName;
 
     /**
-     * The partition identifier.
+     * The partition time range.
      */
-    private final long id;
+    private final TimeRange range;
 
     /**
      * Creates a new <code>TimeSeriesId</code>.
      * 
-     * @param databaseName the database name.
-     * @param seriesName the time series name.
-     * @param id the partition identifier.
+     * @param databaseName the database name
+     * @param seriesName the time series name
+     * @param range the partition time range
      */
-    public PartitionId(String databaseName, String seriesName, long id) {
+    public PartitionId(String databaseName, String seriesName, TimeRange range) {
 
         this.databaseName = databaseName.toLowerCase();
         this.seriesName = seriesName.toLowerCase();
-        this.id = id;
+        this.range = range;
     }
 
     /**
@@ -126,12 +123,12 @@ final class PartitionId implements Comparable<PartitionId>, Serializable {
     }
 
     /**
-     * Returns the partition identifier.
+     * Returns the partition range.
      * 
-     * @return the partition identifier.
+     * @return the partition range.
      */
-    public long getId() {
-        return this.id;
+    public TimeRange getRange() {
+        return this.range;
     }
 
     /**
@@ -148,7 +145,7 @@ final class PartitionId implements Comparable<PartitionId>, Serializable {
         PartitionId rhs = (PartitionId) object;
         return new EqualsBuilder().append(this.databaseName, rhs.databaseName)
                                   .append(this.seriesName, rhs.seriesName)
-                                  .append(this.id, rhs.id)
+                                  .append(this.range, rhs.range)
                                   .isEquals();
     }
 
@@ -159,7 +156,7 @@ final class PartitionId implements Comparable<PartitionId>, Serializable {
     public int hashCode() {
         return new HashCodeBuilder(-881768609, -777990173).append(this.databaseName)
                                                           .append(this.seriesName)
-                                                          .append(this.id)
+                                                          .append(this.range)
                                                           .toHashCode();
     }
 
@@ -168,10 +165,15 @@ final class PartitionId implements Comparable<PartitionId>, Serializable {
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE).append("databaseName", this.databaseName)
-                                                                          .append("seriesName", this.seriesName)
-                                                                          .append("id", this.id)
-                                                                          .toString();
+        return new StringBuilder().append(this.databaseName)
+                                  .append('.')
+                                  .append(this.seriesName)
+                                  .append('[')
+                                  .append(this.range.getStart())
+                                  .append('-')
+                                  .append(this.range.getEnd())
+                                  .append(']')
+                                  .toString();
     }
 
     /**
@@ -181,7 +183,7 @@ final class PartitionId implements Comparable<PartitionId>, Serializable {
     public int compareTo(PartitionId other) {
         return new CompareToBuilder().append(this.databaseName, other.databaseName)
                                      .append(this.seriesName, other.seriesName)
-                                     .append(this.id, other.id)
+                                     .append(this.range, other.range)
                                      .toComparison();
     }
 
@@ -191,7 +193,7 @@ final class PartitionId implements Comparable<PartitionId>, Serializable {
     @Override
     public int computeSerializedSize() {
         return VarInts.computeStringSize(this.databaseName) + VarInts.computeStringSize(this.seriesName)
-                + VarInts.computeUnsignedLongSize(this.id);
+                + this.range.computeSerializedSize();
     }
 
     /**
@@ -201,6 +203,6 @@ final class PartitionId implements Comparable<PartitionId>, Serializable {
     public void writeTo(ByteWriter writer) throws IOException {
         VarInts.writeString(writer, this.databaseName);
         VarInts.writeString(writer, this.seriesName);
-        VarInts.writeUnsignedLong(writer, this.id);
+        this.range.writeTo(writer);
     }
 }

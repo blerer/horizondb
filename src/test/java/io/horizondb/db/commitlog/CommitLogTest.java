@@ -29,8 +29,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.common.util.concurrent.ListenableFuture;
-
 import static io.horizondb.db.commitlog.CommitLogSegment.LOG_OVERHEAD_SIZE;
 import static io.horizondb.io.files.FileUtils.ONE_KB;
 import static io.horizondb.test.AssertFiles.assertFileContainsAt;

@@ -19,6 +19,7 @@ import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.files.FileUtils;
+import io.horizondb.model.TimeRange;
 import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.core.iterators.DefaultRecordIterator;
 import io.horizondb.model.schema.DatabaseDefinition;
@@ -84,7 +85,7 @@ public class TimeSeriesPartitionManagerCachesTest {
 
         try {
 
-            long partitionStart = getTime("2013.11.26 00:00:00.000");
+            TimeRange range = new TimeRange(getTime("2013.11.26 00:00:00.000"), getTime("2013.11.26 23:59:59.999"));
 
             RecordTypeDefinition recordTypeDefinition = RecordTypeDefinition.newBuilder("exchangeState")
                                                                             .addField("timestampInMillis",
@@ -101,7 +102,7 @@ public class TimeSeriesPartitionManagerCachesTest {
                                                                 .addRecordType(recordTypeDefinition)
                                                                 .build();
 
-            PartitionId id = new PartitionId("test", "DAX", partitionStart);
+            PartitionId id = new PartitionId("test", "DAX", range);
 
             caches.getPartitionForWrite(id, definition);
 
@@ -156,7 +157,7 @@ public class TimeSeriesPartitionManagerCachesTest {
 
         try {
 
-            long partitionStart = getTime("2013.11.26 00:00:00.000");
+            TimeRange range = new TimeRange(getTime("2013.11.26 00:00:00.000"), getTime("2013.11.26 23:59:59.999"));
 
             RecordTypeDefinition recordTypeDefinition = RecordTypeDefinition.newBuilder("exchangeState")
                                                                             .addField("timestampInMillis",
@@ -173,7 +174,7 @@ public class TimeSeriesPartitionManagerCachesTest {
                                                                 .addRecordType(recordTypeDefinition)
                                                                 .build();
 
-            PartitionId id = new PartitionId("test", "DAX", partitionStart);
+            PartitionId id = new PartitionId("test", "DAX", range);
 
             caches.getPartitionForRead(id, definition);
 
@@ -232,7 +233,7 @@ public class TimeSeriesPartitionManagerCachesTest {
 
         try {
 
-            long partitionStart = getTime("2013.11.26 00:00:00.000");
+            TimeRange range = new TimeRange(getTime("2013.11.26 00:00:00.000"), getTime("2013.11.26 23:59:59.999"));
 
             RecordTypeDefinition recordTypeDefinition = RecordTypeDefinition.newBuilder("exchangeState")
                                                                             .addField("timestampInMillis",
@@ -249,7 +250,7 @@ public class TimeSeriesPartitionManagerCachesTest {
                                                                 .addRecordType(recordTypeDefinition)
                                                                 .build();
 
-            PartitionId id = new PartitionId("test", "DAX", partitionStart);
+            PartitionId id = new PartitionId("test", "DAX", range);
 
             caches.getPartitionForRead(id, definition);
 
@@ -306,7 +307,7 @@ public class TimeSeriesPartitionManagerCachesTest {
 
         try {
 
-            long partitionStart = getTime("2013.11.26 00:00:00.000");
+            TimeRange range = new TimeRange(getTime("2013.11.26 00:00:00.000"), getTime("2013.11.26 23:59:59.999"));
 
             RecordTypeDefinition recordTypeDefinition = RecordTypeDefinition.newBuilder("exchangeState")
                                                                             .addField("timestampInMillis",
@@ -328,7 +329,7 @@ public class TimeSeriesPartitionManagerCachesTest {
                                                                    .addRecordType(recordTypeDefinition)
                                                                    .build();
 
-            PartitionId daxPartitionId = new PartitionId("test", "DAX", partitionStart);
+            PartitionId daxPartitionId = new PartitionId("test", "DAX", range);
 
             TimeSeriesPartition daxPartition = caches.getPartitionForWrite(daxPartitionId, daxDefinition);
 
@@ -355,7 +356,7 @@ public class TimeSeriesPartitionManagerCachesTest {
 
             daxPartition.write(recordIterator, Futures.immediateFuture(new ReplayPosition(0, 0)));
 
-            PartitionId cacPartitionId = new PartitionId("test", "CAC40", partitionStart);
+            PartitionId cacPartitionId = new PartitionId("test", "CAC40", range);
 
             TimeSeriesPartition cacPartition = caches.getPartitionForWrite(cacPartitionId, cacDefinition);
 

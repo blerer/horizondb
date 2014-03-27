@@ -19,6 +19,7 @@ import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.files.FileUtils;
+import io.horizondb.model.TimeRange;
 import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.core.iterators.DefaultRecordIterator;
 import io.horizondb.model.schema.DatabaseDefinition;
@@ -75,7 +76,7 @@ public class DefaultTimeSeriesPartitionManagerTest {
 
         try {
 
-            long partitionStart = getTime("2013.11.26 00:00:00.000");
+            TimeRange range = new TimeRange(getTime("2013.11.26 00:00:00.000"), getTime("2013.11.26 23:59:59.999"));
 
             RecordTypeDefinition recordTypeDefinition = RecordTypeDefinition.newBuilder("exchangeState")
                                                                             .addField("timestampInMillis",
@@ -92,13 +93,13 @@ public class DefaultTimeSeriesPartitionManagerTest {
                                                                 .addRecordType(recordTypeDefinition)
                                                                 .build();
 
-            PartitionId id = new PartitionId("test", "DAX", partitionStart);
+            PartitionId id = new PartitionId("test", "DAX", range);
 
             TimeSeriesPartition partition = partitionManager.getPartitionForRead(id, definition);
 
             TimeSeriesPartitionMetaData metaData = partition.getMetaData();
 
-            assertEquals(partitionStart, metaData.getRange().getStart());
+            assertEquals(range, metaData.getRange());
             assertEquals(0, metaData.getFileSize());
 
         } finally {
@@ -110,7 +111,7 @@ public class DefaultTimeSeriesPartitionManagerTest {
     @Test
     public void testSave() throws InterruptedException, IOException, HorizonDBException, ExecutionException {
 
-        long partitionStart = getTime("2013.11.26 00:00:00.000");
+        TimeRange range = new TimeRange(getTime("2013.11.26 00:00:00.000"), getTime("2013.11.26 23:59:59.999"));
 
         RecordTypeDefinition recordTypeDefinition = RecordTypeDefinition.newBuilder("exchangeState")
                                                                         .addField("timestampInMillis",
@@ -127,7 +128,7 @@ public class DefaultTimeSeriesPartitionManagerTest {
                                                             .addRecordType(recordTypeDefinition)
                                                             .build();
 
-        PartitionId id = new PartitionId("test", "DAX", partitionStart);
+        PartitionId id = new PartitionId("test", "DAX", range);
 
         DefaultTimeSeriesPartitionManager partitionManager = new DefaultTimeSeriesPartitionManager(this.configuration);
 

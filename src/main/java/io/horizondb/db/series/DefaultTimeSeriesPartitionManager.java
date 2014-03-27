@@ -231,7 +231,7 @@ public final class DefaultTimeSeriesPartitionManager extends AbstractComponent i
 
         if (metadata == null) {
 
-            metadata = TimeSeriesPartitionMetaData.newBuilder(definition.getPartitionTimeRange(partitionId.getId()))
+            metadata = TimeSeriesPartitionMetaData.newBuilder(partitionId.getRange())
                                                   .build();
         }
 
