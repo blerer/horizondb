@@ -19,7 +19,6 @@ import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.files.FileUtils;
-import io.horizondb.model.PartitionId;
 import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.core.iterators.DefaultRecordIterator;
 import io.horizondb.model.schema.DatabaseDefinition;

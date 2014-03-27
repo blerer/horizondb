@@ -178,4 +178,12 @@ public final class DefaultTimeSeriesManager extends AbstractComponent implements
 
         return new TimeSeries(id.getDatabaseName(), this.partitionManager, definition);
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public TimeSeriesPartitionManager getPartitionManager() {
+        return this.getPartitionManager();
+    }
 }

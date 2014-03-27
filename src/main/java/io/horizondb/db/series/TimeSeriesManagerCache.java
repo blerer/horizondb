@@ -129,6 +129,14 @@ public final class TimeSeriesManagerCache extends AbstractComponent implements T
         });
     }
 
+    /**    
+     * {@inheritDoc}
+     */
+    @Override
+    public TimeSeriesPartitionManager getPartitionManager() {
+        return this.manager.getPartitionManager();
+    }
+
     /**
      * Returns the cache statistics.
      * 

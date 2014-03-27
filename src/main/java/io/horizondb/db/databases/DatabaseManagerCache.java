@@ -20,6 +20,7 @@ import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.cache.ValueLoader;
 import io.horizondb.db.commitlog.ReplayPosition;
+import io.horizondb.db.series.TimeSeriesManager;
 import io.horizondb.model.schema.DatabaseDefinition;
 
 import java.io.IOException;
@@ -121,6 +122,14 @@ public final class DatabaseManagerCache extends AbstractComponent implements Dat
                 return DatabaseManagerCache.this.manager.getDatabase(key);
             }
         });
+    }
+
+    /**    
+     * {@inheritDoc}
+     */
+    @Override
+    public TimeSeriesManager getTimeSeriesManager() {
+        return this.manager.getTimeSeriesManager();
     }
 
     /**

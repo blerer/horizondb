@@ -63,4 +63,11 @@ public interface TimeSeriesManager extends Component {
      * @throws HorizonDBException if the time series with the specified name does not exists.
      */
     TimeSeries getTimeSeries(TimeSeriesId id) throws IOException, HorizonDBException;
+    
+    /**
+     * Returns the <code>TimeSeriesPartitionManager</code> used by this <code>TimeSeriesManager</code>.
+     * 
+     * @return the <code>TimeSeriesPartitionManager</code> used by this <code>TimeSeriesManager</code>.
+     */
+    TimeSeriesPartitionManager getPartitionManager();
 }

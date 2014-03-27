@@ -38,7 +38,6 @@ import java.io.IOException;
 
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 
 /**
  * @author Benjamin
@@ -181,9 +180,12 @@ public class DefaultDatabaseEngine extends AbstractComponent implements Database
      * {@inheritDoc}
      */
     @Override
-    public ListenableFuture<Boolean> forceFlush(long id) {
+    public void forceFlush(long id) throws InterruptedException {
 
-        return null;
+        TimeSeriesManager timeSeriesManager = this.databaseManager.getTimeSeriesManager();
+        TimeSeriesPartitionManager partitionManager = timeSeriesManager.getPartitionManager();
+
+        partitionManager.forceFlush(id);
     }
 
     /**

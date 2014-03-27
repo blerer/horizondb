@@ -27,8 +27,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.common.util.concurrent.ListenableFuture;
-
 import static io.horizondb.io.files.FileUtils.ONE_KB;
 import static io.horizondb.test.AssertCollections.assertIterableContains;
 import static io.horizondb.test.AssertFiles.assertFileDoesNotExists;
@@ -88,14 +86,11 @@ public class CommitLogAllocatorTest {
     public void testFetchSegment() throws Exception {
 
         long id = IdFactory.nextId();
+        
+        this.databaseEngine.forceFlush(id + 1);
+        this.databaseEngine.forceFlush(id + 2);
 
-        ListenableFuture<Boolean> forceFlushFuture = EasyMock.createMock(ListenableFuture.class);
-
-        EasyMock.expect(forceFlushFuture.get()).andReturn(Boolean.TRUE).anyTimes();
-        EasyMock.expect(this.databaseEngine.forceFlush(id + 1)).andReturn(forceFlushFuture);
-        EasyMock.expect(this.databaseEngine.forceFlush(id + 2)).andReturn(forceFlushFuture);
-
-        EasyMock.replay(this.databaseEngine, forceFlushFuture);
+        EasyMock.replay(this.databaseEngine);
 
         this.allocator = new CommitLogAllocator(this.configuration, this.databaseEngine);
         this.allocator.start();
@@ -127,6 +122,6 @@ public class CommitLogAllocatorTest {
 
         assertIterableContains(this.allocator.getActiveSegments(), thirdSegment, fourthSegment);
 
-        EasyMock.verify(this.databaseEngine, forceFlushFuture);
+        EasyMock.verify(this.databaseEngine);
     }
 }

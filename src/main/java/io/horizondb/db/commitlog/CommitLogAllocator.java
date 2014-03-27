@@ -35,7 +35,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -245,10 +244,10 @@ final class CommitLogAllocator extends AbstractComponent {
         try {
 
             old.flush();
-            this.databaseEngine.forceFlush(old.getId()).get();
+            this.databaseEngine.forceFlush(old.getId());
             this.availableSegments.add(CommitLogSegment.recycleSegment(old));
 
-        } catch (ExecutionException | IOException e) {
+        } catch (IOException e) {
 
             this.logger.error("An error has occured while recycling the segment " + old.getPath() + " .", e);
         }

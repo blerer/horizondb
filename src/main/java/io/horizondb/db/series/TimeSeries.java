@@ -20,7 +20,6 @@ import io.horizondb.db.OperationContext;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.db.util.concurrent.FutureUtils;
 import io.horizondb.io.ReadableBuffer;
-import io.horizondb.model.PartitionId;
 import io.horizondb.model.TimeRange;
 import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;

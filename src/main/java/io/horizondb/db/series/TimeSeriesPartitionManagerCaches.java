@@ -19,10 +19,11 @@ import io.horizondb.db.AbstractComponent;
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.cache.ValueLoader;
-import io.horizondb.model.PartitionId;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 import javax.annotation.concurrent.ThreadSafe;
 
@@ -120,7 +121,6 @@ public final class TimeSeriesPartitionManagerCaches extends AbstractComponent im
 
     /**
      * {@inheritDoc}
-     * @throws HorizonDBException 
      */
     @Override
     public TimeSeriesPartition getPartitionForWrite(final PartitionId partitionId,
@@ -137,11 +137,45 @@ public final class TimeSeriesPartitionManagerCaches extends AbstractComponent im
         });
     }
 
-    /**
+    /**    
      * {@inheritDoc}
-     * @throws HorizonDBException 
      */
     @Override
+    public void forceFlush(long id) throws InterruptedException {
+        
+        List<TimeSeriesPartition> partitions = this.writeCache.getPartitionsWithNonPersistedDataWithin(id);
+        
+        final CountDownLatch latch = new CountDownLatch(partitions.size());
+        
+        FlushListener listener = new FlushListener() {
+            
+            @Override
+            public void afterFlush() {
+                latch.countDown();                    
+            }
+        };
+        
+        for (TimeSeriesPartition partition : partitions) {
+            
+            forceFlush(id, partition, listener);
+        }
+        
+        latch.await();
+    }
+
+    /**    
+     * {@inheritDoc}
+     */
+    @Override
+    public void forceFlush(long id, TimeSeriesPartition timeSeriesPartition, FlushListener... listeners) {
+        this.manager.forceFlush(id, timeSeriesPartition, listeners);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    
     public TimeSeriesPartition getPartitionForRead(final PartitionId partitionId,
                                                    final TimeSeriesDefinition seriesDefinition) throws IOException, HorizonDBException {
 
@@ -189,18 +223,18 @@ public final class TimeSeriesPartitionManagerCaches extends AbstractComponent im
      * {@inheritDoc}
      */
     @Override
-    public void flush(TimeSeriesPartition timeSeriesPartition) {
+    public void flush(TimeSeriesPartition timeSeriesPartition, FlushListener... listeners) {
 
-        this.manager.flush(timeSeriesPartition);
+        this.manager.flush(timeSeriesPartition, listeners);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void forceFlush(TimeSeriesPartition timeSeriesPartition) {
+    public void forceFlush(TimeSeriesPartition timeSeriesPartition, FlushListener... listeners) {
 
-        this.manager.forceFlush(timeSeriesPartition);
+        this.manager.forceFlush(timeSeriesPartition, listeners);
     }
 
     /**

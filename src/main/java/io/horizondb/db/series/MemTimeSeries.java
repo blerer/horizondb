@@ -163,7 +163,7 @@ final class MemTimeSeries implements TimeSeriesElement {
      * 
      * @return the ID of the first commit log segment which contains data of this <code>MemTimeSeries</code>.
      */
-    public long getFirstCommitLogSegmentId() {
+    public long getFirstSegmentId() {
         
         return FutureUtils.safeGet(this.firstFuture).getSegment(); 
     }

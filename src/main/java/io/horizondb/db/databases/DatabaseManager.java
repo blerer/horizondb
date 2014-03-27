@@ -18,6 +18,7 @@ package io.horizondb.db.databases;
 import io.horizondb.db.Component;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.commitlog.ReplayPosition;
+import io.horizondb.db.series.TimeSeriesManager;
 import io.horizondb.model.schema.DatabaseDefinition;
 
 import java.io.IOException;
@@ -55,4 +56,11 @@ public interface DatabaseManager extends Component {
      * @throws HorizonDBException if the database with the specified name does not exists.
      */
     Database getDatabase(String name) throws IOException, HorizonDBException;
+    
+    /**
+     * Returns the <code>TimeSeriesManager</code> used by this <code>DatabaseManager</code>.
+     * 
+     * @return the <code>TimeSeriesManager</code> used by this <code>DatabaseManager</code>.
+     */
+    TimeSeriesManager getTimeSeriesManager();
 }

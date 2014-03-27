@@ -17,11 +17,13 @@ package io.horizondb.db.series;
 
 import io.horizondb.db.Configuration;
 import io.horizondb.db.cache.AbstractMultilevelCache;
-import io.horizondb.model.PartitionId;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.ThreadSafe;
 
 import com.codahale.metrics.Gauge;
@@ -31,6 +33,7 @@ import com.google.common.cache.RemovalCause;
 import com.google.common.cache.RemovalListener;
 import com.google.common.cache.RemovalNotification;
 import com.google.common.cache.Weigher;
+import com.google.common.collect.TreeMultimap;
 
 /**
  * Decorator that add caching functionalities to a <code>PartitionManager</code>
@@ -44,32 +47,45 @@ final class TimeSeriesPartitionWriteCache extends AbstractMultilevelCache<Partit
     /**
      * The listener used to track the memory usage change.
      */
-    private final MemoryUsageListener listener;
+    private final TimeSeriesPartitionListener listener;
 
     /**
      * The counter used to keep track of the memory usage.
      */
     private final AtomicLong memTimeSeriesMemoryUsage = new AtomicLong();
-
+    
+    /**
+     * The partitions per first segment containing non persisted data.
+     */
+    @GuardedBy("partitionsPerSegment")
+    private final TreeMultimap<Long, TimeSeriesPartition> partitionsPerSegment = TreeMultimap.create();
 
     public TimeSeriesPartitionWriteCache(Configuration configuration, TimeSeriesPartitionSecondLevelCache cache) {
 
         super(configuration, cache);
 
-        this.listener = new MemoryUsageListener() {
+        this.listener = new TimeSeriesPartitionListener() {
 
-            @SuppressWarnings("boxing")
             @Override
             public void memoryUsageChanged(TimeSeriesPartition partition, int previousMemoryUsage, int newMemoryUsage) {
 
-                int delta = newMemoryUsage - previousMemoryUsage;
+                updateMemoryUsage(previousMemoryUsage, newMemoryUsage);
 
-                long newMemTimeSeriesMemoryUsage = TimeSeriesPartitionWriteCache.this.memTimeSeriesMemoryUsage.addAndGet(delta);
-
-                TimeSeriesPartitionWriteCache.this.logger.debug("memory usage by all memTimeSeries: {}",
-                                                                   newMemTimeSeriesMemoryUsage);
-
+                if (newMemoryUsage == 0 
+                        && TimeSeriesPartitionWriteCache.this.getIfPresent(partition.getId()) == null) {
+                    return;
+                }
+                
                 TimeSeriesPartitionWriteCache.this.put(partition.getId(), partition);
+            }
+
+            @Override
+            public void firstSegmentContainingNonPersistedDataChanged(TimeSeriesPartition partition,
+                                                                      Long previousSegment,
+                                                                      Long newSegment) {
+                
+                
+                updatePartitionsPerSegment(partition, previousSegment, newSegment);
             }
         };
     }
@@ -101,7 +117,6 @@ final class TimeSeriesPartitionWriteCache extends AbstractMultilevelCache<Partit
                     /**
                      * {@inheritDoc}
                      */
-                    @SuppressWarnings("boxing")
                     @Override
                     public void
                             onRemoval(RemovalNotification<PartitionId, TimeSeriesPartition> notification) {
@@ -110,32 +125,52 @@ final class TimeSeriesPartitionWriteCache extends AbstractMultilevelCache<Partit
                             return;
                         }
 
-                        TimeSeriesPartition partition = notification.getValue();
+                        final TimeSeriesPartition partition = notification.getValue();
 
-                        long newMemoryUsage = TimeSeriesPartitionWriteCache.this.memTimeSeriesMemoryUsage.addAndGet(-partition.getMemoryUsage());
-
-                        TimeSeriesPartitionWriteCache.this.logger.debug("the partition {} is being removed ({}) (new memory usage after flush {})",
-                                                                           new Object[] {
-                                                                                   partition.getId(),
-                                                                                   notification.getCause(),
-                                                                                   newMemoryUsage });
-
-                        partition.removeMemoryUsageListener(TimeSeriesPartitionWriteCache.this.listener);
-
-                        partition.scheduleForceFlush();
+                        partition.scheduleForceFlush(new FlushListener() {
+                            
+                            @Override
+                            public void afterFlush() {
+                                partition.removeListener(TimeSeriesPartitionWriteCache.this.listener);
+                            }
+                        });
                     }
 
                 })
                 .recordStats().concurrencyLevel(configuration.getCachesConcurrencyLevel());
     }
 
+
+    /**
+     * @param id
+     * @return
+     */
+    public List<TimeSeriesPartition> getPartitionsWithNonPersistedDataWithin(long id) {
+        
+        synchronized(this.partitionsPerSegment)  {
+            
+            List<TimeSeriesPartition> partitions = new ArrayList<>(); 
+            
+            for (Long segment : this.partitionsPerSegment.keySet()) {
+                
+                if (id < segment.longValue()){
+                    break;
+                }
+                
+                partitions.addAll(this.partitionsPerSegment.get(segment));
+            }
+            
+            return partitions;
+        } 
+    }
+    
     /**
      * {@inheritDoc}
      */
     @Override
     protected void afterLoad(TimeSeriesPartition partition) {
         
-        partition.addMemoryUsageListener(TimeSeriesPartitionWriteCache.this.listener);
+        partition.addListener(TimeSeriesPartitionWriteCache.this.listener);
     }
 
     /**
@@ -154,5 +189,56 @@ final class TimeSeriesPartitionWriteCache extends AbstractMultilevelCache<Partit
                 return Long.valueOf(TimeSeriesPartitionWriteCache.this.memTimeSeriesMemoryUsage.get());
             }
         });
+    }
+    
+
+    /**
+     * Updates the total memory usage by the time series.
+     * 
+     * @param previousMemoryUsage the previous amount of memory being used by the partition
+     * @param newMemoryUsage the new amount of memory being used by the partition
+     * @return the new total memory usage 
+     */
+    private long updateMemoryUsage(int previousMemoryUsage, int newMemoryUsage) {
+        
+        int delta = newMemoryUsage - previousMemoryUsage;
+
+        long newMemTimeSeriesMemoryUsage = this.memTimeSeriesMemoryUsage.addAndGet(delta);
+
+        this.logger.debug("memory usage by all memTimeSeries: {}", Long.valueOf(newMemTimeSeriesMemoryUsage));
+        
+        return newMemTimeSeriesMemoryUsage;
+    }
+    
+    /**
+     * Updates the mapping between partitions an the first segment that contains non persisted data.
+     * 
+     * @param partition the partition
+     * @param previousSegment the previous first segment for which the partition was containing non persisted data
+     * @param newSegment the new first segment for which the partition contains non persisted data 
+     */
+    private void updatePartitionsPerSegment(TimeSeriesPartition partition,
+                                            Long previousSegment,
+                                            Long newSegment) {
+
+        synchronized(this.partitionsPerSegment) {
+            
+            if (previousSegment != null) {
+                
+                this.partitionsPerSegment.remove(previousSegment, partition);
+            } 
+
+            if (newSegment != null) {
+                    
+                this.partitionsPerSegment.put(newSegment, partition);
+                this.logger.debug("first segment containing non persisted data for partition {}: {}", 
+                                  partition.getId(),
+                                  newSegment);
+            
+            } else {
+                
+                this.logger.debug("partition {} does not contains anymore non persisted data", partition.getId());
+            }
+        } 
     }
 }

@@ -19,7 +19,6 @@ import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.files.FileUtils;
-import io.horizondb.model.PartitionId;
 import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.core.iterators.DefaultRecordIterator;
 import io.horizondb.model.schema.DatabaseDefinition;
@@ -32,7 +31,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
-import org.easymock.EasyMock;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,7 +39,6 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import static io.horizondb.db.util.TimeUtils.getTime;
-
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -413,7 +410,7 @@ public class TimeSeriesPartitionManagerCachesTest {
 
             assertEquals(2, caches.writeCacheStats().loadCount());
             assertEquals(0, caches.writeCacheStats().hitCount());
-            assertEquals(2, caches.writeCacheStats().missCount());
+            assertEquals(3, caches.writeCacheStats().missCount());
             assertEquals(1, caches.writeCacheStats().evictionCount());
 
             assertEquals(0, caches.readCacheStats().loadCount());
@@ -426,7 +423,8 @@ public class TimeSeriesPartitionManagerCachesTest {
             System.gc();
 
             daxPartition = caches.getPartitionForRead(daxPartitionId, daxDefinition);
-
+            assertEquals(null, daxPartition.getFirstSegmentContainingNonPersistedData());
+            
             assertEquals(2, caches.globalCacheSize());
             assertEquals(1, caches.readCacheSize());
             assertEquals(1, caches.writeCacheSize());
@@ -438,7 +436,7 @@ public class TimeSeriesPartitionManagerCachesTest {
 
             assertEquals(2, caches.writeCacheStats().loadCount());
             assertEquals(0, caches.writeCacheStats().hitCount());
-            assertEquals(2, caches.writeCacheStats().missCount());
+            assertEquals(3, caches.writeCacheStats().missCount());
             assertEquals(1, caches.writeCacheStats().evictionCount());
 
             assertEquals(1, caches.readCacheStats().loadCount());
@@ -453,7 +451,7 @@ public class TimeSeriesPartitionManagerCachesTest {
 
     private static ListenableFuture<ReplayPosition> newFuture() {
 
-        return EasyMock.createNiceMock(ListenableFuture.class);
+        return Futures.immediateCheckedFuture(new ReplayPosition(0, 0));
     }
 
 }

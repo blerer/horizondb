@@ -29,6 +29,8 @@ import com.codahale.metrics.MetricRegistry;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheStats;
+import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.commons.lang.builder.ToStringStyle;
 
 /**
  * Base class for <code>Cache</code> implementation.
@@ -112,6 +114,14 @@ public abstract class AbstractCache<K, V> extends AbstractComponent implements i
         }
     }
     
+    /**    
+     * {@inheritDoc}
+     */
+    @Override
+    public V getIfPresent(K key) {
+        return this.cache.getIfPresent(key);
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -137,6 +147,15 @@ public abstract class AbstractCache<K, V> extends AbstractComponent implements i
      */
     public final long size() {
         return this.cache.size();
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE).append("cache", this.cache.asMap())
+                                                                          .toString();
     }
     
     /**

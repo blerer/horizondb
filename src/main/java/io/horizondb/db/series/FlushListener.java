@@ -1,6 +1,4 @@
 /**
- * Copyright 2013 Benjamin Lerer
- * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,19 +14,12 @@
 package io.horizondb.db.series;
 
 /**
- * Listener called when the memory usage change.
- * 
- * @author Benjamin
- * 
+ * Listener used to receive flush notification.
  */
-interface MemoryUsageListener {
-
+public interface FlushListener {
+    
     /**
-     * Notification that the memory usage of the specified partition did change.
-     * 
-     * @param partition the partition that has changed its memory usage.
-     * @param previousMemoryUsage the previous memory usage.
-     * @param newMemoryUsage the new memory usage.
+     * Notification that the flush has been performed.
      */
-    void memoryUsageChanged(TimeSeriesPartition partition, int previousMemoryUsage, int newMemoryUsage);
+    void afterFlush();
 }

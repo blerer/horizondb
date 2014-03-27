@@ -121,6 +121,21 @@ final class TimeSeriesElements {
 
         return null;
     }
+    
+    /**
+     * Returns the first <code>MemTimeSeries</code> of the elements or null if there are no <code>MemTimeSeries</code>.
+     * 
+     * @return the first <code>MemTimeSeries</code> of the elements or null if there are no <code>MemTimeSeries</code>.
+     */
+    public MemTimeSeries getFirstMemTimeSeries() {
+
+        if (hasMemTimeSeries()) {
+
+            return (MemTimeSeries) this.elements.get(1);
+        }
+
+        return null;
+    }
 
     /**
      * Returns an input to read the content of the elements.
@@ -166,15 +181,6 @@ final class TimeSeriesElements {
     }
 
     /**
-     * 
-     * 
-     * @return
-     */
-    private MemTimeSeries newMemTimeSeries() {
-        return new MemTimeSeries(this.configuration, this.definition);
-    }
-
-    /**
      * Flushes to the disk all <code>MemTimeSeries</code>.
      * 
      * @throws IOException if an I/O problem occurs while flushing the data to the disk.
@@ -206,6 +212,24 @@ final class TimeSeriesElements {
         return flush(getFullMemTimeSeriesList());
     }
 
+    /**
+     * Returns the ID of the first segment that contains non persisted data or <code>null</code> if all the data have been
+     * flushed to disk.
+     * 
+     * @return the ID of the first segment that contains non persisted data or <code>null</code> if all the data have been
+     * flushed to disk.
+     */
+    public Long getFirstSegmentContainingNonPersistedData() {
+        
+        MemTimeSeries first = getFirstMemTimeSeries();
+        
+        if (first == null) {
+            return null;
+        }
+        
+        return Long.valueOf(first.getFirstSegmentId());
+    }
+    
     /**
      * Flushes to the disk the specified <code>MemTimeSeries</code>.
      * 
@@ -304,6 +328,15 @@ final class TimeSeriesElements {
         return (regionUsage.upperEndpoint().intValue() - regionUsage.lowerEndpoint().intValue()) + 1;
     }
 
+    /**
+     * 
+     * 
+     * @return
+     */
+    private MemTimeSeries newMemTimeSeries() {
+        return new MemTimeSeries(this.configuration, this.definition);
+    }
+    
     /**
      * @param elements
      * @return

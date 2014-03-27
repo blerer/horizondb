@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import org.easymock.EasyMock;
 import org.junit.Test;
 
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import static io.horizondb.db.util.TimeUtils.getTime;
@@ -127,6 +128,51 @@ public class MemTimeSeriesTest {
         }
     }
 
+    @Test
+    public void testGetFirstSegmentId() throws Exception {
+
+        Configuration configuration = Configuration.newBuilder().build();
+
+        RecordTypeDefinition recordTypeDefinition = RecordTypeDefinition.newBuilder("exchangeState")
+                                                                        .addField("timestampInMillis",
+                                                                                  FieldType.MILLISECONDS_TIMESTAMP)
+                                                                        .addField("status", FieldType.BYTE)
+                                                                        .build();
+
+        DatabaseDefinition databaseDefinition = new DatabaseDefinition("test");
+
+        TimeSeriesDefinition def = databaseDefinition.newTimeSeriesDefinitionBuilder("test")
+                                                     .timeUnit(TimeUnit.NANOSECONDS)
+                                                     .addRecordType(recordTypeDefinition)
+                                                     .build();
+
+        SlabAllocator allocator = new SlabAllocator(configuration.getMemTimeSeriesSize());
+
+        MemTimeSeries memTimeSeries = new MemTimeSeries(configuration, def);
+
+        DefaultRecordIterator iterator = DefaultRecordIterator.newBuilder(def)
+                                                              .newRecord("exchangeState")
+                                                              .setTimestampInNanos(0, TIME_IN_NANOS + 12000700)
+                                                              .setTimestampInMillis(1, TIME_IN_MILLIS + 12)
+                                                              .setByte(2, 3)
+                                                              .build();
+
+        memTimeSeries = memTimeSeries.write(allocator, iterator, Futures.immediateFuture(new ReplayPosition(1, 1)));
+
+        assertEquals(1, memTimeSeries.getFirstSegmentId());
+        
+        iterator = DefaultRecordIterator.newBuilder(def)
+                                        .newRecord("exchangeState")
+                                        .setTimestampInNanos(0, TIME_IN_NANOS + 13000900)
+                                        .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
+                                        .setByte(2, 3)
+                                        .build();
+
+        memTimeSeries = memTimeSeries.write(allocator, iterator, Futures.immediateFuture(new ReplayPosition(2, 1)));
+        
+        assertEquals(1, memTimeSeries.getFirstSegmentId());
+    }
+    
     @Test
     public void testWriteWithMultipleIterators() throws Exception {
 

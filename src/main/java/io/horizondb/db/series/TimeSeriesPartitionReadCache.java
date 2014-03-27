@@ -17,7 +17,6 @@ package io.horizondb.db.series;
 
 import io.horizondb.db.Configuration;
 import io.horizondb.db.cache.AbstractMultilevelCache;
-import io.horizondb.model.PartitionId;
 
 import javax.annotation.concurrent.ThreadSafe;
 

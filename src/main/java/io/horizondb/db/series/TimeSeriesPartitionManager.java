@@ -17,7 +17,6 @@ package io.horizondb.db.series;
 
 import io.horizondb.db.Component;
 import io.horizondb.db.HorizonDBException;
-import io.horizondb.model.PartitionId;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
@@ -63,13 +62,34 @@ public interface TimeSeriesPartitionManager extends Component {
      * Flush the specified partition.
      * 
      * @param timeSeriesPartition the partition to flush.
+     * @param listeners the listeners that need to be notified from the flush
      */
-    void flush(TimeSeriesPartition timeSeriesPartition);
+    void flush(TimeSeriesPartition timeSeriesPartition, FlushListener... listeners);
 
     /**
      * Force flush the specified partition.
      * 
      * @param timeSeriesPartition the partition to flush.
+     * @param listeners the listeners that need to be notified from the flush
      */
-    void forceFlush(TimeSeriesPartition timeSeriesPartition);
+    void forceFlush(TimeSeriesPartition timeSeriesPartition, FlushListener... listeners);
+    
+    /**
+     * Force flush the specified partition if it contains non persisted data within the 
+     * specified segment. 
+     * 
+     * @param id the segment id
+     * @param timeSeriesPartition the partition to flush.
+     * @param listeners the listeners that need to be notified from the flush
+     */
+    void forceFlush(long id, TimeSeriesPartition timeSeriesPartition, FlushListener... listeners);
+
+    /**
+     * Forces the flush of all the partitions that contains non persisted data within the 
+     * specified segment.  
+     * 
+     * @param id the segment id
+     * @throws InterruptedException if the thread is interrupted
+     */
+    void forceFlush(long id) throws InterruptedException;
 }

@@ -189,6 +189,14 @@ public final class DefaultDatabaseManager extends AbstractComponent implements D
         return new Database(this.configuration, definition, this.timeSeriesManager);
     }
 
+    /**    
+     * {@inheritDoc}
+     */
+    @Override
+    public TimeSeriesManager getTimeSeriesManager() {
+        return this.timeSeriesManager;
+    }
+
     /**
      * <code>NodeWriter</code> for the <code>DatabaseDefinition</code>.
      * 

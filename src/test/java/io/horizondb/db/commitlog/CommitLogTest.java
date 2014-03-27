@@ -169,18 +169,14 @@ public class CommitLogTest {
         position += (fourthBuffer.readableBytes() + LOG_OVERHEAD_SIZE);
         ReplayPosition fourthPosition = new ReplayPosition(thirdSegment, position);
 
-        ListenableFuture<Boolean> future = EasyMock.createMock(ListenableFuture.class);
-
-        EasyMock.expect(this.databaseEngine.forceFlush(firstSegment)).andReturn(future);
-        EasyMock.expect(future.get()).andReturn(Boolean.TRUE);
+        this.databaseEngine.forceFlush(firstSegment);
 
         this.databaseEngine.replay(EasyMock.eq(thirdPosition), eq(thirdBuffer.duplicate()));
         this.databaseEngine.replay(EasyMock.eq(fourthPosition), eq(fourthBuffer.duplicate()));
 
-        EasyMock.expect(this.databaseEngine.forceFlush(secondSegment)).andReturn(future);
-        EasyMock.expect(future.get()).andReturn(Boolean.TRUE);
+        this.databaseEngine.forceFlush(secondSegment);
 
-        EasyMock.replay(this.databaseEngine, future);
+        EasyMock.replay(this.databaseEngine);
 
         this.commitLog.start();
 
@@ -196,6 +192,6 @@ public class CommitLogTest {
 
         Thread.sleep(100);
 
-        EasyMock.verify(this.databaseEngine, future);
+        EasyMock.verify(this.databaseEngine);
     }
 }

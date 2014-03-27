@@ -51,6 +51,14 @@ public interface Cache<K, V> extends Component {
     V get(K key, ValueLoader<K, V> loader) throws IOException, HorizonDBException;
     
     /**
+     * Returns the value associated to the specified key if it is present within the cache.
+     * 
+     * @param key the value key
+     * @return the value associated to the specified key
+     */
+    V getIfPresent(K key);
+    
+    /**
      * Invalidates the entry with the specified key.
      * @param key the entry key
      */

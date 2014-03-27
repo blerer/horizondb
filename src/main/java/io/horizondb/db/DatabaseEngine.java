@@ -20,8 +20,6 @@ import io.horizondb.io.ReadableBuffer;
 
 import java.io.IOException;
 
-import com.google.common.util.concurrent.ListenableFuture;
-
 /**
  * @author Benjamin
  * 
@@ -41,9 +39,9 @@ public interface DatabaseEngine extends Component {
      * segment with the specified ID.
      * 
      * @param id the segment id
-     * @return the future representing the completion of the task
+     * @throws InterruptedException if the thread is interrupted
      */
-    ListenableFuture<Boolean> forceFlush(long id);
+    void forceFlush(long id) throws InterruptedException;
 
     /**
      * Replays the specified message. 

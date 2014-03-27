@@ -29,7 +29,6 @@ import io.horizondb.io.ByteReader;
 import io.horizondb.io.ByteWriter;
 import io.horizondb.io.files.FileDataOutput;
 import io.horizondb.io.files.SeekableFileDataInput;
-import io.horizondb.model.PartitionId;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
@@ -167,20 +166,38 @@ public final class DefaultTimeSeriesPartitionManager extends AbstractComponent i
      * {@inheritDoc}
      */
     @Override
-    public void flush(TimeSeriesPartition timeSeriesPartition) {
+    public void flush(TimeSeriesPartition timeSeriesPartition, FlushListener... listeners) {
 
         checkRunning();
-        this.flushManager.flush(timeSeriesPartition);
+        this.flushManager.flush(timeSeriesPartition, listeners);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void forceFlush(TimeSeriesPartition timeSeriesPartition) {
+    public void forceFlush(TimeSeriesPartition timeSeriesPartition, FlushListener... listeners) {
 
         checkRunning();
-        this.flushManager.forceFlush(timeSeriesPartition);
+        this.flushManager.forceFlush(timeSeriesPartition, listeners);
+    }
+
+    /**    
+     * {@inheritDoc}
+     */
+    @Override
+    public void forceFlush(long id, TimeSeriesPartition timeSeriesPartition, FlushListener... listeners) {
+        
+        checkRunning();
+        this.flushManager.forceFlush(id, timeSeriesPartition, listeners);
+    }
+
+    /**    
+     * {@inheritDoc}
+     */
+    @Override
+    public void forceFlush(long id) {
+        // Do nothing
     }
 
     /**

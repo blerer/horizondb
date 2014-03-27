@@ -20,7 +20,6 @@ import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.commitlog.CommitLog;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.files.SeekableFileDataInput;
-import io.horizondb.model.PartitionId;
 import io.horizondb.model.TimeRange;
 import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;
@@ -43,6 +42,8 @@ import com.google.common.util.concurrent.ListenableFuture;
 import static org.apache.commons.lang.Validate.notEmpty;
 
 import static org.apache.commons.lang.Validate.notNull;
+import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.commons.lang.builder.ToStringStyle;
 
 /**
  * A partition of a given time series.
@@ -51,7 +52,7 @@ import static org.apache.commons.lang.Validate.notNull;
  * 
  */
 @ThreadSafe
-public final class TimeSeriesPartition implements TimeSeriesElement {
+public final class TimeSeriesPartition implements Comparable<TimeSeriesPartition>, TimeSeriesElement {
 
     /**
      * The logger.
@@ -62,6 +63,11 @@ public final class TimeSeriesPartition implements TimeSeriesElement {
      * The database configuration.
      */
     private final Configuration configuration;
+    
+    /**
+     * The ID associated to this partition.
+     */
+    private final PartitionId id;
     
     /**
      * The database name.
@@ -90,9 +96,10 @@ public final class TimeSeriesPartition implements TimeSeriesElement {
     private final SlabAllocator allocator;
 
     /**
-     * The <code>MemoryUsageListener</code>s that must be notified in case of memory usage change.
+     * The <code>TimeSeriesPartitionListener</code>s that must be notified when the memory usage or 
+     * the first commit log segment containing non persisted data change..
      */
-    private final List<MemoryUsageListener> memoryUsageListeners = new CopyOnWriteArrayList<>();
+    private final List<TimeSeriesPartitionListener> listeners = new CopyOnWriteArrayList<>();
 
     /**
      * The time series elements composing this partition.
@@ -126,6 +133,11 @@ public final class TimeSeriesPartition implements TimeSeriesElement {
         this.timeRange = metadata.getRange();
         this.databaseName = databaseName;
         this.definition = definition;
+        
+        this.id = new PartitionId(this.databaseName,
+                                  this.definition.getName(),
+                                  this.timeRange.getStart());
+        
         this.allocator = new SlabAllocator(configuration.getMemTimeSeriesSize());
 
         TimeSeriesElement file = TimeSeriesFile.open(configuration, databaseName, definition, metadata);
@@ -140,9 +152,7 @@ public final class TimeSeriesPartition implements TimeSeriesElement {
      */
     public PartitionId getId() {
 
-        return new PartitionId(this.databaseName,
-                               this.definition.getName(),
-                               this.timeRange.getStart());
+        return this.id;
     }
 
     /**
@@ -168,8 +178,10 @@ public final class TimeSeriesPartition implements TimeSeriesElement {
         
         this.elements.set(newElements);
 
-        notifyMemoryUsageListenersIfNeeded(oldElements.getMemoryUsage(), newElements.getMemoryUsage());
-
+        notifyListenersMemoryUsageChanged(oldElements.getMemoryUsage(), newElements.getMemoryUsage());
+        notifyListenersfirstSegmentContainingNonPersistedDataChanged(oldElements.getFirstSegmentContainingNonPersistedData(), 
+                                                                     newElements.getFirstSegmentContainingNonPersistedData());
+ 
         MemTimeSeries memSeries = newElements.getLastMemTimeSeries();
 
         if (memSeries.isFull()) {
@@ -182,16 +194,20 @@ public final class TimeSeriesPartition implements TimeSeriesElement {
 
     /**
      * Schedules the flush of this partition. 
+     * 
+     * @param listeners the flush listeners
      */
-    void scheduleFlush() {
-        this.manager.flush(this);
+    void scheduleFlush(FlushListener... listeners) {
+        this.manager.flush(this, listeners);
     }
 
     /**
      * Schedules the force flush of this partition. 
+     * 
+     * @param listeners the flush listeners
      */
-    void scheduleForceFlush() {
-        this.manager.forceFlush(this);
+    void scheduleForceFlush(FlushListener... listeners) {
+        this.manager.forceFlush(this, listeners);
     }
     
     /**
@@ -229,9 +245,9 @@ public final class TimeSeriesPartition implements TimeSeriesElement {
      * 
      * @param listener the listener to add.
      */
-    public void addMemoryUsageListener(MemoryUsageListener listener) {
+    public void addListener(TimeSeriesPartitionListener listener) {
 
-        this.memoryUsageListeners.add(listener);
+        this.listeners.add(listener);
     }
 
     /**
@@ -239,9 +255,9 @@ public final class TimeSeriesPartition implements TimeSeriesElement {
      * 
      * @param listener the listener to remove.
      */
-    public void removeMemoryUsageListener(MemoryUsageListener listener) {
+    public void removeListener(TimeSeriesPartitionListener listener) {
 
-        this.memoryUsageListeners.remove(listener);
+        this.listeners.remove(listener);
     }
 
     /**
@@ -254,6 +270,18 @@ public final class TimeSeriesPartition implements TimeSeriesElement {
         return this.elements.get().getMemoryUsage();
     }
 
+    /**
+     * Returns the ID of the first segment that contains non persisted data or <code>null</code> if all the data have been
+     * flushed to disk.
+     * 
+     * @return the ID of the first segment that contains non persisted data or <code>null</code> if all the data have been
+     * flushed to disk.
+     */
+    public Long getFirstSegmentContainingNonPersistedData() {
+
+        return this.elements.get().getFirstSegmentContainingNonPersistedData();
+    }
+    
     /**
      * Flushes to the disk the <code>MemTimeSeries</code> that are full.
      * 
@@ -278,7 +306,9 @@ public final class TimeSeriesPartition implements TimeSeriesElement {
 
             this.elements.set(newElements);
 
-            notifyMemoryUsageListenersIfNeeded(oldElements.getMemoryUsage(), newElements.getMemoryUsage());
+            notifyListenersMemoryUsageChanged(oldElements.getMemoryUsage(), newElements.getMemoryUsage());
+            notifyListenersfirstSegmentContainingNonPersistedDataChanged(oldElements.getFirstSegmentContainingNonPersistedData(), 
+                                                                         newElements.getFirstSegmentContainingNonPersistedData());
         }
 
         this.manager.save(this);
@@ -305,7 +335,9 @@ public final class TimeSeriesPartition implements TimeSeriesElement {
             this.elements.set(newElements);
             this.allocator.release();
 
-            notifyMemoryUsageListenersIfNeeded(oldElements.getMemoryUsage(), newElements.getMemoryUsage());
+            notifyListenersMemoryUsageChanged(oldElements.getMemoryUsage(), newElements.getMemoryUsage());
+            notifyListenersfirstSegmentContainingNonPersistedDataChanged(oldElements.getFirstSegmentContainingNonPersistedData(), 
+                                                                         newElements.getFirstSegmentContainingNonPersistedData());
         }
 
         this.manager.save(this);
@@ -330,7 +362,25 @@ public final class TimeSeriesPartition implements TimeSeriesElement {
 
         return this.elements.get().newInput();
     }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int compareTo(TimeSeriesPartition other) {
+       
+        return this.id.compareTo(other.id);
+    }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE).append("id", this.id)
+                                                                          .toString();
+    }
+    
     /**
      * Notifies the listeners that the memory usage has changed.
      * 
@@ -338,7 +388,7 @@ public final class TimeSeriesPartition implements TimeSeriesElement {
      * @param newMemoryUsage the new memory usage
      */
     @SuppressWarnings("boxing")
-    private void notifyMemoryUsageListenersIfNeeded(int previousMemoryUsage, int newMemoryUsage) {
+    private void notifyListenersMemoryUsageChanged(int previousMemoryUsage, int newMemoryUsage) {
 
         if (previousMemoryUsage == newMemoryUsage) {
 
@@ -348,9 +398,28 @@ public final class TimeSeriesPartition implements TimeSeriesElement {
         this.logger.debug("memory usage for partition {} changed (previous = {}, new = {})", new Object[] { getId(),
                 previousMemoryUsage, newMemoryUsage });
 
-        for (int i = 0, m = this.memoryUsageListeners.size(); i < m; i++) {
+        for (int i = 0, m = this.listeners.size(); i < m; i++) {
 
-            this.memoryUsageListeners.get(i).memoryUsageChanged(this, previousMemoryUsage, newMemoryUsage);
+            this.listeners.get(i).memoryUsageChanged(this, previousMemoryUsage, newMemoryUsage);
         }
     }
+    
+    /**
+     * Notifies the listeners that the first segment containing non persisted data changed.
+     * 
+     * @param previousSegment the previous first segment containing non persisted data changed
+     * @param newSegment the new first segment containing non persisted data changed
+     */
+    private void notifyListenersfirstSegmentContainingNonPersistedDataChanged(Long previousSegment, Long newSegment) {
+
+        if (previousSegment != null && previousSegment.equals(newSegment)) {
+
+            return;
+        }
+
+        for (int i = 0, m = this.listeners.size(); i < m; i++) {
+
+            this.listeners.get(i).firstSegmentContainingNonPersistedDataChanged(this, previousSegment, newSegment);
+        }
+    } 
 }

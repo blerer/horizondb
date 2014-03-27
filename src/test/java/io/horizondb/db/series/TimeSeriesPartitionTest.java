@@ -39,6 +39,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import static io.horizondb.db.util.TimeUtils.getTime;
@@ -69,7 +70,7 @@ public class TimeSeriesPartitionTest {
 
     private TimeSeriesPartitionManager manager;
 
-    private MemoryUsageListener listener;
+    private TimeSeriesPartitionListener listener;
 
     @Before
     public void setUp() throws Exception {
@@ -101,7 +102,7 @@ public class TimeSeriesPartitionTest {
         TimeSeriesPartitionMetaData metadata = TimeSeriesPartitionMetaData.newBuilder(range).build();
 
         this.manager = EasyMock.createMock(TimeSeriesPartitionManager.class);
-        this.listener = EasyMock.createMock(MemoryUsageListener.class);
+        this.listener = EasyMock.createMock(TimeSeriesPartitionListener.class);
 
         this.partition = new TimeSeriesPartition(this.manager, 
                                                  configuration, 
@@ -109,7 +110,7 @@ public class TimeSeriesPartitionTest {
                                                  this.def, 
                                                  metadata);
         
-        this.partition.addMemoryUsageListener(this.listener);
+        this.partition.addListener(this.listener);
     }
 
     @After
@@ -138,6 +139,7 @@ public class TimeSeriesPartitionTest {
     public void testWrite() throws IOException, HorizonDBException {
 
         this.listener.memoryUsageChanged(this.partition, 0, MEMTIMESERIES_SIZE);
+        this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, null, Long.valueOf(0));
 
         EasyMock.replay(this.manager, this.listener);
 
@@ -160,7 +162,7 @@ public class TimeSeriesPartitionTest {
                                                              .setByte(2, 10)
                                                              .build();
 
-        this.partition.write(recordIterator, newFuture());
+        this.partition.write(recordIterator, newFuture(0, 1));
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
 
         RecordIterator iterator = this.partition.read(range);
@@ -198,6 +200,7 @@ public class TimeSeriesPartitionTest {
     public void testWriteOnTwoMemSeries() throws IOException, HorizonDBException {
 
         this.listener.memoryUsageChanged(this.partition, 0, MEMTIMESERIES_SIZE);
+        this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, null, Long.valueOf(0));
         this.listener.memoryUsageChanged(this.partition, MEMTIMESERIES_SIZE, 2 * MEMTIMESERIES_SIZE);
 
         this.manager.flush(this.partition);
@@ -227,8 +230,10 @@ public class TimeSeriesPartitionTest {
                                                              .setByte(2, 6)
                                                              .build();
 
-        this.partition.write(recordIterator, newFuture());
+        this.partition.write(recordIterator, newFuture(0, 1));
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
+        assertEquals(Long.valueOf(0), this.partition.getFirstSegmentContainingNonPersistedData());
+
 
         recordIterator = DefaultRecordIterator.newBuilder(this.def)
                                               .newRecord("exchangeState")
@@ -241,8 +246,9 @@ public class TimeSeriesPartitionTest {
                                               .setByte(2, 5)
                                               .build();
 
-        this.partition.write(recordIterator, newFuture());
+        this.partition.write(recordIterator, newFuture(0, 2));
         assertEquals(2 * MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
+        assertEquals(Long.valueOf(0), this.partition.getFirstSegmentContainingNonPersistedData());
 
         RecordIterator iterator = this.partition.read(range);
 
@@ -303,6 +309,7 @@ public class TimeSeriesPartitionTest {
     public void testFlush() throws IOException, HorizonDBException, InterruptedException {
 
         this.listener.memoryUsageChanged(this.partition, 0, MEMTIMESERIES_SIZE);
+        this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, null, Long.valueOf(0));
 
         this.manager.flush(this.partition);
 
@@ -311,6 +318,7 @@ public class TimeSeriesPartitionTest {
         this.manager.flush(this.partition);
 
         this.listener.memoryUsageChanged(this.partition, 3 * MEMTIMESERIES_SIZE, MEMTIMESERIES_SIZE);
+        this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, Long.valueOf(0), Long.valueOf(1));
 
         this.manager.save(this.partition);
 
@@ -339,8 +347,9 @@ public class TimeSeriesPartitionTest {
                                                              .setByte(2, 6)
                                                              .build();
 
-        this.partition.write(recordIterator, newFuture());
+        this.partition.write(recordIterator, newFuture(0, 1));
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
+        assertEquals(Long.valueOf(0), this.partition.getFirstSegmentContainingNonPersistedData());
 
         recordIterator = DefaultRecordIterator.newBuilder(this.def)
                                               .newRecord("exchangeState")
@@ -361,8 +370,9 @@ public class TimeSeriesPartitionTest {
                                               .setByte(2, 5)
                                               .build();
 
-        this.partition.write(recordIterator, newFuture());
+        this.partition.write(recordIterator, newFuture(0, 2));
         assertEquals(3 * MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
+        assertEquals(Long.valueOf(0), this.partition.getFirstSegmentContainingNonPersistedData());
 
         recordIterator = DefaultRecordIterator.newBuilder(this.def)
                                               .newRecord("exchangeState")
@@ -371,10 +381,12 @@ public class TimeSeriesPartitionTest {
                                               .setByte(2, 6)
                                               .build();
 
-        this.partition.write(recordIterator, newFuture());
+        this.partition.write(recordIterator, newFuture(1, 1));
         assertEquals(3 * MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
+        assertEquals(Long.valueOf(0), this.partition.getFirstSegmentContainingNonPersistedData());
 
         this.partition.flush();
+        assertEquals(Long.valueOf(1), this.partition.getFirstSegmentContainingNonPersistedData());
 
         RecordIterator iterator = this.partition.read(range);
 
@@ -459,10 +471,12 @@ public class TimeSeriesPartitionTest {
     public void testFlushWithOneMemTimeSeriesFull() throws IOException, HorizonDBException, InterruptedException {
 
         this.listener.memoryUsageChanged(this.partition, 0, MEMTIMESERIES_SIZE);
+        this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, null, Long.valueOf(0));
 
         this.manager.flush(this.partition);
 
         this.listener.memoryUsageChanged(this.partition, MEMTIMESERIES_SIZE, 0);
+        this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, Long.valueOf(0), null);
 
         this.manager.save(this.partition);
 
@@ -491,7 +505,7 @@ public class TimeSeriesPartitionTest {
                                                              .setByte(2, 6)
                                                              .build();
 
-        this.partition.write(recordIterator, newFuture());
+        this.partition.write(recordIterator, newFuture(0, 1));
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
 
         this.partition.flush();
@@ -539,6 +553,7 @@ public class TimeSeriesPartitionTest {
     public void testWriteOnThreeMemSeries() throws IOException, HorizonDBException {
 
         this.listener.memoryUsageChanged(this.partition, 0, MEMTIMESERIES_SIZE);
+        this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, null, Long.valueOf(0));
         this.listener.memoryUsageChanged(this.partition, MEMTIMESERIES_SIZE, 3 * MEMTIMESERIES_SIZE);
 
         this.manager.flush(this.partition);
@@ -569,7 +584,7 @@ public class TimeSeriesPartitionTest {
                                                              .setByte(2, 6)
                                                              .build();
 
-        this.partition.write(recordIterator, newFuture());
+        this.partition.write(recordIterator, newFuture(0, 1));
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
 
         recordIterator = DefaultRecordIterator.newBuilder(this.def)
@@ -591,7 +606,7 @@ public class TimeSeriesPartitionTest {
                                               .setByte(2, 5)
                                               .build();
 
-        this.partition.write(recordIterator, newFuture());
+        this.partition.write(recordIterator, newFuture(0, 2));
         assertEquals(3 * MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
 
         recordIterator = DefaultRecordIterator.newBuilder(this.def)
@@ -601,7 +616,7 @@ public class TimeSeriesPartitionTest {
                                               .setByte(2, 6)
                                               .build();
 
-        this.partition.write(recordIterator, newFuture());
+        this.partition.write(recordIterator, newFuture(0, 3));
         assertEquals(3 * MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
 
         RecordIterator iterator = this.partition.read(range);
@@ -687,10 +702,12 @@ public class TimeSeriesPartitionTest {
     public void testForceFlush() throws IOException, HorizonDBException, InterruptedException {
 
         this.listener.memoryUsageChanged(this.partition, 0, MEMTIMESERIES_SIZE);
+        this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, null, Long.valueOf(0));
 
         this.manager.save(this.partition);
 
         this.listener.memoryUsageChanged(this.partition, MEMTIMESERIES_SIZE, 0);
+        this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, Long.valueOf(0), null);
 
         EasyMock.replay(this.manager, this.listener);
 
@@ -713,13 +730,15 @@ public class TimeSeriesPartitionTest {
                                                              .setByte(2, 10)
                                                              .build();
 
-        this.partition.write(recordIterator, newFuture());
+        this.partition.write(recordIterator, newFuture(0, 1));
 
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
-
+        assertEquals(Long.valueOf(0), this.partition.getFirstSegmentContainingNonPersistedData());
+        
         this.partition.forceFlush();
 
         assertEquals(0, this.partition.getMemoryUsage());
+        assertEquals(null, this.partition.getFirstSegmentContainingNonPersistedData());
 
         RecordIterator iterator = this.partition.read(range);
 
@@ -756,9 +775,12 @@ public class TimeSeriesPartitionTest {
     public void testWriteAfterForceFlush() throws IOException, HorizonDBException, InterruptedException {
 
         this.listener.memoryUsageChanged(this.partition, 0, MEMTIMESERIES_SIZE);
+        this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, null, Long.valueOf(0));
         this.listener.memoryUsageChanged(this.partition, MEMTIMESERIES_SIZE, 0);
+        this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, Long.valueOf(0), null);
         this.manager.save(this.partition);
         this.listener.memoryUsageChanged(this.partition, 0, MEMTIMESERIES_SIZE);
+        this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, null, Long.valueOf(0));
 
         EasyMock.replay(this.manager, this.listener);
 
@@ -781,11 +803,13 @@ public class TimeSeriesPartitionTest {
                                                              .setByte(2, 10)
                                                              .build();
 
-        this.partition.write(recordIterator, newFuture());
+        this.partition.write(recordIterator, newFuture(0, 1));
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
+        assertEquals(Long.valueOf(0), this.partition.getFirstSegmentContainingNonPersistedData());
 
         this.partition.forceFlush();
         assertEquals(0, this.partition.getMemoryUsage());
+        assertEquals(null, this.partition.getFirstSegmentContainingNonPersistedData());
 
         recordIterator = DefaultRecordIterator.newBuilder(this.def)
                                               .newRecord("exchangeState")
@@ -798,8 +822,9 @@ public class TimeSeriesPartitionTest {
                                               .setByte(2, 0)
                                               .build();
 
-        this.partition.write(recordIterator, newFuture());
+        this.partition.write(recordIterator, newFuture(0, 2));
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
+        assertEquals(Long.valueOf(0), this.partition.getFirstSegmentContainingNonPersistedData());
 
         RecordIterator iterator = this.partition.read(range);
 
@@ -848,8 +873,8 @@ public class TimeSeriesPartitionTest {
         EasyMock.verify(this.manager, this.listener);
     }
 
-    private static ListenableFuture<ReplayPosition> newFuture() {
+    private static ListenableFuture<ReplayPosition> newFuture(long segment, long position) {
 
-        return EasyMock.createNiceMock(ListenableFuture.class);
+        return Futures.immediateCheckedFuture(new ReplayPosition(segment, position));
     }
 }

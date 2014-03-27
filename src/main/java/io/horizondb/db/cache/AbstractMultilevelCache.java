@@ -19,6 +19,8 @@ import io.horizondb.db.Configuration;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.commons.lang.builder.ToStringStyle;
 
 /**
  * Base class for <code>Cache</code> implementation with multilevel.
@@ -46,6 +48,17 @@ public abstract class AbstractMultilevelCache<K, V> extends AbstractCache<K, V> 
         this.secondLevelCache = secondLevelCache;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
+            .appendSuper(super.toString())
+            .append("secondLevelCache", this.secondLevelCache)
+            .toString();
+    }
+    
     /**
      * {@inheritDoc}
      */
