@@ -34,16 +34,16 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.ThreadSafe;
 
+import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.commons.lang.builder.ToStringStyle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
+import static io.horizondb.io.files.FileUtils.printNumberOfBytes;
 import static org.apache.commons.lang.Validate.notEmpty;
-
 import static org.apache.commons.lang.Validate.notNull;
-import org.apache.commons.lang.builder.ToStringBuilder;
-import org.apache.commons.lang.builder.ToStringStyle;
 
 /**
  * A partition of a given time series.
@@ -396,7 +396,7 @@ public final class TimeSeriesPartition implements Comparable<TimeSeriesPartition
         }
 
         this.logger.debug("memory usage for partition {} changed (previous = {}, new = {})", new Object[] { getId(),
-                previousMemoryUsage, newMemoryUsage });
+                printNumberOfBytes(previousMemoryUsage), printNumberOfBytes(newMemoryUsage) });
 
         for (int i = 0, m = this.listeners.size(); i < m; i++) {
 

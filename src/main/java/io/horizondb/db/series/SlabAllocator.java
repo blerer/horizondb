@@ -15,11 +15,13 @@
  */
 package io.horizondb.db.series;
 
+import io.horizondb.io.Buffer;
+import io.horizondb.io.buffers.Buffers;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.horizondb.io.Buffer;
-import io.horizondb.io.buffers.Buffers;
+import static io.horizondb.io.files.FileUtils.printNumberOfBytes;
 
 /**
  * Combat heap fragmentation by ensuring that all allocations for a MemTimeSeries come from contiguous memory. Like that
@@ -78,7 +80,7 @@ public final class SlabAllocator {
 
         if (this.region == null || this.region.readableBytes() < size) {
 
-            this.logger.debug("allocating a new region of size: " + this.regionSize);
+            this.logger.debug("allocating a new region of size: " + printNumberOfBytes(this.regionSize));
 
             this.region = Buffers.allocate(this.regionSize).writerIndex(this.regionSize);
             this.regionCount++;

@@ -197,6 +197,73 @@ public class TimeSeriesPartitionTest {
     }
 
     @Test
+    public void testTwoWriteOnSameMemTimeSeries() throws IOException, HorizonDBException {
+
+        this.listener.memoryUsageChanged(this.partition, 0, MEMTIMESERIES_SIZE);
+        this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, null, Long.valueOf(0));
+
+        EasyMock.replay(this.manager, this.listener);
+
+        long timestamp = getTime("2013.11.26 12:32:12.000");
+
+        RecordIterator recordIterator = DefaultRecordIterator.newBuilder(this.def)
+                                                             .newRecord("exchangeState")
+                                                             .setTimestampInMillis(0, timestamp)
+                                                             .setTimestampInMillis(1, timestamp)
+                                                             .setByte(2, 10)
+                                                             .newRecord("exchangeState")
+                                                             .setTimestampInMillis(0, timestamp + 100)
+                                                             .setTimestampInMillis(1, timestamp + 100)
+                                                             .setByte(2, 5)
+                                                             .build();
+
+        this.partition.write(recordIterator, newFuture(0, 1));
+        assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
+        
+        recordIterator = DefaultRecordIterator.newBuilder(this.def)
+                                              .newRecord("exchangeState")
+                                              .setTimestampInMillis(0, timestamp + 350)
+                                              .setTimestampInMillis(1, timestamp + 350)
+                                              .setByte(2, 10)
+                                              .build();
+
+        this.partition.write(recordIterator, newFuture(0, 2000));
+        assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
+
+
+        TimeRange range = new TimeRange(timestamp, timestamp + 2000);
+        RecordIterator iterator = this.partition.read(range);
+
+        assertTrue(iterator.hasNext());
+        Record actual = iterator.next();
+
+        assertFalse(actual.isDelta());
+        assertEquals(timestamp, actual.getTimestampInMillis(0));
+        assertEquals(timestamp, actual.getTimestampInMillis(1));
+        assertEquals(10, actual.getByte(2));
+
+        assertTrue(iterator.hasNext());
+        actual = iterator.next();
+
+        assertTrue(actual.isDelta());
+        assertEquals(100L, actual.getTimestampInMillis(0));
+        assertEquals(100L, actual.getTimestampInMillis(1));
+        assertEquals(-5, actual.getByte(2));
+
+        assertTrue(iterator.hasNext());
+        actual = iterator.next();
+
+        assertTrue(actual.isDelta());
+        assertEquals(250, actual.getTimestampInMillis(0));
+        assertEquals(250, actual.getTimestampInMillis(1));
+        assertEquals(5, actual.getByte(2));
+
+        assertFalse(iterator.hasNext());
+
+        EasyMock.verify(this.manager, this.listener);
+    }
+    
+    @Test
     public void testWriteOnTwoMemSeries() throws IOException, HorizonDBException {
 
         this.listener.memoryUsageChanged(this.partition, 0, MEMTIMESERIES_SIZE);

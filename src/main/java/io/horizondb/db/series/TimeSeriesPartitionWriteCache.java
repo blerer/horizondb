@@ -17,6 +17,7 @@ package io.horizondb.db.series;
 
 import io.horizondb.db.Configuration;
 import io.horizondb.db.cache.AbstractMultilevelCache;
+import io.horizondb.io.files.FileUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -205,8 +206,9 @@ final class TimeSeriesPartitionWriteCache extends AbstractMultilevelCache<Partit
 
         long newMemTimeSeriesMemoryUsage = this.memTimeSeriesMemoryUsage.addAndGet(delta);
 
-        this.logger.debug("memory usage by all memTimeSeries: {}", Long.valueOf(newMemTimeSeriesMemoryUsage));
-        
+        this.logger.debug("memory usage by all memTimeSeries: {}", 
+                          FileUtils.printNumberOfBytes(newMemTimeSeriesMemoryUsage));
+
         return newMemTimeSeriesMemoryUsage;
     }
     
