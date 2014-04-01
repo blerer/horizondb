@@ -95,11 +95,7 @@ public abstract class AbstractCache<K, V> extends AbstractComponent implements i
         
         try {
 
-            final V value = doGet(key, loader);
-            
-            afterLoad(value);
-            
-            return value;
+            return doGet(key, loader);
 
         } catch (ExecutionException e) {
 
@@ -206,15 +202,6 @@ public abstract class AbstractCache<K, V> extends AbstractComponent implements i
         
         return this.cache.get(key, callable);
     }  
-
-    /**
-     * Allows a sub-classes to perform operations on a loaded value before returning it.
-     *  
-     * @param value the loaded value
-     */
-    protected void afterLoad(V value) {
-
-    }
     
     /**
      * Allows sub-classes to register more meters if they need to.

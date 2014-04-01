@@ -246,7 +246,7 @@ public final class TimeSeriesPartition implements Comparable<TimeSeriesPartition
      * @param listener the listener to add.
      */
     public void addListener(TimeSeriesPartitionListener listener) {
-
+        
         this.listeners.add(listener);
     }
 

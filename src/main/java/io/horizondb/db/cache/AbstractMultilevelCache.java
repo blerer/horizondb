@@ -72,8 +72,22 @@ public abstract class AbstractMultilevelCache<K, V> extends AbstractCache<K, V> 
              */
             @Override
             public V call() throws Exception {
-                return AbstractMultilevelCache.this.secondLevelCache.get(key, loader);
+                
+                final V value = AbstractMultilevelCache.this.secondLevelCache.get(key, loader);
+                
+                AbstractMultilevelCache.this.afterLoad(value);
+                
+                return value;
             }
         });
     }
+    
+  /**
+   * Allows a sub-classes to perform operations on a loaded value before returning it.
+   *  
+   * @param value the loaded value
+   */
+  protected void afterLoad(V value) {
+
+  }
 }

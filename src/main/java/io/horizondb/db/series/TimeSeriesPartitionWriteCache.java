@@ -71,7 +71,7 @@ final class TimeSeriesPartitionWriteCache extends AbstractMultilevelCache<Partit
             public void memoryUsageChanged(TimeSeriesPartition partition, int previousMemoryUsage, int newMemoryUsage) {
 
                 updateMemoryUsage(previousMemoryUsage, newMemoryUsage);
-
+                
                 if (newMemoryUsage == 0 
                         && TimeSeriesPartitionWriteCache.this.getIfPresent(partition.getId()) == null) {
                     return;
