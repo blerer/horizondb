@@ -161,6 +161,7 @@ final class TimeSeriesElements {
         if (!hasMemTimeSeries()) {
 
             MemTimeSeries memSeries = newMemTimeSeries();
+            
             memSeries = memSeries.write(allocator, iterator, future);
 
             return newTimeSeriesElements(Arrays.asList(getLast(), memSeries));
@@ -177,6 +178,7 @@ final class TimeSeriesElements {
 
         memSeries = memSeries.write(allocator, iterator, future);
         newElements.add(memSeries);
+        
         return newTimeSeriesElements(newElements);
     }
 

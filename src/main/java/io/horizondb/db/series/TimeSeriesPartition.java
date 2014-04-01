@@ -387,7 +387,6 @@ public final class TimeSeriesPartition implements Comparable<TimeSeriesPartition
      * @param previousMemoryUsage the previous memory usage
      * @param newMemoryUsage the new memory usage
      */
-    @SuppressWarnings("boxing")
     private void notifyListenersMemoryUsageChanged(int previousMemoryUsage, int newMemoryUsage) {
 
         if (previousMemoryUsage == newMemoryUsage) {

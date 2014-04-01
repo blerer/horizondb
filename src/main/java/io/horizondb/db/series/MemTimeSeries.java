@@ -26,10 +26,13 @@ import io.horizondb.io.files.SeekableFileDataInputs;
 import io.horizondb.model.ErrorCodes;
 import io.horizondb.model.core.Record;
 import io.horizondb.model.core.RecordIterator;
+import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;
+import io.horizondb.model.core.iterators.LoggingRecordIterator;
 import io.horizondb.model.core.records.TimeSeriesRecord;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
+import java.io.PrintStream;
 
 import javax.annotation.concurrent.Immutable;
 
@@ -166,6 +169,26 @@ final class MemTimeSeries implements TimeSeriesElement {
     public long getFirstSegmentId() {
         
         return FutureUtils.safeGet(this.firstFuture).getSegment(); 
+    }
+    
+    /**
+     * Writes the content of this <code>MemTimeSeries</code> in a readable format into the specified stream.
+     * 
+     * @param definition the time series definition
+     * @param stream the stream into which the record representation must be written
+     * @throws IOException if an I/O problem occurs
+     */
+    public void writePrettyPrint(TimeSeriesDefinition definition, PrintStream stream) throws IOException {
+        
+        try (RecordIterator iterator =new LoggingRecordIterator(definition, 
+                                                           new BinaryTimeSeriesRecordIterator(definition, 
+                                                                                              this.compositeBuffer),
+                                                           stream)) {
+            while (iterator.hasNext()) {
+                
+                iterator.next();
+            }
+        }
     }
     
     /**
