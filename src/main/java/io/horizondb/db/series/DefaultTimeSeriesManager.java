@@ -184,6 +184,6 @@ public final class DefaultTimeSeriesManager extends AbstractComponent implements
      */
     @Override
     public TimeSeriesPartitionManager getPartitionManager() {
-        return this.getPartitionManager();
+        return this.partitionManager;
     }
 }

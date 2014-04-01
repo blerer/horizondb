@@ -276,7 +276,9 @@ final class CommitLogAllocator extends AbstractComponent {
 
             int count = segment.replay(this.databaseEngine);
 
-            this.logger.info(count + " messages have been replayed from segment: " + segment.getPath().getFileName());
+            this.logger.info("{} messages have been replayed from segment: {}", 
+                             Integer.valueOf(count), 
+                             segment.getPath().getFileName());
         }
     }
 

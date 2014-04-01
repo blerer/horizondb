@@ -143,14 +143,14 @@ public final class TimeSeriesPartitionManagerCaches extends AbstractComponent im
     @Override
     public void forceFlush(long id) throws InterruptedException {
         
-        this.logger.info("trying to flush all the partitions that have non persisted data within commit log segment: "
-                + id);
+        this.logger.info("trying to flush all the partitions that have non persisted data within commit log segment: {}",
+                Long.valueOf(id));
         
         List<TimeSeriesPartition> partitions = this.writeCache.getPartitionsWithNonPersistedDataWithin(id);
         
         if (partitions.isEmpty()) {
             
-            this.logger.info("no partitions have non persisted data within commit log segment: " + id);
+            this.logger.info("no partitions have non persisted data within commit log segment: {}", Long.valueOf(id));
             return;
         }
         
@@ -171,8 +171,8 @@ public final class TimeSeriesPartitionManagerCaches extends AbstractComponent im
         
         latch.await();
                 
-        this.logger.info("partitions with non persisted data within commit log segment " + id 
-                         + " that have been flushed to disk: " + partitions);
+        this.logger.info("the partitions: {}  had non persisted data within commit log segment {}" 
+                         + " and have been flushed to disk", partitions, Long.valueOf(id));
     }
 
     /**    
