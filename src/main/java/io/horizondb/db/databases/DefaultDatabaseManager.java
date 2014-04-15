@@ -27,8 +27,6 @@ import io.horizondb.db.btree.NodeReaderFactory;
 import io.horizondb.db.btree.NodeWriter;
 import io.horizondb.db.btree.NodeWriterFactory;
 import io.horizondb.db.btree.OnDiskNodeManager;
-import io.horizondb.db.commitlog.CommitLog;
-import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.db.series.TimeSeriesManager;
 import io.horizondb.io.ByteReader;
 import io.horizondb.io.ByteWriter;
@@ -43,7 +41,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import com.codahale.metrics.MetricRegistry;
-import com.google.common.util.concurrent.ListenableFuture;
 
 import static org.apache.commons.lang.Validate.notNull;
 
@@ -155,7 +152,6 @@ public final class DefaultDatabaseManager extends AbstractComponent implements D
      */
     @Override
     public void createDatabase(DatabaseDefinition definition, 
-                               ListenableFuture<ReplayPosition> future, 
                                boolean throwExceptionIfExists) 
                                        throws IOException, HorizonDBException {
 
@@ -168,8 +164,6 @@ public final class DefaultDatabaseManager extends AbstractComponent implements D
 
             throw new HorizonDBException(ErrorCodes.DUPLICATE_DATABASE, "Duplicate database name " + name);
         }
-        
-        CommitLog.waitForCommitLogWriteIfNeeded(this.configuration, future);
     }
 
     /**

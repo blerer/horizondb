@@ -20,8 +20,6 @@ import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.Names;
 import io.horizondb.db.btree.BTreeFile;
-import io.horizondb.db.commitlog.CommitLog;
-import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.model.ErrorCodes;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
@@ -30,7 +28,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import com.codahale.metrics.MetricRegistry;
-import com.google.common.util.concurrent.ListenableFuture;
 
 import static org.apache.commons.lang.Validate.notNull;
 
@@ -136,7 +133,6 @@ public final class DefaultTimeSeriesManager extends AbstractComponent implements
     @Override
     public void createTimeSeries(String databaseName,
                                  TimeSeriesDefinition definition, 
-                                 ListenableFuture<ReplayPosition> future, 
                                  boolean throwExceptionIfExists) 
                                          throws IOException, 
                                                 HorizonDBException {
@@ -150,8 +146,6 @@ public final class DefaultTimeSeriesManager extends AbstractComponent implements
             throw new HorizonDBException(ErrorCodes.DUPLICATE_TIMESERIES, "Duplicate time series name "
                     + definition.getName() + " in database " + databaseName);
         }
-        
-        CommitLog.waitForCommitLogWriteIfNeeded(this.configuration, future);
     }
 
     /**

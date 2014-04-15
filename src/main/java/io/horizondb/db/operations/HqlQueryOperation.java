@@ -1,6 +1,4 @@
 /**
- * Copyright 2013 Benjamin Lerer
- * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,18 +16,21 @@ package io.horizondb.db.operations;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.Operation;
 import io.horizondb.db.OperationContext;
-import io.horizondb.model.protocol.CreateDatabaseRequestPayload;
+import io.horizondb.db.Query;
+import io.horizondb.db.QueryContext;
+import io.horizondb.db.parser.QueryParser;
+import io.horizondb.model.protocol.HqlQueryPayload;
 import io.horizondb.model.protocol.Msg;
 import io.horizondb.model.protocol.Msgs;
 
 import java.io.IOException;
 
 /**
- * <code>Operation</code> that handle <code>CREATE_DATABASE</code> operations.
+ * <code>Operation</code> that execute an HQL query.
  * 
  * @author Benjamin
  */
-final class CreateDatabaseOperation implements Operation {
+final class HqlQueryOperation implements Operation {
 
     /**
      * {@inheritDoc}
@@ -37,12 +38,10 @@ final class CreateDatabaseOperation implements Operation {
     @Override
     public Object perform(OperationContext context, Msg<?> request) throws IOException, HorizonDBException {
 
-        CreateDatabaseRequestPayload payload = Msgs.getPayload(request);
+        HqlQueryPayload payload = Msgs.getPayload(request);
 
-        context.getDatabaseManager().createDatabase(payload.getDefinition(), 
-                                                    context.getFuture(), 
-                                                    !context.isReplay());
+        Query query = QueryParser.parse(payload.getQuery());
         
-        return Msgs.newCreateDatabaseResponse(request);
+        return query.execute(new QueryContext(context, request.getHeader(), payload.getDatabaseName()));
     }
 }

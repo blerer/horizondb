@@ -68,7 +68,7 @@ public class DefaultDatabaseManagerTest {
 
         manager.start();
 
-        manager.createDatabase(new DatabaseDefinition("test"), null, true);
+        manager.createDatabase(new DatabaseDefinition("test"), true);
 
         Database database = manager.getDatabase("Test");
 
@@ -111,8 +111,8 @@ public class DefaultDatabaseManagerTest {
 
         try {
 
-            manager.createDatabase(new DatabaseDefinition("test"), null, true);
-            manager.createDatabase(new DatabaseDefinition("Test"), null, true);
+            manager.createDatabase(new DatabaseDefinition("test"), true);
+            manager.createDatabase(new DatabaseDefinition("Test"), true);
             Assert.fail();
 
         } catch (HorizonDBException e) {
@@ -134,8 +134,8 @@ public class DefaultDatabaseManagerTest {
 
         manager.start();
 
-        manager.createDatabase(new DatabaseDefinition("test"), null, true);
-        manager.createDatabase(new DatabaseDefinition("Test"), null, false);
+        manager.createDatabase(new DatabaseDefinition("test"), true);
+        manager.createDatabase(new DatabaseDefinition("Test"), false);
 
         manager.shutdown();
     }

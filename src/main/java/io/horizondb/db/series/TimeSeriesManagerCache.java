@@ -19,14 +19,12 @@ import io.horizondb.db.AbstractComponent;
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.cache.ValueLoader;
-import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
 
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.cache.CacheStats;
-import com.google.common.util.concurrent.ListenableFuture;
 
 /**
  * Decorator that add caching functionalities to a <code>TimeSeriesManager</code>
@@ -99,11 +97,10 @@ public final class TimeSeriesManagerCache extends AbstractComponent implements T
     @Override
     public void createTimeSeries(String databaseName, 
                                  TimeSeriesDefinition definition, 
-                                 ListenableFuture<ReplayPosition> future, 
                                  boolean throwExceptionIfExists) 
                                          throws IOException, HorizonDBException {
         
-        this.manager.createTimeSeries(databaseName, definition, future, throwExceptionIfExists);
+        this.manager.createTimeSeries(databaseName, definition, throwExceptionIfExists);
     }
 
     /**
