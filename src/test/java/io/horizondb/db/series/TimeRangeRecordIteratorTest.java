@@ -19,7 +19,6 @@ import io.horizondb.db.util.TimeUtils;
 import io.horizondb.io.Buffer;
 import io.horizondb.io.buffers.Buffers;
 import io.horizondb.io.encoding.VarInts;
-import io.horizondb.model.TimeRange;
 import io.horizondb.model.core.Record;
 import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;
 import io.horizondb.model.core.records.TimeSeriesRecord;
@@ -32,6 +31,8 @@ import java.io.IOException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.google.common.collect.Range;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -82,7 +83,8 @@ public class TimeRangeRecordIteratorTest {
 
         BinaryTimeSeriesRecordIterator iterator = new BinaryTimeSeriesRecordIterator(this.seriesDefinition, buffer);
 
-        TimeRange range = new TimeRange(timestamp - 100, timestamp + 500);
+        Range<Long> range = Range.closedOpen(Long.valueOf(timestamp - 100), 
+                                             Long.valueOf(timestamp + 500));
 
         try (TimeRangeRecordIterator rangeIterator = new TimeRangeRecordIterator(this.seriesDefinition, iterator, range)) {
 
@@ -132,7 +134,8 @@ public class TimeRangeRecordIteratorTest {
 
         BinaryTimeSeriesRecordIterator iterator = new BinaryTimeSeriesRecordIterator(this.seriesDefinition, buffer);
 
-        TimeRange range = new TimeRange(timestamp + 120, timestamp + 600);
+        Range<Long> range = Range.closedOpen(Long.valueOf(timestamp + 120), 
+                                             Long.valueOf(timestamp + 600));
 
         try (TimeRangeRecordIterator rangeIterator = new TimeRangeRecordIterator(this.seriesDefinition, iterator, range)) {
 
@@ -167,7 +170,8 @@ public class TimeRangeRecordIteratorTest {
 
         BinaryTimeSeriesRecordIterator iterator = new BinaryTimeSeriesRecordIterator(this.seriesDefinition, buffer);
 
-        TimeRange range = new TimeRange(timestamp - 100, timestamp + 600);
+        Range<Long> range = Range.closed(Long.valueOf(timestamp - 100), 
+                                         Long.valueOf(timestamp + 600));
 
         try (TimeRangeRecordIterator rangeIterator = new TimeRangeRecordIterator(this.seriesDefinition, iterator, range)) {
 
@@ -251,7 +255,8 @@ public class TimeRangeRecordIteratorTest {
 
         BinaryTimeSeriesRecordIterator iterator = new BinaryTimeSeriesRecordIterator(this.seriesDefinition, buffer);
 
-        TimeRange range = new TimeRange(timestamp + 200, timestamp + 400);
+        Range<Long> range = Range.closedOpen(Long.valueOf(timestamp + 200), 
+                                             Long.valueOf(timestamp + 400));
 
         try (TimeRangeRecordIterator rangeIterator = new TimeRangeRecordIterator(this.seriesDefinition, iterator, range)) {
 
@@ -288,7 +293,8 @@ public class TimeRangeRecordIteratorTest {
 
         BinaryTimeSeriesRecordIterator iterator = new BinaryTimeSeriesRecordIterator(this.seriesDefinition, buffer);
 
-        TimeRange range = new TimeRange(timestamp + 80, timestamp + 600);
+        Range<Long> range = Range.closedOpen(Long.valueOf(timestamp + 80), 
+                                             Long.valueOf(timestamp + 600));
 
         try (TimeRangeRecordIterator rangeIterator = new TimeRangeRecordIterator(this.seriesDefinition, iterator, range)) {
 
@@ -330,7 +336,8 @@ public class TimeRangeRecordIteratorTest {
 
         BinaryTimeSeriesRecordIterator iterator = new BinaryTimeSeriesRecordIterator(this.seriesDefinition, buffer);
 
-        TimeRange range = new TimeRange(timestamp - 100, timestamp + 500);
+        Range<Long> range = Range.closedOpen(Long.valueOf(timestamp - 100), 
+                                             Long.valueOf(timestamp + 500));
 
         try (TimeRangeRecordIterator rangeIterator = new TimeRangeRecordIterator(this.seriesDefinition, iterator, range)) {
 
@@ -379,7 +386,8 @@ public class TimeRangeRecordIteratorTest {
 
         BinaryTimeSeriesRecordIterator iterator = new BinaryTimeSeriesRecordIterator(this.seriesDefinition, buffer);
 
-        TimeRange range = new TimeRange(timestamp - 100, timestamp + 500);
+        Range<Long> range = Range.closedOpen(Long.valueOf(timestamp - 100), 
+                                             Long.valueOf(timestamp + 500));
 
         try (TimeRangeRecordIterator rangeIterator = new TimeRangeRecordIterator(this.seriesDefinition, iterator, range)) {
 
@@ -428,7 +436,8 @@ public class TimeRangeRecordIteratorTest {
 
         BinaryTimeSeriesRecordIterator iterator = new BinaryTimeSeriesRecordIterator(this.seriesDefinition, buffer);
 
-        TimeRange range = new TimeRange(timestamp - 100, timestamp);
+        Range<Long> range = Range.closedOpen(Long.valueOf(timestamp - 100), 
+                                             Long.valueOf(timestamp + 1));
 
         try (TimeRangeRecordIterator rangeIterator = new TimeRangeRecordIterator(this.seriesDefinition, iterator, range)) {
 
@@ -453,7 +462,8 @@ public class TimeRangeRecordIteratorTest {
 
         BinaryTimeSeriesRecordIterator iterator = new BinaryTimeSeriesRecordIterator(this.seriesDefinition, buffer);
 
-        TimeRange range = new TimeRange(timestamp + 50, timestamp + 400);
+        Range<Long> range = Range.closedOpen(Long.valueOf(timestamp + 50), 
+                                             Long.valueOf(timestamp + 400));
 
         try (TimeRangeRecordIterator rangeIterator = new TimeRangeRecordIterator(this.seriesDefinition, iterator, range)) {
 

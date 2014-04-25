@@ -19,7 +19,6 @@ import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.files.FileUtils;
-import io.horizondb.model.TimeRange;
 import io.horizondb.model.core.Record;
 import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.core.iterators.DefaultRecordIterator;
@@ -39,11 +38,11 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.common.collect.Range;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import static io.horizondb.db.util.TimeUtils.getTime;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -97,7 +96,7 @@ public class TimeSeriesPartitionTest {
                                      .addRecordType(recordTypeDefinition)
                                      .build();
 
-        TimeRange range = new TimeRange(getTime("2013.11.26 00:00:00.000"), getTime("2013.11.26 23:59:59.999"));
+        Range<Long> range = newTimeRange("2013.11.26 00:00:00.000", "2013.11.27 00:00:00.000");
 
         TimeSeriesPartitionMetaData metadata = TimeSeriesPartitionMetaData.newBuilder(range).build();
 
@@ -126,7 +125,7 @@ public class TimeSeriesPartitionTest {
 
         EasyMock.replay(this.manager, this.listener);
 
-        TimeRange range = new TimeRange(getTime("2013.11.26 12:00:00.000"), getTime("2013.11.26 14:00:00.000"));
+        Range<Long> range = newTimeRange("2013.11.26 12:00:00.000", "2013.11.26 14:00:00.000");
 
         RecordIterator iterator = this.partition.read(range);
 
@@ -143,7 +142,7 @@ public class TimeSeriesPartitionTest {
 
         EasyMock.replay(this.manager, this.listener);
 
-        TimeRange range = new TimeRange(getTime("2013.11.26 12:00:00.000"), getTime("2013.11.26 14:00:00.000"));
+        Range<Long> range = newTimeRange("2013.11.26 12:00:00.000", "2013.11.26 14:00:00.000");
 
         long timestamp = getTime("2013.11.26 12:32:12.000");
 
@@ -231,7 +230,7 @@ public class TimeSeriesPartitionTest {
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
 
 
-        TimeRange range = new TimeRange(timestamp, timestamp + 2000);
+        Range<Long> range = Range.closedOpen(Long.valueOf(timestamp), Long.valueOf(timestamp  + 2000));
         RecordIterator iterator = this.partition.read(range);
 
         assertTrue(iterator.hasNext());
@@ -274,7 +273,7 @@ public class TimeSeriesPartitionTest {
 
         EasyMock.replay(this.manager, this.listener);
 
-        TimeRange range = new TimeRange(getTime("2013.11.26 12:00:00.000"), getTime("2013.11.26 14:00:00.000"));
+        Range<Long> range = newTimeRange("2013.11.26 12:00:00.000", "2013.11.26 14:00:00.000");
 
         long timestamp = getTime("2013.11.26 12:32:12.000");
 
@@ -391,7 +390,7 @@ public class TimeSeriesPartitionTest {
 
         EasyMock.replay(this.manager, this.listener);
 
-        TimeRange range = new TimeRange(getTime("2013.11.26 12:00:00.000"), getTime("2013.11.26 14:00:00.000"));
+        Range<Long> range = newTimeRange("2013.11.26 12:00:00.000", "2013.11.26 14:00:00.000");
 
         long timestamp = getTime("2013.11.26 12:32:12.000");
 
@@ -549,7 +548,7 @@ public class TimeSeriesPartitionTest {
 
         EasyMock.replay(this.manager, this.listener);
 
-        TimeRange range = new TimeRange(getTime("2013.11.26 12:00:00.000"), getTime("2013.11.26 14:00:00.000"));
+        Range<Long> range = newTimeRange("2013.11.26 12:00:00.000", "2013.11.26 14:00:00.000");
 
         long timestamp = getTime("2013.11.26 12:32:12.000");
 
@@ -628,7 +627,7 @@ public class TimeSeriesPartitionTest {
 
         EasyMock.replay(this.manager, this.listener);
 
-        TimeRange range = new TimeRange(getTime("2013.11.26 12:00:00.000"), getTime("2013.11.26 14:00:00.000"));
+        Range<Long> range = newTimeRange("2013.11.26 12:00:00.000", "2013.11.26 14:00:00.000");
 
         long timestamp = getTime("2013.11.26 12:32:12.000");
 
@@ -778,7 +777,7 @@ public class TimeSeriesPartitionTest {
 
         EasyMock.replay(this.manager, this.listener);
 
-        TimeRange range = new TimeRange(getTime("2013.11.26 12:00:00.000"), getTime("2013.11.26 14:00:00.000"));
+        Range<Long> range = newTimeRange("2013.11.26 12:00:00.000", "2013.11.26 14:00:00.000");
 
         long timestamp = getTime("2013.11.26 12:32:12.000");
 
@@ -851,7 +850,7 @@ public class TimeSeriesPartitionTest {
 
         EasyMock.replay(this.manager, this.listener);
 
-        TimeRange range = new TimeRange(getTime("2013.11.26 12:00:00.000"), getTime("2013.11.26 14:00:00.000"));
+        Range<Long> range = newTimeRange("2013.11.26 12:00:00.000", "2013.11.26 14:00:00.000");
 
         long timestamp = getTime("2013.11.26 12:32:12.000");
 
@@ -943,5 +942,12 @@ public class TimeSeriesPartitionTest {
     private static ListenableFuture<ReplayPosition> newFuture(long segment, long position) {
 
         return Futures.immediateCheckedFuture(new ReplayPosition(segment, position));
+    }
+    
+    private static Range<Long> newTimeRange(String start, String end) {
+        
+        return Range.closedOpen(Long.valueOf(getTime(start)), 
+                                Long.valueOf(getTime(end)));
+        
     }
 }

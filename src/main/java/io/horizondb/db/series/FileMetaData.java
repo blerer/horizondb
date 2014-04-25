@@ -32,12 +32,13 @@ import io.horizondb.io.encoding.VarInts;
 import io.horizondb.io.files.FileUtils;
 import io.horizondb.io.serialization.Parser;
 import io.horizondb.io.serialization.Serializable;
-import io.horizondb.model.TimeRange;
 
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
+
+import com.google.common.collect.Range;
 
 /**
  * The meta data of a time series file.
@@ -78,7 +79,9 @@ public final class FileMetaData implements Serializable {
             byte version = buffer.readByte();
             String database = VarInts.readString(buffer);
             String timeSeries = VarInts.readString(buffer);
-            TimeRange range = TimeRange.parseFrom(buffer);
+            long lowerEndPoint = VarInts.readUnsignedLong(buffer);
+            long upperEndPoint = VarInts.readUnsignedLong(buffer);
+            Range<Long> range = Range.closedOpen(Long.valueOf(lowerEndPoint), Long.valueOf(upperEndPoint));
 
             return new FileMetaData(version, database, timeSeries, range);
         }
@@ -122,7 +125,7 @@ public final class FileMetaData implements Serializable {
     /**
      * The partition range.
      */
-    private final TimeRange range;
+    private final Range<Long> range;
 
     /**
      * Creates the file meta data.
@@ -131,7 +134,7 @@ public final class FileMetaData implements Serializable {
      * @param timeSeries the name of the time series to which belongs this file
      * @param range the partition range
      */
-    public FileMetaData(String database, String timeSeries, TimeRange range) {
+    public FileMetaData(String database, String timeSeries, Range<Long> range) {
 
         this(DEFAULT_VERSION, database, timeSeries, range);
     }
@@ -144,7 +147,7 @@ public final class FileMetaData implements Serializable {
      * @param timeSeries the name of the time series to which belongs this file
      * @param range the partition range
      */
-    private FileMetaData(byte version, String database, String timeSeries, TimeRange range) {
+    private FileMetaData(byte version, String database, String timeSeries, Range<Long> range) {
 
         this.version = version;
         this.database = database;
@@ -184,7 +187,7 @@ public final class FileMetaData implements Serializable {
      * 
      * @return the partition range.
      */
-    public TimeRange getRange() {
+    public Range<Long> getRange() {
         return this.range;
     }
 
@@ -231,7 +234,8 @@ public final class FileMetaData implements Serializable {
 
         VarInts.writeString(checksumByteWriter, this.database);
         VarInts.writeString(checksumByteWriter, this.timeSeries);
-        this.range.writeTo(checksumByteWriter);
+        VarInts.writeUnsignedLong(checksumByteWriter, this.range.lowerEndpoint().longValue());
+        VarInts.writeUnsignedLong(checksumByteWriter, this.range.upperEndpoint().longValue());
 
         checksumByteWriter.writeZeroBytes(buffer.writeableBytes() - CHECKSUM_LENGTH);
         checksumByteWriter.writeChecksum();

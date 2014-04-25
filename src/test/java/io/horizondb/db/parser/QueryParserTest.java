@@ -13,10 +13,14 @@
  */
 package io.horizondb.db.parser;
 
+import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
+
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.Query;
 import io.horizondb.db.queries.CreateDatabaseQuery;
 import io.horizondb.db.queries.CreateTimeSeriesQuery;
+import io.horizondb.db.queries.SelectQuery;
 import io.horizondb.db.queries.UseDatabaseQuery;
 import io.horizondb.model.schema.DatabaseDefinition;
 import io.horizondb.model.schema.RecordTypeDefinition;
@@ -72,16 +76,69 @@ public class QueryParserTest {
                                                          .addIntegerField("volume")
                                                          .build();
 
-        TimeSeriesDefinition definition = TimeSeriesDefinition.newBuilder("Dax")
-                                                              .addRecordType(quote)
-                                                              .addRecordType(trade)
-                                                              .build();
+        TimeSeriesDefinition expected = TimeSeriesDefinition.newBuilder("Dax")
+                                                            .addRecordType(quote)
+                                                            .addRecordType(trade)
+                                                            .timeUnit(TimeUnit.NANOSECONDS)
+                                                            .timeZone(TimeZone.getTimeZone("Europe/Berlin"))
+                                                            .build();
         
-        Query query = QueryParser.parse(definition.toHql());
-        
+        Query query = QueryParser.parse("CREATE TIMESERIES Dax (" +
+                                        "Quote(received NANOSECONDS_TIMESTAMP, bidPrice DECIMAL, askPrice DECIMAL, bidVolume INTEGER, askVolume INTEGER), " +
+                                        "Trade(received NANOSECONDS_TIMESTAMP, price DECIMAL, volume INTEGER))TIME_UNIT = NANOSECONDS TIMEZONE = 'Europe/Berlin';");
         assertNotNull(query);
         
-        assertEquals(definition, ((CreateTimeSeriesQuery) query).getDefinition());
+        assertEquals(expected, ((CreateTimeSeriesQuery) query).getDefinition());
+    }
+    
+    @Test
+    public void testParseCreateTimeSeriesWithDefaultTimeUnit() throws HorizonDBException {
+
+        RecordTypeDefinition quote = RecordTypeDefinition.newBuilder("Quote")
+                                                         .addNanosecondTimestampField("received")
+                                                         .addDecimalField("bidPrice")
+                                                         .addDecimalField("askPrice")
+                                                         .addIntegerField("bidVolume")
+                                                         .addIntegerField("askVolume")
+                                                         .build();
+
+        RecordTypeDefinition trade = RecordTypeDefinition.newBuilder("Trade")
+                                                         .addNanosecondTimestampField("received")
+                                                         .addDecimalField("price")
+                                                         .addIntegerField("volume")
+                                                         .build();
+
+        TimeSeriesDefinition expected = TimeSeriesDefinition.newBuilder("Dax")
+                                                            .addRecordType(quote)
+                                                            .addRecordType(trade)
+                                                            .timeUnit(TimeUnit.MILLISECONDS)
+                                                            .timeZone(TimeZone.getTimeZone("America/Los_Angeles"))
+                                                            .build();
+        
+        Query query = QueryParser.parse("CREATE TIMESERIES Dax (" +
+                                        "Quote(received NANOSECONDS_TIMESTAMP, bidPrice DECIMAL, askPrice DECIMAL, bidVolume INTEGER, askVolume INTEGER), " +
+                                        "Trade(received NANOSECONDS_TIMESTAMP, price DECIMAL, volume INTEGER))TIMEZONE = 'America/Los_Angeles';");
+        assertNotNull(query);
+        
+        assertEquals(expected, ((CreateTimeSeriesQuery) query).getDefinition());
+    }
+    
+    @Test
+    public void testParseSelectAll() throws HorizonDBException {
+
+        
+        SelectQuery query = (SelectQuery) QueryParser.parse("SELECT * FROM Dax;");
+        assertEquals("Dax", query.getTimeSeriesName());
+        assertTrue(query.getCriteria().isEmpty());
+    }
+    
+    @Test
+    public void testParseSelectWithTimestampGreaterThan() throws HorizonDBException {
+
+        
+        SelectQuery query = (SelectQuery) QueryParser.parse("SELECT * FROM Dax WHERE timestamp > 2;");
+        assertEquals("Dax", query.getTimeSeriesName());
+        assertFalse(query.getCriteria().isEmpty());
     }
     
     @Test

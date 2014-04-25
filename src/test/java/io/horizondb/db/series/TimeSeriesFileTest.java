@@ -23,7 +23,6 @@ import io.horizondb.io.ReadableBuffer;
 import io.horizondb.io.buffers.Buffers;
 import io.horizondb.io.files.FileUtils;
 import io.horizondb.io.files.SeekableFileDataInput;
-import io.horizondb.model.TimeRange;
 import io.horizondb.model.core.RecordListMultimapBuilder;
 import io.horizondb.model.core.RecordUtils;
 import io.horizondb.model.core.iterators.DefaultRecordIterator;
@@ -46,10 +45,10 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.common.collect.Range;
 import com.google.common.util.concurrent.Futures;
 
 import static io.horizondb.db.util.TimeUtils.getTime;
-
 import static java.util.Arrays.asList;
 
 public class TimeSeriesFileTest {
@@ -99,7 +98,8 @@ public class TimeSeriesFileTest {
                                             .addRecordType(recordTypeDefinition)
                                             .build();
 
-        TimeRange range = new TimeRange(getTime("2013.11.26 00:00:00.000"), getTime("2013.11.26 23:59:59.999"));
+        Range<Long> range = Range.closedOpen(Long.valueOf(getTime("2013.11.26 00:00:00.000")), 
+                                             Long.valueOf(getTime("2013.11.26 23:59:59.999")));
 
         this.metadata = TimeSeriesPartitionMetaData.newBuilder(range).build();
     }

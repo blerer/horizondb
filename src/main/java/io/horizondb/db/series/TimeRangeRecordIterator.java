@@ -15,7 +15,6 @@
  */
 package io.horizondb.db.series;
 
-import io.horizondb.model.TimeRange;
 import io.horizondb.model.core.Record;
 import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.core.records.TimeSeriesRecord;
@@ -23,6 +22,8 @@ import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
 import java.util.NoSuchElementException;
+
+import com.google.common.collect.Range;
 
 import static org.apache.commons.lang.Validate.notNull;
 
@@ -42,7 +43,7 @@ class TimeRangeRecordIterator implements RecordIterator {
     /**
      * The time range for which the records must be returned.
      */
-    private final TimeRange range;
+    private final Range<Long> range;
 
     /**
      * The last timestamp for each record type.
@@ -69,7 +70,7 @@ class TimeRangeRecordIterator implements RecordIterator {
      */
     private boolean[] addToRecord;
 
-    public TimeRangeRecordIterator(TimeSeriesDefinition definition, RecordIterator iterator, TimeRange range) {
+    public TimeRangeRecordIterator(TimeSeriesDefinition definition, RecordIterator iterator, Range<Long> range) {
 
         notNull(iterator, "the iterator parameter must not be null.");
         notNull(range, "the range parameter must not be null.");
@@ -116,7 +117,7 @@ class TimeRangeRecordIterator implements RecordIterator {
                 this.timestamps[type] = record.getTimestampInMillis(0);
             }
 
-            if (this.range.includes(this.timestamps[type])) {
+            if (this.range.contains(Long.valueOf(this.timestamps[type]))) {
 
                 if (record.isDelta() && this.addToRecord[type]) {
 
@@ -132,7 +133,7 @@ class TimeRangeRecordIterator implements RecordIterator {
                 break;
             }
 
-            if (this.range.isBefore(this.timestamps[type])) {
+            if (this.range.upperEndpoint().longValue() < this.timestamps[type]) {
 
                 this.endOfRecords = true;
                 break;

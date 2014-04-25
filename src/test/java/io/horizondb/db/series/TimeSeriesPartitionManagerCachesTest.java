@@ -19,7 +19,6 @@ import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.files.FileUtils;
-import io.horizondb.model.TimeRange;
 import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.core.iterators.DefaultRecordIterator;
 import io.horizondb.model.schema.DatabaseDefinition;
@@ -36,6 +35,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.common.collect.Range;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -85,7 +85,7 @@ public class TimeSeriesPartitionManagerCachesTest {
 
         try {
 
-            TimeRange range = new TimeRange(getTime("2013.11.26 00:00:00.000"), getTime("2013.11.26 23:59:59.999"));
+            Range<Long> range = newTimeRange("2013.11.26 00:00:00.000", "2013.11.27 00:00:00.000");
 
             RecordTypeDefinition recordTypeDefinition = RecordTypeDefinition.newBuilder("exchangeState")
                                                                             .addField("timestampInMillis",
@@ -157,7 +157,7 @@ public class TimeSeriesPartitionManagerCachesTest {
 
         try {
 
-            TimeRange range = new TimeRange(getTime("2013.11.26 00:00:00.000"), getTime("2013.11.26 23:59:59.999"));
+            Range<Long> range = newTimeRange("2013.11.26 00:00:00.000", "2013.11.27 00:00:00.000");
 
             RecordTypeDefinition recordTypeDefinition = RecordTypeDefinition.newBuilder("exchangeState")
                                                                             .addField("timestampInMillis",
@@ -233,7 +233,7 @@ public class TimeSeriesPartitionManagerCachesTest {
 
         try {
 
-            TimeRange range = new TimeRange(getTime("2013.11.26 00:00:00.000"), getTime("2013.11.26 23:59:59.999"));
+            Range<Long> range = newTimeRange("2013.11.26 00:00:00.000", "2013.11.27 00:00:00.000");
 
             RecordTypeDefinition recordTypeDefinition = RecordTypeDefinition.newBuilder("exchangeState")
                                                                             .addField("timestampInMillis",
@@ -307,7 +307,7 @@ public class TimeSeriesPartitionManagerCachesTest {
 
         try {
 
-            TimeRange range = new TimeRange(getTime("2013.11.26 00:00:00.000"), getTime("2013.11.26 23:59:59.999"));
+            Range<Long> range = newTimeRange("2013.11.26 00:00:00.000", "2013.11.27 00:00:00.000");
 
             RecordTypeDefinition recordTypeDefinition = RecordTypeDefinition.newBuilder("exchangeState")
                                                                             .addField("timestampInMillis",
@@ -454,5 +454,11 @@ public class TimeSeriesPartitionManagerCachesTest {
 
         return Futures.immediateCheckedFuture(new ReplayPosition(0, 0));
     }
-
+    
+    private static Range<Long> newTimeRange(String start, String end) {
+        
+        return Range.closedOpen(Long.valueOf(getTime(start)), 
+                                Long.valueOf(getTime(end)));
+        
+    }
 }

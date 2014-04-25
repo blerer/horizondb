@@ -20,7 +20,6 @@ import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.commitlog.CommitLog;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.files.SeekableFileDataInput;
-import io.horizondb.model.TimeRange;
 import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;
 import io.horizondb.model.schema.TimeSeriesDefinition;
@@ -39,6 +38,7 @@ import org.apache.commons.lang.builder.ToStringStyle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.Range;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import static io.horizondb.io.files.FileUtils.printNumberOfBytes;
@@ -87,7 +87,7 @@ public final class TimeSeriesPartition implements Comparable<TimeSeriesPartition
     /**
      * The partition range.
      */
-    private final TimeRange timeRange;
+    private final Range<Long> timeRange;
 
     /**
      * Used to combat heap fragmentation.
@@ -217,7 +217,7 @@ public final class TimeSeriesPartition implements Comparable<TimeSeriesPartition
      * @return a <code>RecordIterator</code> containing the data from the specified time range.
      * @throws IOException if an I/O problem occurs while writing the data.
      */
-    public RecordIterator read(TimeRange timeRange) throws IOException {
+    public RecordIterator read(Range<Long> timeRange) throws IOException {
 
         return new TimeRangeRecordIterator(this.definition, new BinaryTimeSeriesRecordIterator(this.definition,
                                                                                                newInput()), timeRange);

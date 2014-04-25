@@ -20,12 +20,13 @@ import io.horizondb.db.OperationContext;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.db.util.concurrent.FutureUtils;
 import io.horizondb.io.ReadableBuffer;
-import io.horizondb.model.TimeRange;
 import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
+
+import com.google.common.collect.Range;
 
 /**
  * @author Benjamin
@@ -63,7 +64,7 @@ public final class TimeSeries {
         return this.definition;
     }
 
-    public void write(OperationContext context, TimeRange partitionTimeRange, ReadableBuffer buffer) throws IOException,
+    public void write(OperationContext context, Range<Long> partitionTimeRange, ReadableBuffer buffer) throws IOException,
                                                                                                HorizonDBException {
 
         PartitionId partitionId = new PartitionId(this.databaseName,
@@ -95,9 +96,9 @@ public final class TimeSeries {
      * @throws IOException if an I/O problem occurs
      * @throws HorizonDBException if another problem occurs
      */
-    public RecordIterator read(TimeRange timeRange) throws IOException, HorizonDBException {
+    public RecordIterator read(Range<Long> timeRange) throws IOException, HorizonDBException {
 
-        TimeRange partitionTimeRange = this.definition.getPartitionTimeRange(timeRange.getStart());
+        Range<Long> partitionTimeRange = this.definition.getPartitionTimeRange(timeRange.lowerEndpoint().longValue());
         
         PartitionId partitionId = new PartitionId(this.databaseName, 
                                                   this.definition.getName(), 

@@ -13,11 +13,15 @@
  */
 package io.horizondb.db.parser.builders;
 
+import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
+
 import io.horizondb.db.Query;
 import io.horizondb.db.parser.HqlBaseListener;
-import io.horizondb.db.parser.HqlParser.CreateTimeseriesContext;
+import io.horizondb.db.parser.HqlParser.CreateTimeSeriesContext;
 import io.horizondb.db.parser.HqlParser.FieldDefinitionContext;
 import io.horizondb.db.parser.HqlParser.RecordDefinitionContext;
+import io.horizondb.db.parser.HqlParser.TimeSeriesOptionContext;
 import io.horizondb.db.parser.QueryBuilder;
 import io.horizondb.db.queries.CreateTimeSeriesQuery;
 import io.horizondb.model.schema.FieldType;
@@ -32,7 +36,7 @@ import org.antlr.v4.runtime.misc.NotNull;
  * @author Benjamin
  *
  */
-final class CreateTimeseriesQueryBuilder extends HqlBaseListener implements QueryBuilder {
+final class CreateTimeSeriesQueryBuilder extends HqlBaseListener implements QueryBuilder {
 
     /**
      * The time series definition builder.
@@ -72,17 +76,39 @@ final class CreateTimeseriesQueryBuilder extends HqlBaseListener implements Quer
         String fieldName = ctx.ID().getText();
         String fieldType = ctx.type().getText();
                         
-        this.recordTypeDefBuilder.addField(fieldName, FieldType.valueOf(fieldType));
+        this.recordTypeDefBuilder.addField(fieldName, FieldType.valueOf(fieldType.toUpperCase()));
     }
 
     /**    
      * {@inheritDoc}
      */
     @Override
-    public void enterCreateTimeseries(@NotNull CreateTimeseriesContext ctx) {
+    public void enterCreateTimeSeries(@NotNull CreateTimeSeriesContext ctx) {
         
         String timeSeriesName = ctx.ID().getText();
         this.timeSeriesDefBuilder = TimeSeriesDefinition.newBuilder(timeSeriesName);
+    }
+
+    /**    
+     * {@inheritDoc}
+     */
+    @Override
+    public void enterTimeSeriesOption(@NotNull TimeSeriesOptionContext ctx) {
+        
+        String option = ctx.getChild(0).getText();
+        
+        if ("TIME_UNIT".equals(option)) {
+            
+            TimeUnit unit = TimeUnit.valueOf(ctx.timeUnit().getText().toUpperCase()); 
+            this.timeSeriesDefBuilder.timeUnit(unit);
+        
+        } else if ("TIMEZONE".equals(option)) {
+            
+            String quotedID = ctx.STRING().getText();
+            String ID = quotedID.substring(1, quotedID.length() - 1);
+            TimeZone timeZone = TimeZone.getTimeZone(ID); 
+            this.timeSeriesDefBuilder.timeZone(timeZone);
+        }
     }
 
     /**

@@ -21,13 +21,15 @@ import io.horizondb.io.ByteWriter;
 import io.horizondb.io.encoding.VarInts;
 import io.horizondb.io.serialization.Parser;
 import io.horizondb.io.serialization.Serializable;
-import io.horizondb.model.TimeRange;
 
 import java.io.IOException;
 
 import javax.annotation.concurrent.Immutable;
+
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
+
+import com.google.common.collect.Range;
 
 /**
  * @author Benjamin
@@ -47,7 +49,11 @@ public final class TimeSeriesPartitionMetaData implements Serializable {
         @Override
         public TimeSeriesPartitionMetaData parseFrom(ByteReader reader) throws IOException {
 
-            TimeRange range = TimeRange.parseFrom(reader);
+            long lowerEndPoint = VarInts.readUnsignedLong(reader);
+            long upperEndPoint = VarInts.readUnsignedLong(reader);
+            
+            Range<Long> range = Range.closedOpen(Long.valueOf(lowerEndPoint), 
+                                                 Long.valueOf(upperEndPoint));
 
             ReplayPosition replayPosition = null;
 
@@ -65,7 +71,7 @@ public final class TimeSeriesPartitionMetaData implements Serializable {
     /**
      * The partition time range.
      */
-    private final TimeRange range;
+    private final Range<Long> range;
 
     /**
      * The replay position of the latest data written on the disk.
@@ -82,7 +88,7 @@ public final class TimeSeriesPartitionMetaData implements Serializable {
      * 
      * @return the partition time range.
      */
-    public TimeRange getRange() {
+    public Range<Long> getRange() {
         return this.range;
     }
 
@@ -131,7 +137,9 @@ public final class TimeSeriesPartitionMetaData implements Serializable {
     @Override
     public int computeSerializedSize() {
 
-        int size = this.range.computeSerializedSize() + VarInts.computeUnsignedLongSize(this.fileSize) + 1;
+        int size = VarInts.computeUnsignedLongSize(this.range.lowerEndpoint().longValue())
+                + VarInts.computeUnsignedLongSize(this.range.upperEndpoint().longValue())
+                + VarInts.computeUnsignedLongSize(this.fileSize) + 1;
 
         if (this.replayPosition != null) {
 
@@ -147,7 +155,8 @@ public final class TimeSeriesPartitionMetaData implements Serializable {
     @Override
     public void writeTo(ByteWriter writer) throws IOException {
 
-        writer.writeObject(this.range);
+        VarInts.writeUnsignedLong(writer, this.range.lowerEndpoint().longValue());
+        VarInts.writeUnsignedLong(writer, this.range.upperEndpoint().longValue());
 
         if (this.replayPosition == null) {
 
@@ -166,7 +175,7 @@ public final class TimeSeriesPartitionMetaData implements Serializable {
      * 
      * @return a new <code>Builder</code> instance.
      */
-    public static Builder newBuilder(TimeRange range) {
+    public static Builder newBuilder(Range<Long> range) {
 
         return new Builder(range);
     }
@@ -188,7 +197,7 @@ public final class TimeSeriesPartitionMetaData implements Serializable {
      * @param replayPosition the replay position of the latest data written on the disk
      * @param fileSize the expected file size.
      */
-    private TimeSeriesPartitionMetaData(TimeRange range, ReplayPosition replayPosition, long fileSize) {
+    private TimeSeriesPartitionMetaData(Range<Long> range, ReplayPosition replayPosition, long fileSize) {
 
         this.range = range;
         this.replayPosition = replayPosition;
@@ -216,7 +225,7 @@ public final class TimeSeriesPartitionMetaData implements Serializable {
         /**
          * The partition time range.
          */
-        private final TimeRange range;
+        private final Range<Long> range;
 
         /**
          * The replay position of the latest data written on the disk.
@@ -267,7 +276,7 @@ public final class TimeSeriesPartitionMetaData implements Serializable {
         /**
          * Must not be called from outside the enclosing class.
          */
-        private Builder(TimeRange range) {
+        private Builder(Range<Long> range) {
 
             this.range = range;
         }

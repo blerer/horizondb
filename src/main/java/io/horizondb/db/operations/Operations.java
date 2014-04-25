@@ -57,7 +57,6 @@ public final class Operations {
     private Operations() {
         
         this.operations = new EnumMap<>(OpCode.class);
-        this.operations.put(OpCode.CREATE_TIMESERIES, new CreateTimeSeriesOperation());
         this.operations.put(OpCode.GET_TIMESERIES, new GetTimeSeriesOperation());
         this.operations.put(OpCode.BULK_WRITE, new BulkWriteOperation());
         this.operations.put(OpCode.QUERY, new QueryOperation());

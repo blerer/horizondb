@@ -15,13 +15,17 @@ package io.horizondb.db.parser.builders;
 
 import io.horizondb.db.Query;
 import io.horizondb.db.parser.HqlBaseListener;
+import io.horizondb.db.parser.HqlParser.BooleanExpressionContext;
 import io.horizondb.db.parser.HqlParser.CreateDatabaseContext;
-import io.horizondb.db.parser.HqlParser.CreateTimeseriesContext;
+import io.horizondb.db.parser.HqlParser.CreateTimeSeriesContext;
 import io.horizondb.db.parser.HqlParser.FieldDefinitionContext;
 import io.horizondb.db.parser.HqlParser.FieldsDefinitionContext;
 import io.horizondb.db.parser.HqlParser.RecordDefinitionContext;
 import io.horizondb.db.parser.HqlParser.RecordsDefinitionContext;
+import io.horizondb.db.parser.HqlParser.SelectContext;
+import io.horizondb.db.parser.HqlParser.TimeSeriesOptionContext;
 import io.horizondb.db.parser.HqlParser.UseDatabaseContext;
+import io.horizondb.db.parser.HqlParser.WhereDefinitionContext;
 import io.horizondb.db.parser.QueryBuilder;
 
 import org.antlr.v4.runtime.misc.NotNull;
@@ -134,8 +138,8 @@ public final class QueryBuilderDispatcher extends HqlBaseListener implements Que
      * {@inheritDoc}
      */
     @Override
-    public void exitCreateTimeseries(@NotNull CreateTimeseriesContext ctx) {
-        this.builder.exitCreateTimeseries(ctx);
+    public void exitCreateTimeSeries(@NotNull CreateTimeSeriesContext ctx) {
+        this.builder.exitCreateTimeSeries(ctx);
     }
 
     /**
@@ -152,9 +156,66 @@ public final class QueryBuilderDispatcher extends HqlBaseListener implements Que
      * {@inheritDoc}
      */    
     @Override
-    public void enterCreateTimeseries(@NotNull CreateTimeseriesContext ctx) {
-        this.builder = new CreateTimeseriesQueryBuilder();
-        this.builder.enterCreateTimeseries(ctx);
+    public void enterCreateTimeSeries(@NotNull CreateTimeSeriesContext ctx) {
+        this.builder = new CreateTimeSeriesQueryBuilder();
+        this.builder.enterCreateTimeSeries(ctx);
+    }
+
+    /**    
+     * {@inheritDoc}
+     */
+    @Override
+    public void enterTimeSeriesOption(@NotNull TimeSeriesOptionContext ctx) {
+        this.builder.enterTimeSeriesOption(ctx);
+    }
+    
+    /**    
+     * {@inheritDoc}
+     */
+    @Override
+    public void enterSelect(@NotNull SelectContext ctx) {
+        this.builder = new SelectQueryBuilder();
+        this.builder.enterSelect(ctx);
+    }
+
+    /**    
+     * {@inheritDoc}
+     */    
+    @Override
+    public void exitSelect(@NotNull SelectContext ctx) {
+        this.builder.exitSelect(ctx);
+    }
+
+    /**    
+     * {@inheritDoc}
+     */
+    @Override
+    public void exitWhereDefinition(@NotNull WhereDefinitionContext ctx) {
+        this.builder.exitWhereDefinition(ctx);
+    }
+
+    /**    
+     * {@inheritDoc}
+     */
+    @Override
+    public void exitBooleanExpression(@NotNull BooleanExpressionContext ctx) {
+        this.builder.exitBooleanExpression(ctx);
+    }
+
+    /**    
+     * {@inheritDoc}
+     */
+    @Override
+    public void enterWhereDefinition(@NotNull WhereDefinitionContext ctx) {
+        this.builder.enterWhereDefinition(ctx);
+    }
+
+    /**    
+     * {@inheritDoc}
+     */
+    @Override
+    public void enterBooleanExpression(@NotNull BooleanExpressionContext ctx) {
+        this.builder.enterBooleanExpression(ctx);
     }
 
     /**

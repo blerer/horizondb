@@ -250,7 +250,7 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
 
         return new StringBuilder().append(definition.getName())
                                   .append('-')
-                                  .append(partitionMetadata.getRange().getStart())
+                                  .append(partitionMetadata.getRange().lowerEndpoint())
                                   .append(".ts")
                                   .toString();
     }
