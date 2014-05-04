@@ -134,6 +134,10 @@ AND
     : A_ N_ D_ 
     ;
     
+BETWEEN
+    : B_ E_ T_ W_ E_ E_ N_ 
+    ;    
+    
 BYTE
     : B_ Y_ T_ E_ 
     ;
@@ -164,19 +168,7 @@ INTEGER
     
 LONG
     : L_ O_ N_ G_ 
-    ;
-    
-LE
-    : '<=' 
-    ;
-    
-GE  
-    : '>=' 
-    ;
-
-GT  
-    : '>' 
-    ;    
+    ;   
 
 MICROSECONDS
     : M_ I_ C_ R_ O_ S_ E_ C_ O_ N_ D_ S_ 
@@ -201,6 +193,14 @@ NANOSECONDS
 NANOSECONDS_TIMESTAMP
     : NANOSECONDS'_' T_ I_ M_ E_ S_ T_ A_ M_ P_
     ;
+    
+NOT
+    : N_ O_ T_
+    ;    
+    
+OR
+    : O_ R_
+    ;       
 
 SECONDS
     : S_ E_ C_ O_ N_ D_ S_ 
@@ -301,21 +301,41 @@ useDatabase
     ;
 
 select
-    : SELECT '*' FROM ID (WHERE whereDefinition)?
+    : SELECT '*' FROM ID (whereDefinition)?
     ;
 
 whereDefinition
-    : booleanExpression
+    : WHERE expression
     ;
      
-booleanExpression
+expression
+    : '('expression')'
+    | expression AND expression
+    | expression OR expression
+    | inExpression
+    | betweenExpression
+    | simpleExpression
+    ;
+
+inExpression 
+    : ID NOT? IN '(' value (',' value )* ')'
+    ;
+    
+betweenExpression 
+    : ID NOT? BETWEEN value AND value
+    ;    
+    
+simpleExpression
     : ID operator value
     ;
 
 operator
-    : GE 
-    | LE
-    | GT
+    : '=' 
+    | '>=' 
+    | '>' 
+    | '<=' 
+    | '<' 
+    | '!='
     ; 
 
 value
@@ -328,7 +348,9 @@ ID
     ;
 
 fragment ID_LETTER
-    : 'a'..'z'|'A'..'Z'|'_' 
+    : 'a'..'z'
+    |'A'..'Z'
+    |'_' 
     ;
 
 fragment DIGIT 

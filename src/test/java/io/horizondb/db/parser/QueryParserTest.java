@@ -129,16 +129,105 @@ public class QueryParserTest {
         
         SelectQuery query = (SelectQuery) QueryParser.parse("SELECT * FROM Dax;");
         assertEquals("Dax", query.getTimeSeriesName());
-        assertTrue(query.getCriteria().isEmpty());
+        assertEquals("", query.getExpression().toString());
     }
     
     @Test
     public void testParseSelectWithTimestampGreaterThan() throws HorizonDBException {
 
+        String expression = "timestamp > 2";
         
-        SelectQuery query = (SelectQuery) QueryParser.parse("SELECT * FROM Dax WHERE timestamp > 2;");
+        SelectQuery query = (SelectQuery) QueryParser.parse("SELECT * FROM Dax WHERE " + expression + ";");
         assertEquals("Dax", query.getTimeSeriesName());
-        assertFalse(query.getCriteria().isEmpty());
+        assertEquals(expression, query.getExpression().toString());
+    }
+    
+    @Test
+    public void testParseSelectWithAndAndOr() throws HorizonDBException {
+
+        String expression = "timestamp > 2 AND timestamp < 4 OR timestamp > 6 AND timestamp < 8";
+        
+        SelectQuery query = (SelectQuery) QueryParser.parse("SELECT * FROM Dax WHERE " + expression + ";");
+        
+        assertEquals("Dax", query.getTimeSeriesName());
+        assertEquals(expression, query.getExpression().toString());
+    }
+    
+    @Test
+    public void testParseSelectWithAndOrAndParentheses() throws HorizonDBException {
+
+        String expression = "timestamp > 2 AND (timestamp < 4 OR timestamp > 6)";
+        
+        SelectQuery query = (SelectQuery) QueryParser.parse("SELECT * FROM Dax WHERE " + expression + ";");
+        
+        assertEquals("Dax", query.getTimeSeriesName());
+        assertEquals(expression, query.getExpression().toString());
+    }
+    
+    @Test
+    public void testParseSelectWithInExpression() throws HorizonDBException {
+
+        String expression = "timestamp IN (2, 4)";
+        
+        SelectQuery query = (SelectQuery) QueryParser.parse("SELECT * FROM Dax WHERE " + expression + ";");
+        
+        assertEquals("Dax", query.getTimeSeriesName());
+        assertEquals(expression, query.getExpression().toString());
+    }
+    
+    @Test
+    public void testParseSelectWithBetweenExpression() throws HorizonDBException {
+
+        String expression = "timestamp BETWEEN 2 AND 4";
+        
+        SelectQuery query = (SelectQuery) QueryParser.parse("SELECT * FROM Dax WHERE " + expression + ";");
+        
+        assertEquals("Dax", query.getTimeSeriesName());
+        assertEquals(expression, query.getExpression().toString());
+    }
+    
+    @Test
+    public void testParseSelectWithNotBetweenExpression() throws HorizonDBException {
+
+        String expression = "timestamp NOT BETWEEN 2 AND 6";
+        
+        SelectQuery query = (SelectQuery) QueryParser.parse("SELECT * FROM Dax WHERE " + expression + ";");
+        
+        assertEquals("Dax", query.getTimeSeriesName());
+        assertEquals(expression, query.getExpression().toString());
+    }
+    
+    @Test
+    public void testParseSelectWithBetweenAndInExpression() throws HorizonDBException {
+
+        String expression = "timestamp BETWEEN 2 AND 6 AND timestamp IN (5, 6)";
+        
+        SelectQuery query = (SelectQuery) QueryParser.parse("SELECT * FROM Dax WHERE " + expression + ";");
+        
+        assertEquals("Dax", query.getTimeSeriesName());
+        assertEquals(expression, query.getExpression().toString());
+    }
+    
+    @Test
+    public void testParseSelectWithNotInExpression() throws HorizonDBException {
+
+        String expression = "timestamp NOT IN (2, 4)";
+        
+        SelectQuery query = (SelectQuery) QueryParser.parse("SELECT * FROM Dax WHERE " + expression + ";");
+        
+        assertEquals("Dax", query.getTimeSeriesName());
+        assertEquals(expression, query.getExpression().toString());
+    }
+    
+    @Test
+    public void testParseSelectWithInExpressionAndOnlyOneValue() throws HorizonDBException {
+
+        String expression = "timestamp IN (2)";
+        
+        SelectQuery query = (SelectQuery) QueryParser.parse("SELECT * FROM Dax WHERE " + expression + ";");
+        
+        assertEquals("Dax", query.getTimeSeriesName());
+        assertEquals(expression, query.getExpression().toString());
     }
     
     @Test

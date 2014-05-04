@@ -15,14 +15,17 @@ package io.horizondb.db.parser.builders;
 
 import io.horizondb.db.Query;
 import io.horizondb.db.parser.HqlBaseListener;
-import io.horizondb.db.parser.HqlParser.BooleanExpressionContext;
+import io.horizondb.db.parser.HqlParser.BetweenExpressionContext;
 import io.horizondb.db.parser.HqlParser.CreateDatabaseContext;
 import io.horizondb.db.parser.HqlParser.CreateTimeSeriesContext;
+import io.horizondb.db.parser.HqlParser.ExpressionContext;
 import io.horizondb.db.parser.HqlParser.FieldDefinitionContext;
 import io.horizondb.db.parser.HqlParser.FieldsDefinitionContext;
+import io.horizondb.db.parser.HqlParser.InExpressionContext;
 import io.horizondb.db.parser.HqlParser.RecordDefinitionContext;
 import io.horizondb.db.parser.HqlParser.RecordsDefinitionContext;
 import io.horizondb.db.parser.HqlParser.SelectContext;
+import io.horizondb.db.parser.HqlParser.SimpleExpressionContext;
 import io.horizondb.db.parser.HqlParser.TimeSeriesOptionContext;
 import io.horizondb.db.parser.HqlParser.UseDatabaseContext;
 import io.horizondb.db.parser.HqlParser.WhereDefinitionContext;
@@ -198,24 +201,48 @@ public final class QueryBuilderDispatcher extends HqlBaseListener implements Que
      * {@inheritDoc}
      */
     @Override
-    public void exitBooleanExpression(@NotNull BooleanExpressionContext ctx) {
-        this.builder.exitBooleanExpression(ctx);
-    }
-
-    /**    
-     * {@inheritDoc}
-     */
-    @Override
     public void enterWhereDefinition(@NotNull WhereDefinitionContext ctx) {
         this.builder.enterWhereDefinition(ctx);
     }
 
     /**    
      * {@inheritDoc}
+     */    
+    @Override
+    public void enterExpression(@NotNull ExpressionContext ctx) {
+        this.builder.enterExpression(ctx);
+    }
+
+    /**    
+     * {@inheritDoc}
      */
     @Override
-    public void enterBooleanExpression(@NotNull BooleanExpressionContext ctx) {
-        this.builder.enterBooleanExpression(ctx);
+    public void exitExpression(@NotNull ExpressionContext ctx) {
+        this.builder.exitExpression(ctx);
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void enterSimpleExpression(@NotNull SimpleExpressionContext ctx) {
+        this.builder.enterSimpleExpression(ctx);
+    }
+
+    /**    
+     * {@inheritDoc}
+     */
+    @Override
+    public void enterInExpression(@NotNull InExpressionContext ctx) {
+        this.builder.enterInExpression(ctx);
+    }
+
+    /**    
+     * {@inheritDoc}
+     */
+    @Override
+    public void enterBetweenExpression(@NotNull BetweenExpressionContext ctx) {
+        this.builder.enterBetweenExpression(ctx);
     }
 
     /**

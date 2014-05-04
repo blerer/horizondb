@@ -17,9 +17,7 @@ import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.Query;
 import io.horizondb.db.QueryContext;
 import io.horizondb.db.databases.Database;
-import io.horizondb.db.operations.ChunkedRecordStream;
 import io.horizondb.db.series.TimeSeries;
-import io.horizondb.model.core.RecordIterator;
 
 import java.io.IOException;
 
@@ -37,21 +35,21 @@ public final class SelectQuery implements Query {
     private final String timeSeriesName;
     
     /**
-     * The criteria used to select the records returned by the query.
+     * The expression used to select the records returned by the query.
      */
-    private final Criteria criteria;
+    private final Expression expression;
         
     /**
      * Creates a <code>SelectQuery</code> used to return the records from the specified time series which match 
      * the specified criteria.
      * 
      * @param timeSeriesName the timeSeriesName of the database to use
-     * @param criteria the criteria used to select the records
+     * @param expression the expression used to select the records
      */
-    public SelectQuery(String timeSeriesName, Criteria criteria) {
+    public SelectQuery(String timeSeriesName, Expression expression) {
         
         this.timeSeriesName = timeSeriesName;
-        this.criteria = criteria;
+        this.expression = expression;
     }
 
     /**
@@ -64,9 +62,11 @@ public final class SelectQuery implements Query {
 
         TimeSeries series = database.getTimeSeries(this.timeSeriesName);
 
-        RecordIterator iterator = series.read(this.criteria.getTimestampRange());
-
-        return new ChunkedRecordStream(context.getRequestHeader(), iterator);
+//        RecordIterator iterator = series.read(this.criteria.getTimestampRange());
+//
+//        return new ChunkedRecordStream(context.getRequestHeader(), iterator);
+        
+        return null;
     }
     
     /**
@@ -79,11 +79,11 @@ public final class SelectQuery implements Query {
     }
     
     /**
-     * Returns the criteria. 
+     * Returns the expression. 
      * 
-     * @return the criteria.
+     * @return the expression.
      */
-    public Criteria getCriteria() {
-        return this.criteria;
+    public Expression getExpression() {
+        return this.expression;
     }
 }

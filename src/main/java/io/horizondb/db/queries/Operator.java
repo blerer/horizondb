@@ -13,8 +13,6 @@
  */
 package io.horizondb.db.queries;
 
-import com.google.common.collect.BoundType;
-import com.google.common.collect.Range;
 
 /**
  * The comparison operators.
@@ -32,8 +30,21 @@ public enum Operator {
          * {@inheritDoc}
          */
         @Override
-        public <C extends Comparable<C>> Range<C> toRange(C value) {
-            return Range.closed(value, value);
+        public String toString() {
+            return "=";
+        }
+    },
+    
+    /**
+     * The equal operator: '=' 
+     */
+    NE {
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public String toString() {
+            return "=";
         }
     },
     
@@ -45,8 +56,8 @@ public enum Operator {
          * {@inheritDoc}
          */
         @Override
-        public <C extends Comparable<C>> Range<C> toRange(C value) {
-            return Range.upTo(value, BoundType.OPEN);
+        public String toString() {
+            return "<";
         }
     },
     
@@ -58,67 +69,52 @@ public enum Operator {
          * {@inheritDoc}
          */
         @Override
-        public <C extends Comparable<C>> Range<C> toRange(C value) {
-            return Range.upTo(value, BoundType.CLOSED);
+        public String toString() {
+            return "<=";
         }
     },
     
     /**
      * The greater than operator: '>' 
      */
-    GT {
+    GT {        
         /**
          * {@inheritDoc}
          */
         @Override
-        public <C extends Comparable<C>> Range<C> toRange(C value) {
-            return Range.downTo(value, BoundType.OPEN);
+        public String toString() {
+            return ">";
         }
     },
     
     /**
      * The greater than or equal operator: '>=' 
      */
-    GE {
+    GE {       
         /**
          * {@inheritDoc}
          */
         @Override
-        public <C extends Comparable<C>> Range<C> toRange(C value) {
-            return Range.downTo(value, BoundType.CLOSED);
+        public String toString() {
+            return ">=";
         }
     };
     
     /**
-     * Returns the range corresponding to this operator with the specified value.
+     * Returns the operator associated to the specified symbol.
      * 
-     * @param value the value to which the field will be compared.
-     * @return the range corresponding to this operator with the specified value.
+     * @param symbol the symbol
+     * @return the operator associated to the specified symbol.
      */
-    public abstract <C extends Comparable<C>> Range<C> toRange(C value);
-    
     public static Operator fromSymbol(String symbol) {
         
-        if ("=".equals(symbol)) {
-            return EQ;
+        for (Operator operator : Operator.values()) {
+            
+            if (operator.toString().equals(symbol)) {
+                return operator;
+            }
         }
-        
-        if (">".equals(symbol)) {
-            return GT;
-        }
-        
-        if (">=".equals(symbol)) {
-            return GE;
-        }
-        
-        if ("<".equals(symbol)) {
-            return LT;
-        }
-        
-        if ("<=".equals(symbol)) {
-            return LE;
-        }
-        
+                
         throw new IllegalArgumentException("Unknown operator: " + symbol);
     }
 }
