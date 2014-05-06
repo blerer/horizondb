@@ -22,9 +22,9 @@ import io.horizondb.db.parser.HqlParser.SelectContext;
 import io.horizondb.db.parser.HqlParser.SimpleExpressionContext;
 import io.horizondb.db.parser.QueryBuilder;
 import io.horizondb.db.queries.Expression;
-import io.horizondb.db.queries.Operator;
 import io.horizondb.db.queries.SelectQuery;
 import io.horizondb.db.queries.expressions.Expressions;
+import io.horizondb.db.queries.expressions.Operator;
 
 import java.util.ArrayList;
 import java.util.Deque;

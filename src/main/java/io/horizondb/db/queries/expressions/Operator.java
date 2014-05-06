@@ -11,7 +11,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.horizondb.db.queries;
+package io.horizondb.db.queries.expressions;
+
+import com.google.common.collect.ImmutableRangeSet;
+import com.google.common.collect.Range;
+import com.google.common.collect.RangeSet;
+
+import io.horizondb.model.core.Field;
 
 
 /**
@@ -33,6 +39,14 @@ public enum Operator {
         public String toString() {
             return "=";
         }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public RangeSet<Field> getRangeSet(Field value) {
+            return ImmutableRangeSet.of(Range.closed(value, value));
+        }
     },
     
     /**
@@ -45,6 +59,18 @@ public enum Operator {
         @Override
         public String toString() {
             return "=";
+        }
+        
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public RangeSet<Field> getRangeSet(Field value) {
+            return ImmutableRangeSet.<Field>builder()
+                                    .add(Range.closedOpen(value.minValue(), value))
+                                    .add(Range.openClosed(value, value.maxValue()))
+                                    .build();
+                                             
         }
     },
     
@@ -59,6 +85,14 @@ public enum Operator {
         public String toString() {
             return "<";
         }
+        
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public RangeSet<Field> getRangeSet(Field value) {
+            return ImmutableRangeSet.of(Range.closedOpen(value.minValue(), value));
+        }
     },
     
     /**
@@ -71,6 +105,14 @@ public enum Operator {
         @Override
         public String toString() {
             return "<=";
+        }
+        
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public RangeSet<Field> getRangeSet(Field value) {
+            return ImmutableRangeSet.of(Range.closed(value.minValue(), value));
         }
     },
     
@@ -85,6 +127,14 @@ public enum Operator {
         public String toString() {
             return ">";
         }
+        
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public RangeSet<Field> getRangeSet(Field value) {
+            return ImmutableRangeSet.of(Range.openClosed(value, value.maxValue()));
+        }
     },
     
     /**
@@ -97,6 +147,14 @@ public enum Operator {
         @Override
         public String toString() {
             return ">=";
+        }
+        
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public RangeSet<Field> getRangeSet(Field value) {
+            return ImmutableRangeSet.of(Range.closed(value, value.maxValue()));
         }
     };
     
@@ -117,4 +175,11 @@ public enum Operator {
                 
         throw new IllegalArgumentException("Unknown operator: " + symbol);
     }
+
+    /**
+     * Returns the range corresponding to specified field for this operator.
+     * 
+     * @param field the field used to create the range.
+     */
+    public abstract RangeSet<Field> getRangeSet(Field value);
 }

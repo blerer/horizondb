@@ -26,12 +26,12 @@ abstract class LogicalExpression implements Expression {
     /**
      * The expression on the left hand side of the operator.
      */
-    private final Expression left;
+    protected final Expression left;
     
     /**
      * The expression on the right hand side of the operator.
      */
-    private final Expression right;
+    protected final Expression right;
 
     /**
      * Creates a <code>LogicalExpression</code> 

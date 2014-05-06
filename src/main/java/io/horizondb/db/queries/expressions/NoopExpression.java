@@ -13,10 +13,12 @@
  */
 package io.horizondb.db.queries.expressions;
 
-import com.google.common.collect.RangeSet;
-
 import io.horizondb.db.queries.Expression;
 import io.horizondb.model.core.Field;
+
+import java.util.TimeZone;
+
+import com.google.common.collect.RangeSet;
 
 /**
  * Expression that does nothing.
@@ -32,5 +34,14 @@ final class NoopExpression implements Expression {
     @Override
     public String toString() {
         return "";
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public RangeSet<Field> getTimestampRanges(Field prototype, TimeZone timeZone) {
+        
+        return prototype.allValues();
     }
 }

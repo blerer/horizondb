@@ -16,7 +16,6 @@ package io.horizondb.db.queries.expressions;
 import java.util.List;
 
 import io.horizondb.db.queries.Expression;
-import io.horizondb.db.queries.Operator;
 
 /**
  * Factory methods for Expressions.
@@ -40,6 +39,72 @@ public final class Expressions {
      */
     public static Expression simpleExpression(String fieldName, Operator operator, String value) {
         return new SimpleExpression(fieldName, operator, value);
+    }
+    
+    /**
+     * Creates an EQUAL expression. 
+     * 
+     * @param fieldName the name of the field 
+     * @param value the value to which the value of the field must be compared
+     * @return an EQUAL expression
+     */
+    public static Expression eq(String fieldName, String value) {
+        return simpleExpression(fieldName, Operator.EQ, value);
+    }
+    
+    /**
+     * Creates a NOT EQUAL expression. 
+     * 
+     * @param fieldName the name of the field 
+     * @param value the value to which the value of the field must be compared
+     * @return a NOT EQUAL expression
+     */
+    public static Expression ne(String fieldName, String value) {
+        return simpleExpression(fieldName, Operator.NE, value);
+    }
+    
+    /**
+     * Creates a GREATER THAN expression. 
+     * 
+     * @param fieldName the name of the field 
+     * @param value the value to which the value of the field must be compared
+     * @return a GREATER THAN expression
+     */
+    public static Expression gt(String fieldName, String value) {
+        return simpleExpression(fieldName, Operator.GT, value);
+    }
+    
+    /**
+     * Creates a GREATER OR EQUAL expression. 
+     * 
+     * @param fieldName the name of the field 
+     * @param value the value to which the value of the field must be compared
+     * @return a GREATER OR EQUAL expression
+     */
+    public static Expression ge(String fieldName, String value) {
+        return simpleExpression(fieldName, Operator.GE, value);
+    }
+    
+    /**
+     * Creates a LESS OR EQUAL expression. 
+     * 
+     * @param fieldName the name of the field 
+     * @param value the value to which the value of the field must be compared
+     * @return a LESS OR EQUAL expression
+     */
+    public static Expression le(String fieldName, String value) {
+        return simpleExpression(fieldName, Operator.LE, value);
+    }
+    
+    /**
+     * Creates a LESS THAN expression. 
+     * 
+     * @param fieldName the name of the field 
+     * @param value the value to which the value of the field must be compared
+     * @return a LESS THAN expression
+     */
+    public static Expression lt(String fieldName, String value) {
+        return simpleExpression(fieldName, Operator.LT, value);
     }
     
     /**

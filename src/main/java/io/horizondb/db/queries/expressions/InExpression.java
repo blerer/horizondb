@@ -13,11 +13,23 @@
  */
 package io.horizondb.db.queries.expressions;
 
+import io.horizondb.db.queries.Expression;
+import io.horizondb.model.Globals;
+import io.horizondb.model.core.Field;
+import io.horizondb.model.core.fields.ImmutableField;
+import io.horizondb.model.core.fields.TimestampField;
+
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.TimeZone;
 
 import org.apache.commons.lang.text.StrBuilder;
 
-import io.horizondb.db.queries.Expression;
+import com.google.common.collect.ImmutableRangeSet;
+import com.google.common.collect.ImmutableRangeSet.Builder;
+import com.google.common.collect.Range;
+import com.google.common.collect.RangeSet;
 
 /**
  * An IN expression.
@@ -67,6 +79,47 @@ final class InExpression implements Expression {
         this.notIn = notIn;
     }
 
+    /**    
+     * {@inheritDoc}
+     */
+    @Override
+    public RangeSet<Field> getTimestampRanges(Field prototype, TimeZone timeZone) {
+        
+        if (!Globals.TIMESTAMP_COLUMN.equals(this.fieldName)) {
+            return prototype.allValues();
+        }
+        
+        List<Field> fields = new ArrayList<>();
+        
+        for (int i = 0, m = this.values.size(); i < m; i++) {
+            
+            String value = this.values.get(i);
+            
+            TimestampField field = (TimestampField) prototype.newInstance();
+            field.setValueFromString(timeZone, value);
+            
+            fields.add(ImmutableField.of(field));
+        }
+        
+        Collections.sort(fields);
+        
+        Builder<Field> builder = ImmutableRangeSet.builder();
+ 
+        for (int i = 0, m = fields.size(); i < m; i++) {
+
+            Field field = fields.get(i);
+            builder.add(Range.closed(field, field));
+        }
+        
+        RangeSet<Field> rangeSet = builder.build();
+        
+        if (this.notIn) {
+            return rangeSet.complement();
+        }
+        
+        return rangeSet;
+    }
+    
     /**
      * {@inheritDoc}
      */

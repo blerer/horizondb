@@ -15,6 +15,8 @@ package io.horizondb.db.queries;
 
 import io.horizondb.model.core.Field;
 
+import java.util.TimeZone;
+
 import com.google.common.collect.RangeSet;
 
 /**
@@ -22,12 +24,13 @@ import com.google.common.collect.RangeSet;
  *
  */
 public interface Expression {
-
-//    /**
-//     * Adds to the specified range set the timestamp range corresponding to this expression.
-//     * 
-//     * @param field the timestamp field
-//     * @param rangeSet the range set to add to
-//     */
-//    void addTimestampRanges(Field field, RangeSet<Long> rangeSet);    
+    
+    /**
+     * Returns the timestamp range corresponding to this expression.
+     * 
+     * @param prototype the timestamp field used as prototype
+     * @param timeZone the time series time zone
+     * @return the timestamp ranges accepted by this expression.
+     */
+    RangeSet<Field> getTimestampRanges(Field prototype, TimeZone timeZone);    
 }

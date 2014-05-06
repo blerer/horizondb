@@ -13,10 +13,17 @@
  */
 package io.horizondb.db.queries.expressions;
 
+import java.util.TimeZone;
+
+import com.google.common.collect.ImmutableRangeSet;
+import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 
 import io.horizondb.db.queries.Expression;
+import io.horizondb.model.Globals;
 import io.horizondb.model.core.Field;
+import io.horizondb.model.core.fields.ImmutableField;
+import io.horizondb.model.core.fields.TimestampField;
 
 /**
  * A BETWEEN expression.
@@ -74,6 +81,38 @@ final class BetweenExpression implements Expression {
         this.notBetween = notBetween;
     }
 
+    /**    
+     * {@inheritDoc}
+     */
+    @Override
+    public RangeSet<Field> getTimestampRanges(Field prototype, TimeZone timeZone) {
+        
+        if (!Globals.TIMESTAMP_COLUMN.equals(this.fieldName)) {
+            return prototype.allValues();
+        }
+        
+        TimestampField lower = (TimestampField) prototype.newInstance();
+        lower.setValueFromString(timeZone, this.min);
+        
+        TimestampField upper = (TimestampField) prototype.newInstance();
+        upper.setValueFromString(timeZone, this.max);
+        
+        if (upper.compareTo(lower) < 0) {
+            return ImmutableRangeSet.of();
+        }
+        
+        Range<Field> range = Range.<Field>closed(ImmutableField.of(lower), 
+                                                 ImmutableField.of(upper));
+        
+        RangeSet<Field> rangeSet = ImmutableRangeSet.of(range);
+        
+        if (this.notBetween) {
+            return rangeSet.complement();
+        }
+        
+        return rangeSet;
+    }
+    
     /**
      * {@inheritDoc}
      */

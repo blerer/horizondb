@@ -14,9 +14,17 @@
 package io.horizondb.db.queries.expressions;
 
 import io.horizondb.db.queries.Expression;
-import io.horizondb.db.queries.Operator;
+import io.horizondb.model.Globals;
+import io.horizondb.model.core.Field;
+import io.horizondb.model.core.fields.ImmutableField;
+import io.horizondb.model.core.fields.TimestampField;
+
+import java.util.TimeZone;
+
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
+
+import com.google.common.collect.RangeSet;
 
 /**
  * A simple expression used to compare a field to given value.
@@ -78,6 +86,22 @@ final class SimpleExpression implements Expression {
      */
     public String getValue() {
         return this.value;
+    }
+
+    /**    
+     * {@inheritDoc}
+     */
+    @Override
+    public RangeSet<Field> getTimestampRanges(Field prototype, TimeZone timeZone) {
+        
+        if (!Globals.TIMESTAMP_COLUMN.equals(this.fieldName)) {
+            return prototype.allValues();
+        }
+        
+        TimestampField field = (TimestampField) prototype.newInstance();
+        field.setValueFromString(timeZone, this.value);
+        
+        return this.operator.getRangeSet(ImmutableField.of(field));
     }
 
     /**

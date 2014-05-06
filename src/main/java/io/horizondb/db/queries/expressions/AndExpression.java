@@ -14,6 +14,14 @@
 package io.horizondb.db.queries.expressions;
 
 import io.horizondb.db.queries.Expression;
+import io.horizondb.model.core.Field;
+
+import java.util.TimeZone;
+
+import com.google.common.collect.ImmutableRangeSet;
+import com.google.common.collect.ImmutableRangeSet.Builder;
+import com.google.common.collect.Range;
+import com.google.common.collect.RangeSet;
 
 /**
  * An AND expression
@@ -31,6 +39,24 @@ final class AndExpression extends LogicalExpression {
     public AndExpression(Expression left, Expression right) {
         
         super(left, right);
+    }
+
+    
+    
+    @Override
+    public RangeSet<Field> getTimestampRanges(Field prototype, TimeZone timeZone) {
+                
+        RangeSet<Field> leftRanges = this.left.getTimestampRanges(prototype, timeZone);
+        RangeSet<Field> rightRanges = this.right.getTimestampRanges(prototype, timeZone);
+        
+        Builder<Field> builder = ImmutableRangeSet.builder();    
+        
+        for (Range<Field> range : leftRanges.asRanges()) {
+            
+            builder.addAll(rightRanges.subRangeSet(range));
+        }
+        
+        return builder.build();
     }
 
     /**

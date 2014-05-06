@@ -14,6 +14,12 @@
 package io.horizondb.db.queries.expressions;
 
 import io.horizondb.db.queries.Expression;
+import io.horizondb.model.core.Field;
+
+import java.util.TimeZone;
+
+import com.google.common.collect.RangeSet;
+import com.google.common.collect.TreeRangeSet;
 
 /**
  * An OR expression
@@ -31,6 +37,21 @@ final class OrExpression extends LogicalExpression {
         super(left, right);
     }
     
+    /**    
+     * {@inheritDoc}
+     */
+    @Override
+    public RangeSet<Field> getTimestampRanges(Field prototype, TimeZone timeZone) {
+        
+        RangeSet<Field> leftRanges = this.left.getTimestampRanges(prototype, timeZone);
+        RangeSet<Field> rightRanges = this.right.getTimestampRanges(prototype, timeZone);
+        
+        RangeSet<Field> rangeSet = TreeRangeSet.create(leftRanges);
+        rangeSet.addAll(rightRanges);
+        
+        return rangeSet;
+    }
+
     /**
      * {@inheritDoc}
      */

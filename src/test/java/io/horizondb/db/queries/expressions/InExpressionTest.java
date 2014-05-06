@@ -13,6 +13,8 @@
  */
 package io.horizondb.db.queries.expressions;
 
+import java.util.Arrays;
+
 import io.horizondb.db.queries.Expression;
 import io.horizondb.model.core.Field;
 import io.horizondb.model.schema.FieldType;
@@ -29,55 +31,33 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author Benjamin
  */
-public class BetweenExpressionTest {
+public class InExpressionTest {
 
     @Test
     public void testGetTimestampRangesWithNonTimestampField() {
         
-        Expression expr = Expressions.between("price", "10", "20"); 
+        Expression expr = Expressions.in("price", Arrays.asList("10", "20")); 
         Field prototype = FieldType.MILLISECONDS_TIMESTAMP.newField();
         
         RangeSet<Field> rangeSet = expr.getTimestampRanges(prototype, EUROPE_BERLIN_TIMEZONE);
         assertEquals(prototype.allValues(), rangeSet);
     }
-    
-    @Test
-    public void testGetTimestampRangesWithSameBoundaries() {
         
-        long timeInMillis = 1399147894150L;
-        
-        Expression expr = Expressions.between("timestamp", timeInMillis + "ms", timeInMillis + "ms"); 
-        
-        Field prototype = FieldType.MILLISECONDS_TIMESTAMP.newField();
-        
-        RangeSet<Field> rangeSet = expr.getTimestampRanges(prototype, EUROPE_BERLIN_TIMEZONE);
-        
-        Field expected = FieldType.MILLISECONDS_TIMESTAMP.newField();
-        expected.setTimestampInMillis(timeInMillis + 10);
-
-        assertFalse(rangeSet.contains(expected));
-        
-        expected.setTimestampInMillis(timeInMillis - 10);
-        
-        assertFalse(rangeSet.contains(expected));
-        
-        expected.setTimestampInMillis(timeInMillis);
-        
-        assertTrue(rangeSet.contains(expected));
-    }
-    
     @Test
     public void testGetTimestampRanges() {
         
         long timeInMillis = 1399147894150L;
         
-        Expression expr = Expressions.between("timestamp", (timeInMillis - 10) + "ms", (timeInMillis + 10) + "ms"); 
+        Expression expr = Expressions.in("timestamp", Arrays.asList((timeInMillis - 10) + "ms",
+                                                                    timeInMillis + "ms",
+                                                                    (timeInMillis + 10) + "ms")); 
         
         Field prototype = FieldType.MILLISECONDS_TIMESTAMP.newField();
         
         RangeSet<Field> rangeSet = expr.getTimestampRanges(prototype, EUROPE_BERLIN_TIMEZONE);
         
         Field expected = FieldType.MILLISECONDS_TIMESTAMP.newField();
+        
         expected.setTimestampInMillis(timeInMillis + 10);
         
         assertTrue(rangeSet.contains(expected));
@@ -86,9 +66,17 @@ public class BetweenExpressionTest {
         
         assertFalse(rangeSet.contains(expected));
         
+        expected.setTimestampInMillis(timeInMillis + 15);
+        
+        assertFalse(rangeSet.contains(expected));
+        
         expected.setTimestampInMillis(timeInMillis - 10);
         
         assertTrue(rangeSet.contains(expected));
+        
+        expected.setTimestampInMillis(timeInMillis - 15);
+        
+        assertFalse(rangeSet.contains(expected));
         
         expected.setTimestampInMillis(timeInMillis - 20);
         
@@ -103,45 +91,6 @@ public class BetweenExpressionTest {
         assertFalse(rangeSet.contains(expected));
         
         expected.setTimestampInMillis(Long.MIN_VALUE);
-        
-        assertFalse(rangeSet.contains(expected));
-    }
-    
-    @Test
-    public void testGetTimestampRangesWithInvalidRange() {
-        
-        long timeInMillis = 1399147894150L;
-        
-        Expression expr = Expressions.between("timestamp", (timeInMillis + 10) + "ms", (timeInMillis - 10) + "ms"); 
-        
-        Field prototype = FieldType.MILLISECONDS_TIMESTAMP.newField();
-        
-        RangeSet<Field> rangeSet = expr.getTimestampRanges(prototype, EUROPE_BERLIN_TIMEZONE);
-
-        assertTrue(rangeSet.isEmpty());
-    }
-    
-    @Test
-    public void testGetTimestampRangesWithNotAndSameBoundaries() {
-        
-        long timeInMillis = 1399147894150L;
-        
-        Expression expr = Expressions.notBetween("timestamp", timeInMillis + "ms", timeInMillis + "ms"); 
-        
-        Field prototype = FieldType.MILLISECONDS_TIMESTAMP.newField();
-        
-        RangeSet<Field> rangeSet = expr.getTimestampRanges(prototype, EUROPE_BERLIN_TIMEZONE);
-        
-        Field expected = FieldType.MILLISECONDS_TIMESTAMP.newField();
-        expected.setTimestampInMillis(timeInMillis + 10);
-
-        assertTrue(rangeSet.contains(expected));
-        
-        expected.setTimestampInMillis(timeInMillis - 10);
-        
-        assertTrue(rangeSet.contains(expected));
-        
-        expected.setTimestampInMillis(timeInMillis);
         
         assertFalse(rangeSet.contains(expected));
     }
@@ -151,13 +100,16 @@ public class BetweenExpressionTest {
         
         long timeInMillis = 1399147894150L;
         
-        Expression expr = Expressions.notBetween("timestamp", (timeInMillis - 10) + "ms", (timeInMillis + 10) + "ms"); 
+        Expression expr = Expressions.notIn("timestamp", Arrays.asList((timeInMillis - 10) + "ms",
+                                                                       timeInMillis + "ms",
+                                                                       (timeInMillis + 10) + "ms")); 
         
         Field prototype = FieldType.MILLISECONDS_TIMESTAMP.newField();
         
         RangeSet<Field> rangeSet = expr.getTimestampRanges(prototype, EUROPE_BERLIN_TIMEZONE);
         
         Field expected = FieldType.MILLISECONDS_TIMESTAMP.newField();
+        
         expected.setTimestampInMillis(timeInMillis + 10);
         
         assertFalse(rangeSet.contains(expected));
@@ -166,9 +118,17 @@ public class BetweenExpressionTest {
         
         assertTrue(rangeSet.contains(expected));
         
+        expected.setTimestampInMillis(timeInMillis + 15);
+        
+        assertTrue(rangeSet.contains(expected));
+        
         expected.setTimestampInMillis(timeInMillis - 10);
         
         assertFalse(rangeSet.contains(expected));
+        
+        expected.setTimestampInMillis(timeInMillis - 15);
+        
+        assertTrue(rangeSet.contains(expected));
         
         expected.setTimestampInMillis(timeInMillis - 20);
         
@@ -185,19 +145,5 @@ public class BetweenExpressionTest {
         expected.setTimestampInMillis(Long.MIN_VALUE);
         
         assertTrue(rangeSet.contains(expected));
-    }
-    
-    @Test
-    public void testGetTimestampRangesWithInvalidRangeAndNot() {
-        
-        long timeInMillis = 1399147894150L;
-        
-        Expression expr = Expressions.notBetween("timestamp", (timeInMillis + 10) + "ms", (timeInMillis - 10) + "ms"); 
-        
-        Field prototype = FieldType.MILLISECONDS_TIMESTAMP.newField();
-        
-        RangeSet<Field> rangeSet = expr.getTimestampRanges(prototype, EUROPE_BERLIN_TIMEZONE);
-
-        assertTrue(rangeSet.isEmpty());
     }
 }
