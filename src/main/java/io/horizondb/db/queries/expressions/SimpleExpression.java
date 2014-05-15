@@ -13,11 +13,12 @@
  */
 package io.horizondb.db.queries.expressions;
 
-import io.horizondb.db.queries.Expression;
-import io.horizondb.model.Globals;
+import io.horizondb.db.series.Filter;
+import io.horizondb.db.series.filters.Filters;
 import io.horizondb.model.core.Field;
+import io.horizondb.model.core.Record;
 import io.horizondb.model.core.fields.ImmutableField;
-import io.horizondb.model.core.fields.TimestampField;
+import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.util.TimeZone;
 
@@ -31,12 +32,7 @@ import com.google.common.collect.RangeSet;
  * 
  * @author Benjamin
  */
-final class SimpleExpression implements Expression {
-    
-    /**
-     * The field name.
-     */
-    private final String fieldName;
+final class SimpleExpression extends FieldExpression {
     
     /**
      * The operator.
@@ -57,18 +53,9 @@ final class SimpleExpression implements Expression {
      */
     public SimpleExpression(String fieldName, Operator operator, String value) {
         
-        this.fieldName = fieldName;
+        super(fieldName);
         this.operator = operator;
         this.value = value;
-    }
-
-    /**
-     * Returns the field name.
-     * 
-     * @return the field name.
-     */
-    public String getFieldName() {
-        return this.fieldName;
     }
 
     /**
@@ -94,14 +81,27 @@ final class SimpleExpression implements Expression {
     @Override
     public RangeSet<Field> getTimestampRanges(Field prototype, TimeZone timeZone) {
         
-        if (!Globals.TIMESTAMP_COLUMN.equals(this.fieldName)) {
+        if (!isTimestamp()) {
             return prototype.allValues();
         }
         
-        TimestampField field = (TimestampField) prototype.newInstance();
+        Field field = prototype.newInstance();
         field.setValueFromString(timeZone, this.value);
         
         return this.operator.getRangeSet(ImmutableField.of(field));
+    }
+
+    /**    
+     * {@inheritDoc}
+     */
+    @Override
+    public Filter<Record> toFilter(TimeSeriesDefinition definition) {
+
+        Field field = newField(definition, this.value);
+        
+        Filter<Field> fieldFilter = this.operator.getFilter(field, isTimestamp());
+        
+        return Filters.toRecordFilter(definition, getFieldName(), fieldFilter);
     }
 
     /**
@@ -117,7 +117,7 @@ final class SimpleExpression implements Expression {
             return false;
         }
         SimpleExpression rhs = (SimpleExpression) object;
-        return new EqualsBuilder().append(this.fieldName, rhs.fieldName)
+        return new EqualsBuilder().appendSuper(super.equals(object))
                                   .append(this.operator, rhs.operator)
                                   .append(this.value, rhs.value)
                                   .isEquals();
@@ -129,8 +129,8 @@ final class SimpleExpression implements Expression {
     @Override
     public int hashCode() {
         
-        return new HashCodeBuilder(-86018061, -1103579581).append(this.value)
-                                                          .append(this.fieldName)
+        return new HashCodeBuilder(-86018061, -1103579581).appendSuper(super.hashCode())
+                .append(this.value)
                                                           .append(this.operator)
                                                           .toHashCode();
     }
@@ -140,7 +140,7 @@ final class SimpleExpression implements Expression {
      */
     @Override
     public String toString() {
-        return new StringBuilder().append(this.fieldName)
+        return new StringBuilder().append(getFieldName())
                                   .append(' ')
                                   .append(this.operator)
                                   .append(' ')

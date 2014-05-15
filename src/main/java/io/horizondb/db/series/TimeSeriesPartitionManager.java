@@ -17,6 +17,7 @@ package io.horizondb.db.series;
 
 import io.horizondb.db.Component;
 import io.horizondb.db.HorizonDBException;
+import io.horizondb.db.btree.KeyValueIterator;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
@@ -57,7 +58,22 @@ public interface TimeSeriesPartitionManager extends Component {
      */
     TimeSeriesPartition getPartitionForWrite(PartitionId partitionId, TimeSeriesDefinition seriesDefinition) throws IOException,
                                                                                                             HorizonDBException;
-
+    
+    /**
+     * Returns an iterator to iterate over the time series partition whose IDs range from {@code fromId}, inclusive, to
+     * {@code toId}, exclusive.
+     * 
+     * @param fromId low end-point (inclusive) of the IDs in the returned iterator
+     * @param toId high end-point (exclusive) of the IDs in the returned iterator
+     * @return an iterator to iterate over the time series partition whose IDs range from {@code fromId}, inclusive, to
+     * {@code toId}, exclusive.
+     * @throws IOException if an I/O problem occurs.
+     */
+    KeyValueIterator<PartitionId, TimeSeriesPartition> getRangeForRead(PartitionId fromId,
+                                                                       PartitionId toId,
+                                                                       TimeSeriesDefinition definition) 
+                                                                               throws IOException;
+    
     /**
      * Flush the specified partition.
      * 

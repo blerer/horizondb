@@ -94,6 +94,15 @@ final class NodeProxy<K extends Comparable<K>, V> extends DataPointer<K, V> impl
         return loadNode().get(key);
     }
 
+    /**    
+     * {@inheritDoc}
+     */
+    @Override
+    public KeyValueIterator<K, V> iterator(K fromKey, K toKey) throws IOException {
+        
+        return loadNode().iterator(fromKey, toKey);
+    }
+
     /**
      * {@inheritDoc}
      */

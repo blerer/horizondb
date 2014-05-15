@@ -20,12 +20,20 @@ import io.horizondb.db.Operation;
 import io.horizondb.db.OperationContext;
 import io.horizondb.db.databases.Database;
 import io.horizondb.db.series.TimeSeries;
+import io.horizondb.db.series.filters.Filters;
+import io.horizondb.model.Globals;
+import io.horizondb.model.core.Field;
+import io.horizondb.model.core.Record;
 import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.protocol.Msg;
 import io.horizondb.model.protocol.Msgs;
 import io.horizondb.model.protocol.QueryPayload;
 
 import java.io.IOException;
+
+import com.google.common.collect.ImmutableRangeSet;
+import com.google.common.collect.Range;
+import com.google.common.collect.RangeSet;
 
 /**
  * @author Benjamin
@@ -45,7 +53,19 @@ final class QueryOperation implements Operation {
 
         TimeSeries series = database.getTimeSeries(queryPayload.getSeriesName());
 
-        RecordIterator iterator = series.read(queryPayload.getTimeRange());
+        Field prototype = series.getDefinition().newField(Globals.TIMESTAMP_FIELD);
+        
+        Range<Long> range = queryPayload.getTimeRange();
+        
+        Field lower = prototype.newInstance();
+        lower.setTimestampInMillis(range.lowerEndpoint().longValue());
+        
+        Field upper = prototype.newInstance();
+        upper.setTimestampInMillis(range.upperEndpoint().longValue());
+        
+        RangeSet<Field> timeRanges = ImmutableRangeSet.of(Range.closedOpen(lower, upper));
+        
+        RecordIterator iterator = series.read(timeRanges, Filters.<Record>noop());
 
         return new ChunkedRecordStream(request.getHeader(), iterator);
     }

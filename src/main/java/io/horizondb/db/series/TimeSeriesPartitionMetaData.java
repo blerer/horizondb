@@ -21,6 +21,8 @@ import io.horizondb.io.ByteWriter;
 import io.horizondb.io.encoding.VarInts;
 import io.horizondb.io.serialization.Parser;
 import io.horizondb.io.serialization.Serializable;
+import io.horizondb.model.core.Field;
+import io.horizondb.model.core.util.SerializationUtils;
 
 import java.io.IOException;
 
@@ -30,6 +32,10 @@ import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
 
 import com.google.common.collect.Range;
+
+import static io.horizondb.model.core.util.SerializationUtils.writeRange;
+
+import static io.horizondb.model.core.util.SerializationUtils.computeRangeSerializedSize;
 
 /**
  * @author Benjamin
@@ -48,12 +54,8 @@ public final class TimeSeriesPartitionMetaData implements Serializable {
          */
         @Override
         public TimeSeriesPartitionMetaData parseFrom(ByteReader reader) throws IOException {
-
-            long lowerEndPoint = VarInts.readUnsignedLong(reader);
-            long upperEndPoint = VarInts.readUnsignedLong(reader);
             
-            Range<Long> range = Range.closedOpen(Long.valueOf(lowerEndPoint), 
-                                                 Long.valueOf(upperEndPoint));
+            Range<Field> range = SerializationUtils.parseRangeFrom(reader);
 
             ReplayPosition replayPosition = null;
 
@@ -71,7 +73,7 @@ public final class TimeSeriesPartitionMetaData implements Serializable {
     /**
      * The partition time range.
      */
-    private final Range<Long> range;
+    private final Range<Field> range;
 
     /**
      * The replay position of the latest data written on the disk.
@@ -88,7 +90,7 @@ public final class TimeSeriesPartitionMetaData implements Serializable {
      * 
      * @return the partition time range.
      */
-    public Range<Long> getRange() {
+    public Range<Field> getRange() {
         return this.range;
     }
 
@@ -137,8 +139,7 @@ public final class TimeSeriesPartitionMetaData implements Serializable {
     @Override
     public int computeSerializedSize() {
 
-        int size = VarInts.computeUnsignedLongSize(this.range.lowerEndpoint().longValue())
-                + VarInts.computeUnsignedLongSize(this.range.upperEndpoint().longValue())
+        int size = computeRangeSerializedSize(this.range)
                 + VarInts.computeUnsignedLongSize(this.fileSize) + 1;
 
         if (this.replayPosition != null) {
@@ -155,8 +156,7 @@ public final class TimeSeriesPartitionMetaData implements Serializable {
     @Override
     public void writeTo(ByteWriter writer) throws IOException {
 
-        VarInts.writeUnsignedLong(writer, this.range.lowerEndpoint().longValue());
-        VarInts.writeUnsignedLong(writer, this.range.upperEndpoint().longValue());
+        writeRange(writer, this.range);
 
         if (this.replayPosition == null) {
 
@@ -175,7 +175,7 @@ public final class TimeSeriesPartitionMetaData implements Serializable {
      * 
      * @return a new <code>Builder</code> instance.
      */
-    public static Builder newBuilder(Range<Long> range) {
+    public static Builder newBuilder(Range<Field> range) {
 
         return new Builder(range);
     }
@@ -197,7 +197,7 @@ public final class TimeSeriesPartitionMetaData implements Serializable {
      * @param replayPosition the replay position of the latest data written on the disk
      * @param fileSize the expected file size.
      */
-    private TimeSeriesPartitionMetaData(Range<Long> range, ReplayPosition replayPosition, long fileSize) {
+    private TimeSeriesPartitionMetaData(Range<Field> range, ReplayPosition replayPosition, long fileSize) {
 
         this.range = range;
         this.replayPosition = replayPosition;
@@ -212,7 +212,6 @@ public final class TimeSeriesPartitionMetaData implements Serializable {
         return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE).append("range", this.range)
                                                                           .append("replayPosition", this.replayPosition)
                                                                           .append("fileSize", this.fileSize)
-
                                                                           .toString();
     }
 
@@ -225,7 +224,7 @@ public final class TimeSeriesPartitionMetaData implements Serializable {
         /**
          * The partition time range.
          */
-        private final Range<Long> range;
+        private final Range<Field> range;
 
         /**
          * The replay position of the latest data written on the disk.
@@ -276,7 +275,7 @@ public final class TimeSeriesPartitionMetaData implements Serializable {
         /**
          * Must not be called from outside the enclosing class.
          */
-        private Builder(Range<Long> range) {
+        private Builder(Range<Field> range) {
 
             this.range = range;
         }

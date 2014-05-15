@@ -117,6 +117,21 @@ public final class BTree<K extends Comparable<K>, V> {
     }
 
     /**
+     * Returns an iterator to iterate over the records whose keys range from
+     * {@code fromKey}, inclusive, to {@code toKey}, exclusive.
+     * 
+     * @param fromKey low end-point (inclusive) of the keys in the returned iterator
+     * @param toKey high end-point (exclusive) of the keys in the returned iterator
+     * @return an iterator to iterate over the records whose keys range from
+     * {@code fromKey}, inclusive, to {@code toKey}, exclusive.
+     * @throws IOException if an I/O problem occurs.
+     */
+    public KeyValueIterator<K, V> iterator(K fromKey, K toKey) throws IOException {
+        
+        return getRoot().iterator(fromKey, toKey);
+    }
+    
+    /**
      * Returns <code>true</code> if this B+Tree contains the specified key, <code>false</code> otherwise.
      * 
      * @param key the key to check

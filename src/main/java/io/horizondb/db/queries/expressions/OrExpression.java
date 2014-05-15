@@ -14,7 +14,11 @@
 package io.horizondb.db.queries.expressions;
 
 import io.horizondb.db.queries.Expression;
+import io.horizondb.db.series.Filter;
+import io.horizondb.db.series.filters.Filters;
 import io.horizondb.model.core.Field;
+import io.horizondb.model.core.Record;
+import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.util.TimeZone;
 
@@ -50,6 +54,14 @@ final class OrExpression extends LogicalExpression {
         rangeSet.addAll(rightRanges);
         
         return rangeSet;
+    }
+
+    /**    
+     * {@inheritDoc}
+     */
+    @Override
+    public Filter<Record> toFilter(TimeSeriesDefinition definition) {
+        return Filters.or(this.left.toFilter(definition), this.right.toFilter(definition));
     }
 
     /**

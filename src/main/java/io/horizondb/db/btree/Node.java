@@ -80,6 +80,18 @@ interface Node<K extends Comparable<K>, V> {
      * @throws IOException if an I/O problem occurs.
      */
     V get(K key) throws IOException;
+    
+    /**
+     * Returns an iterator to iterate over the records whose keys range from
+     * {@code fromKey}, inclusive, to {@code toKey}, exclusive.
+     * 
+     * @param fromKey low end-point (inclusive) of the keys in the returned iterator
+     * @param toKey high end-point (exclusive) of the keys in the returned iterator
+     * @return an iterator to iterate over the records whose keys range from
+     * {@code fromKey}, inclusive, to {@code toKey}, exclusive.
+     * @throws IOException if an I/O problem occurs.
+     */
+    KeyValueIterator<K, V> iterator(K fromKey, K toKey) throws IOException;
 
     /**
      * Returns <code>true</code> if this node or its children contains the specified key.

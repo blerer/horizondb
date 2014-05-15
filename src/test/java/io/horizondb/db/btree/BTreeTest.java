@@ -157,7 +157,45 @@ public class BTreeTest {
 
         assertLeafNodeEmpty(btree.getRoot());
     }
+    
+    @Test
+    @SuppressWarnings({ "boxing" })
+    public void testIteratorWithOnlyARootNodeAndFullScan() throws IOException {
 
+        BTree<Integer, String> btree = new BTree<>(this.manager, 5);
+
+        btree.insert(2, "B");
+        btree.insert(4, "D");
+        btree.insert(3, "C");
+        btree.insert(1, "A");
+
+        KeyValueIterator<Integer, String> iterator = btree.iterator(0, 5);
+        
+        assertNextContains(iterator, 1, "A");
+        assertNextContains(iterator, 2, "B");
+        assertNextContains(iterator, 3, "C");
+        assertNextContains(iterator, 4, "D");
+        assertFalse(iterator.next());
+    }
+
+    @Test
+    @SuppressWarnings({ "boxing" })
+    public void testIteratorWithOnlyARootNodeAndPartialScan() throws IOException {
+
+        BTree<Integer, String> btree = new BTree<>(this.manager, 5);
+
+        btree.insert(2, "B");
+        btree.insert(4, "D");
+        btree.insert(3, "C");
+        btree.insert(1, "A");
+
+        KeyValueIterator<Integer, String> iterator = btree.iterator(2, 4);
+        
+        assertNextContains(iterator, 2, "B");
+        assertNextContains(iterator, 3, "C");
+        assertFalse(iterator.next());
+    }
+    
     @Test
     @SuppressWarnings({ "boxing" })
     public void testInsertionWithRootNodeSplit() throws IOException {
@@ -200,6 +238,65 @@ public class BTreeTest {
         assertLeafNodeContains(internalNode.getChild(1), 3, "C", 4, "D", 6, "E");
     }
 
+    @Test
+    @SuppressWarnings({ "boxing" })
+    public void testIteratorWithInternalNodesAndPartialScanOverTwoNodes() throws IOException {
+
+        BTree<Integer, String> btree = new BTree<>(this.manager, 5);
+
+        btree.insert(2, "B");
+        btree.insert(4, "D");
+        btree.insert(3, "C");
+        btree.insert(1, "A");
+        btree.insert(6, "F");
+
+        KeyValueIterator<Integer, String> iterator = btree.iterator(2, 4);
+        
+        assertNextContains(iterator, 2, "B");
+        assertNextContains(iterator, 3, "C");
+        assertFalse(iterator.next());
+    }
+    
+    @Test
+    @SuppressWarnings({ "boxing" })
+    public void testIteratorWithInternalNodesAndPartialScanOverOneNode() throws IOException {
+
+        BTree<Integer, String> btree = new BTree<>(this.manager, 5);
+
+        btree.insert(2, "B");
+        btree.insert(4, "D");
+        btree.insert(3, "C");
+        btree.insert(1, "A");
+        btree.insert(6, "F");
+
+        KeyValueIterator<Integer, String> iterator = btree.iterator(0, 2);
+        
+        assertNextContains(iterator, 1, "A");
+        assertFalse(iterator.next());
+    }
+        
+    @Test
+    @SuppressWarnings({ "boxing" })
+    public void testIteratorWithInternalNodesAndFullScan() throws IOException {
+
+        BTree<Integer, String> btree = new BTree<>(this.manager, 5);
+
+        btree.insert(2, "B");
+        btree.insert(4, "D");
+        btree.insert(3, "C");
+        btree.insert(1, "A");
+        btree.insert(6, "F");
+
+        KeyValueIterator<Integer, String> iterator = btree.iterator(0, 10);
+        
+        assertNextContains(iterator, 1, "A");
+        assertNextContains(iterator, 2, "B");
+        assertNextContains(iterator, 3, "C");
+        assertNextContains(iterator, 4, "D");
+        assertNextContains(iterator, 6, "F");
+        assertFalse(iterator.next());
+    }
+    
     @Test
     @SuppressWarnings({ "boxing" })
     public void testDeletionWithInternalNode() throws IOException {
@@ -529,6 +626,90 @@ public class BTreeTest {
 
         assertLeafNodeContains(internalNodeDepth2.getChild(0), 16, "P");
         assertLeafNodeContains(internalNodeDepth2.getChild(1), 17, "Q", 18, "R");
+    }
+    
+    @Test
+    @SuppressWarnings({ "boxing" })
+    public void testIteratorWith3LevelDepthAndFullScan() throws IOException {
+
+        BTree<Integer, String> btree = new BTree<>(this.manager, 3);
+
+        btree.insert(1, "A");
+        btree.insert(2, "B");
+        btree.insert(8, "H");
+        btree.insert(9, "I");
+        btree.insert(14, "N");
+        btree.insert(15, "O");
+        btree.insert(16, "P");
+
+        btree.insert(5, "E");
+        btree.insert(7, "G");
+        btree.insert(6, "F");
+        btree.insert(3, "C");
+        btree.insert(4, "D");
+        btree.insert(10, "J");
+        btree.insert(11, "K");
+        btree.insert(12, "L");
+        btree.insert(17, "Q");
+
+        btree.insert(18, "R");
+        btree.insert(13, "M");
+
+        KeyValueIterator<Integer, String> iterator = btree.iterator(0, 100);
+        
+        assertNextContains(iterator, 1, "A");
+        assertNextContains(iterator, 2, "B");
+        assertNextContains(iterator, 3, "C");
+        assertNextContains(iterator, 4, "D");
+        assertNextContains(iterator, 5, "E");
+        assertNextContains(iterator, 6, "F");
+        assertNextContains(iterator, 7, "G");
+        assertNextContains(iterator, 8, "H");
+        assertNextContains(iterator, 9, "I");
+        assertNextContains(iterator, 10, "J");
+        assertNextContains(iterator, 11, "K");
+        assertNextContains(iterator, 12, "L");
+        assertNextContains(iterator, 13, "M");
+        assertNextContains(iterator, 14, "N");
+        assertNextContains(iterator, 15, "O");
+        assertNextContains(iterator, 16, "P");
+        assertNextContains(iterator, 17, "Q");
+        assertNextContains(iterator, 18, "R");
+        assertFalse(iterator.next());
+    }
+    
+    @Test
+    @SuppressWarnings({ "boxing" })
+    public void testIteratorWith3LevelDepthAndPartialScan() throws IOException {
+
+        BTree<Integer, String> btree = new BTree<>(this.manager, 3);
+
+        btree.insert(1, "A");
+        btree.insert(2, "B");
+        btree.insert(8, "H");
+        btree.insert(9, "I");
+        btree.insert(14, "N");
+        btree.insert(15, "O");
+        btree.insert(16, "P");
+
+        btree.insert(5, "E");
+        btree.insert(7, "G");
+        btree.insert(6, "F");
+        btree.insert(3, "C");
+        btree.insert(4, "D");
+        btree.insert(10, "J");
+        btree.insert(11, "K");
+        btree.insert(12, "L");
+        btree.insert(17, "Q");
+
+        btree.insert(18, "R");
+        btree.insert(13, "M");
+
+        KeyValueIterator<Integer, String> iterator = btree.iterator(13, 15);
+        
+        assertNextContains(iterator, 13, "M");
+        assertNextContains(iterator, 14, "N");
+        assertFalse(iterator.next());
     }
 
     @Test
@@ -1472,6 +1653,23 @@ public class BTreeTest {
         btree.accept(null);
     }
 
+    /**
+     * Asserts that the key and the value of the next record returned by the iterator are equals to
+     * the specified ones.
+     * 
+     * @param iterator the iterator to check
+     * @param key the expected key
+     * @param value the expected value
+     * @throws IOException if an I/O problem occurs
+     */
+    private static void assertNextContains(KeyValueIterator<Integer, String> iterator, Integer key, String value) 
+            throws IOException {
+        
+        assertTrue(iterator.next());
+        assertEquals(key, iterator.getKey());
+        assertEquals(value, iterator.getValue());
+    }
+        
     /**
      * The visitor used during the tests.
      * 

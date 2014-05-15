@@ -18,6 +18,7 @@ import io.horizondb.db.Query;
 import io.horizondb.db.QueryContext;
 import io.horizondb.db.databases.Database;
 import io.horizondb.db.series.TimeSeries;
+import io.horizondb.model.core.RecordIterator;
 
 import java.io.IOException;
 
@@ -61,9 +62,9 @@ public final class SelectQuery implements Query {
         Database database = context.getDatabaseManager().getDatabase(context.getDatabaseName());
 
         TimeSeries series = database.getTimeSeries(this.timeSeriesName);
+        
+        RecordIterator iterator = series.read(this.expression);
 
-//        RecordIterator iterator = series.read(this.criteria.getTimestampRange());
-//
 //        return new ChunkedRecordStream(context.getRequestHeader(), iterator);
         
         return null;

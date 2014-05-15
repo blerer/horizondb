@@ -20,6 +20,7 @@ import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.commitlog.CommitLog;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.files.SeekableFileDataInput;
+import io.horizondb.model.core.Field;
 import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;
 import io.horizondb.model.schema.TimeSeriesDefinition;
@@ -87,7 +88,7 @@ public final class TimeSeriesPartition implements Comparable<TimeSeriesPartition
     /**
      * The partition range.
      */
-    private final Range<Long> timeRange;
+    private final Range<Field> timeRange;
 
     /**
      * Used to combat heap fragmentation.

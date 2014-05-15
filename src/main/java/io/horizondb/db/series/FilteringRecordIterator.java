@@ -28,13 +28,13 @@ public class FilteringRecordIterator implements RecordIterator {
 
     private final RecordIterator iterator;
     
-    private final RecordFilter filter;
+    private final Filter<Record> filter;
     
     private final TimeSeriesRecord[] records;
     
     private final boolean[] addToRecord;
 
-    public FilteringRecordIterator(TimeSeriesDefinition definition, RecordFilter filter, RecordIterator iterator) {
+    public FilteringRecordIterator(TimeSeriesDefinition definition, Filter<Record> filter, RecordIterator iterator) {
         
         this.records = definition.newRecords();
         this.addToRecord = new boolean[this.records.length];

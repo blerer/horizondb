@@ -14,7 +14,11 @@
 package io.horizondb.db.queries.expressions;
 
 import io.horizondb.db.queries.Expression;
+import io.horizondb.db.series.Filter;
+import io.horizondb.db.series.filters.Filters;
 import io.horizondb.model.core.Field;
+import io.horizondb.model.core.Record;
+import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.util.TimeZone;
 
@@ -40,9 +44,10 @@ final class AndExpression extends LogicalExpression {
         
         super(left, right);
     }
-
     
-    
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public RangeSet<Field> getTimestampRanges(Field prototype, TimeZone timeZone) {
                 
@@ -59,6 +64,14 @@ final class AndExpression extends LogicalExpression {
         return builder.build();
     }
 
+    /**    
+     * {@inheritDoc}
+     */
+    @Override
+    public Filter<Record> toFilter(TimeSeriesDefinition definition) {
+        return Filters.and(this.left.toFilter(definition), this.right.toFilter(definition));
+    }
+    
     /**
      * {@inheritDoc}
      */

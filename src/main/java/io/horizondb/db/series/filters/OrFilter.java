@@ -15,29 +15,31 @@ package io.horizondb.db.series.filters;
 
 import io.horizondb.db.series.Filter;
 
-import java.io.IOException;
-
 /**
- * <code>Filter</code> that accept everything.
+ * <code>Filter</code> that perform an OR between two filters.
  * 
  * @author Benjamin
  *
  */
-final class NoopFilter<T> implements Filter<T> {
-    
+final class OrFilter<T> extends LogicalFilter<T> {
+
     /**
-     * {@inheritDoc}
+     * Creates a new <code>OrRecordFilter</code>.
+     * 
+     * @param leftFilter the left filter
+     * @param rightFilter the right filter
      */
-    @Override
-    public boolean accept(T value) throws IOException {
-        return true;
+    public OrFilter(Filter<T> leftFilter, 
+                    Filter<T> rightFilter) {
+        
+        super(leftFilter, rightFilter);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public boolean isDone() {
-        return false;
+    protected boolean performOperation(boolean left, boolean right) {
+        return left || right;
     }
 }

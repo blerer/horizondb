@@ -13,7 +13,10 @@
  */
 package io.horizondb.db.queries;
 
+import io.horizondb.db.series.Filter;
 import io.horizondb.model.core.Field;
+import io.horizondb.model.core.Record;
+import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.util.TimeZone;
 
@@ -33,4 +36,12 @@ public interface Expression {
      * @return the timestamp ranges accepted by this expression.
      */
     RangeSet<Field> getTimestampRanges(Field prototype, TimeZone timeZone);    
+    
+    /**
+     * Converts this <code>Expression</code> into a record filter.
+     * 
+     * @param definition the definition of the time series on which the filter will be applied.
+     * @return a record filter corresponding to this expression.
+     */
+    Filter<Record> toFilter(TimeSeriesDefinition definition);
 }

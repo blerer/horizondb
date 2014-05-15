@@ -57,7 +57,7 @@ final class EqualityFilter<T extends Comparable<T>> implements Filter<T> {
      * specified one.
      * 
      * @param expected the expected value
-     * @param valuesNeverDecrease <code>true</code> if the value that will be used to 
+     * @param valuesNeverDecrease <code>true</code> if the value that will be used  
      * as argument to the accept method will never decrease.
      */
     public EqualityFilter(T expected, boolean valuesNeverDecrease) {

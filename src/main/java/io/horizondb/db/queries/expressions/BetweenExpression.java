@@ -13,17 +13,22 @@
  */
 package io.horizondb.db.queries.expressions;
 
+import io.horizondb.db.series.Filter;
+import io.horizondb.model.core.Field;
+import io.horizondb.model.core.Record;
+import io.horizondb.model.core.fields.ImmutableField;
+import io.horizondb.model.core.fields.TimestampField;
+import io.horizondb.model.schema.TimeSeriesDefinition;
+
 import java.util.TimeZone;
 
 import com.google.common.collect.ImmutableRangeSet;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 
-import io.horizondb.db.queries.Expression;
-import io.horizondb.model.Globals;
-import io.horizondb.model.core.Field;
-import io.horizondb.model.core.fields.ImmutableField;
-import io.horizondb.model.core.fields.TimestampField;
+import static io.horizondb.db.series.filters.Filters.not;
+import static io.horizondb.db.series.filters.Filters.range;
+import static io.horizondb.db.series.filters.Filters.toRecordFilter;
 
 /**
  * A BETWEEN expression.
@@ -31,12 +36,7 @@ import io.horizondb.model.core.fields.TimestampField;
  * @author Benjamin
  *
  */
-final class BetweenExpression implements Expression {
-
-    /**
-     * The name of the field.
-     */
-    private final String fieldName;
+final class BetweenExpression extends FieldExpression {
     
     /**
      * The minimum value of the closed range.
@@ -75,7 +75,7 @@ final class BetweenExpression implements Expression {
      */
     public BetweenExpression(String fieldName, String min, String max, boolean notBetween) {
         
-        this.fieldName = fieldName;
+        super(fieldName);
         this.min = min;
         this.max = max;
         this.notBetween = notBetween;
@@ -87,7 +87,7 @@ final class BetweenExpression implements Expression {
     @Override
     public RangeSet<Field> getTimestampRanges(Field prototype, TimeZone timeZone) {
         
-        if (!Globals.TIMESTAMP_COLUMN.equals(this.fieldName)) {
+        if (!isTimestamp()) {
             return prototype.allValues();
         }
         
@@ -113,13 +113,34 @@ final class BetweenExpression implements Expression {
         return rangeSet;
     }
     
+    /**    
+     * {@inheritDoc}
+     */
+    @Override
+    public Filter<Record> toFilter(TimeSeriesDefinition definition) {
+
+        Field prototype = newField(definition);
+        
+        Range<Field> range = Range.closed(newField(prototype, definition.getTimeZone(), this.min), 
+                                          newField(prototype, definition.getTimeZone(), this.max));
+        
+        Filter<Field> fieldFilter = range(range, isTimestamp());
+        
+        if (this.notBetween) {
+            
+            fieldFilter = not(fieldFilter);
+        }
+        
+        return toRecordFilter(definition, getFieldName(), fieldFilter);
+    }
+
     /**
      * {@inheritDoc}
      */
     @Override
     public String toString() {
         
-        StringBuilder builder = new StringBuilder().append(this.fieldName);
+        StringBuilder builder = new StringBuilder().append(getFieldName());
         
         if (this.notBetween) {
             builder.append(" NOT");

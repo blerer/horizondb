@@ -18,8 +18,11 @@ package io.horizondb.db.series;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.OperationContext;
 import io.horizondb.db.commitlog.ReplayPosition;
+import io.horizondb.db.queries.Expression;
 import io.horizondb.db.util.concurrent.FutureUtils;
 import io.horizondb.io.ReadableBuffer;
+import io.horizondb.model.core.Field;
+import io.horizondb.model.core.Record;
 import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;
 import io.horizondb.model.schema.TimeSeriesDefinition;
@@ -27,6 +30,7 @@ import io.horizondb.model.schema.TimeSeriesDefinition;
 import java.io.IOException;
 
 import com.google.common.collect.Range;
+import com.google.common.collect.RangeSet;
 
 /**
  * @author Benjamin
@@ -64,7 +68,7 @@ public final class TimeSeries {
         return this.definition;
     }
 
-    public void write(OperationContext context, Range<Long> partitionTimeRange, ReadableBuffer buffer) throws IOException,
+    public void write(OperationContext context, Range<Field> partitionTimeRange, ReadableBuffer buffer) throws IOException,
                                                                                                HorizonDBException {
 
         PartitionId partitionId = new PartitionId(this.databaseName,
@@ -90,23 +94,39 @@ public final class TimeSeries {
     }
 
     /**
-     * Returns the records of this time series that belong to the specified time range.
-     * 
-     * @param timeRange the time range for which the data must be read
+     * Returns the records of this time series that match the specified expression.
+     *  
+     * @param expression the expression used to filter the data
      * @throws IOException if an I/O problem occurs
      * @throws HorizonDBException if another problem occurs
      */
-    public RecordIterator read(Range<Long> timeRange) throws IOException, HorizonDBException {
+    public RecordIterator read(Expression expression) throws IOException, HorizonDBException {
 
-        Range<Long> partitionTimeRange = this.definition.getPartitionTimeRange(timeRange.lowerEndpoint().longValue());
         
-        PartitionId partitionId = new PartitionId(this.databaseName, 
-                                                  this.definition.getName(), 
-                                                  partitionTimeRange);
-        
-        TimeSeriesPartition partition = this.partitionManager.getPartitionForRead(partitionId,
-                                                                                  this.definition);
+        throw new UnsupportedOperationException();
+    }
+    
+    /**
+     * Returns the records of this time series that belong to the specified time ranges and are accepted by the 
+     * specified filter.
+     * 
+     * @param timeRanges the time ranges for which the data must be read
+     * @throws IOException if an I/O problem occurs
+     * @throws HorizonDBException if another problem occurs
+     */
+    public RecordIterator read(RangeSet<Field> timeRanges, Filter<Record> filter) throws IOException, HorizonDBException {
 
-        return partition.read(timeRange);
+//        Range<Long> partitionTimeRange = this.definition.getPartitionTimeRange(timeRange.lowerEndpoint().longValue());
+//        
+//        PartitionId partitionId = new PartitionId(this.databaseName, 
+//                                                  this.definition.getName(), 
+//                                                  partitionTimeRange);
+//        
+//        TimeSeriesPartition partition = this.partitionManager.getPartitionForRead(partitionId,
+//                                                                                  this.definition);
+//
+//        return partition.read(timeRange);
+        
+        throw new UnsupportedOperationException();
     }
 }

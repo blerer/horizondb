@@ -19,6 +19,7 @@ import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.files.FileUtils;
+import io.horizondb.model.core.Field;
 import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.core.iterators.DefaultRecordIterator;
 import io.horizondb.model.schema.DatabaseDefinition;
@@ -38,6 +39,8 @@ import org.junit.Test;
 import com.google.common.collect.Range;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+
+import static io.horizondb.model.schema.FieldType.MILLISECONDS_TIMESTAMP;
 
 import static io.horizondb.db.util.TimeUtils.getTime;
 import static org.junit.Assert.assertEquals;
@@ -85,7 +88,8 @@ public class TimeSeriesPartitionManagerCachesTest {
 
         try {
 
-            Range<Long> range = newTimeRange("2013.11.26 00:00:00.000", "2013.11.27 00:00:00.000");
+            Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26 00:00:00.000'", 
+                                                              "'2013-11-27 00:00:00.000'");
 
             RecordTypeDefinition recordTypeDefinition = RecordTypeDefinition.newBuilder("exchangeState")
                                                                             .addField("timestampInMillis",
@@ -157,7 +161,8 @@ public class TimeSeriesPartitionManagerCachesTest {
 
         try {
 
-            Range<Long> range = newTimeRange("2013.11.26 00:00:00.000", "2013.11.27 00:00:00.000");
+            Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26 00:00:00.000'", 
+                                                              "'2013-11-27 00:00:00.000'");
 
             RecordTypeDefinition recordTypeDefinition = RecordTypeDefinition.newBuilder("exchangeState")
                                                                             .addField("timestampInMillis",
@@ -233,7 +238,8 @@ public class TimeSeriesPartitionManagerCachesTest {
 
         try {
 
-            Range<Long> range = newTimeRange("2013.11.26 00:00:00.000", "2013.11.27 00:00:00.000");
+            Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26 00:00:00.000'", 
+                                                              "'2013-11-27 00:00:00.000'");
 
             RecordTypeDefinition recordTypeDefinition = RecordTypeDefinition.newBuilder("exchangeState")
                                                                             .addField("timestampInMillis",
@@ -307,8 +313,6 @@ public class TimeSeriesPartitionManagerCachesTest {
 
         try {
 
-            Range<Long> range = newTimeRange("2013.11.26 00:00:00.000", "2013.11.27 00:00:00.000");
-
             RecordTypeDefinition recordTypeDefinition = RecordTypeDefinition.newBuilder("exchangeState")
                                                                             .addField("timestampInMillis",
                                                                                       FieldType.MILLISECONDS_TIMESTAMP)
@@ -329,6 +333,9 @@ public class TimeSeriesPartitionManagerCachesTest {
                                                                    .addRecordType(recordTypeDefinition)
                                                                    .build();
 
+            Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26 00:00:00.000'", 
+                                                              "'2013-11-27 00:00:00.000'");
+            
             PartitionId daxPartitionId = new PartitionId("test", "DAX", range);
 
             TimeSeriesPartition daxPartition = caches.getPartitionForWrite(daxPartitionId, daxDefinition);
@@ -453,12 +460,5 @@ public class TimeSeriesPartitionManagerCachesTest {
     private static ListenableFuture<ReplayPosition> newFuture() {
 
         return Futures.immediateCheckedFuture(new ReplayPosition(0, 0));
-    }
-    
-    private static Range<Long> newTimeRange(String start, String end) {
-        
-        return Range.closedOpen(Long.valueOf(getTime(start)), 
-                                Long.valueOf(getTime(end)));
-        
     }
 }

@@ -20,6 +20,7 @@ import io.horizondb.db.Configuration;
 import io.horizondb.db.btree.AbstractNodeReader;
 import io.horizondb.db.btree.AbstractNodeWriter;
 import io.horizondb.db.btree.BTree;
+import io.horizondb.db.btree.KeyValueIterator;
 import io.horizondb.db.btree.NodeReader;
 import io.horizondb.db.btree.NodeReaderFactory;
 import io.horizondb.db.btree.NodeWriter;
@@ -166,6 +167,19 @@ public final class DefaultTimeSeriesPartitionManager extends AbstractComponent i
      * {@inheritDoc}
      */
     @Override
+    public KeyValueIterator<PartitionId, TimeSeriesPartition> getRangeForRead(PartitionId fromId,
+                                                                              PartitionId toId,
+                                                                              TimeSeriesDefinition definition) 
+                                                                              throws IOException {
+        
+        return new TimeSeriesPartitionIterator(definition, this.btree.iterator(fromId, toId));
+    }
+    
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void flush(TimeSeriesPartition timeSeriesPartition, FlushListener... listeners) {
 
         checkRunning();
@@ -223,7 +237,7 @@ public final class DefaultTimeSeriesPartitionManager extends AbstractComponent i
 
         this.flushManager.sync();
     }
-
+    
     private TimeSeriesPartition
             getPartition(PartitionId partitionId, TimeSeriesDefinition definition) throws IOException {
 
@@ -235,6 +249,22 @@ public final class DefaultTimeSeriesPartitionManager extends AbstractComponent i
                                                   .build();
         }
 
+        return newTimeSeriesPartition(partitionId, definition, metadata);
+    }
+
+    /**
+     * Creates a new <code>TimeSeriesPartition</code>.
+     * 
+     * @param partitionId the partition ID
+     * @param definition the time series definition
+     * @param metadata the partition meta data
+     * @return a new <code>TimeSeriesPartition</code>
+     * @throws IOException if an I/O problem occurs
+     */
+    private TimeSeriesPartition newTimeSeriesPartition(PartitionId partitionId,
+                                                       TimeSeriesDefinition definition,
+                                                       TimeSeriesPartitionMetaData metadata) throws IOException {
+        
         return new TimeSeriesPartition(this, this.configuration, partitionId.getDatabaseName(), definition, metadata);
     }
 
@@ -350,5 +380,57 @@ public final class DefaultTimeSeriesPartitionManager extends AbstractComponent i
         protected PartitionId readKey(ByteReader reader) throws IOException {
             return PartitionId.parseFrom(reader);
         }
+    }
+    
+    /**
+     * <code>KeyValueIterator</code> used to iterate over a range of partitions.
+     */
+    private final class TimeSeriesPartitionIterator implements KeyValueIterator<PartitionId, TimeSeriesPartition> {
+        
+        /**
+         * The time series definition.
+         */
+        private final TimeSeriesDefinition definition;
+        
+        /**
+         * The meta data iterator.
+         */
+        private final KeyValueIterator<PartitionId, TimeSeriesPartitionMetaData> iterator;
+
+        /**
+         * Creates a <code>TimeSeriesPartitionIterator</code>.
+         * 
+         * @param definition the time series definition
+         * @param iterator the meta data iterator
+         */
+        public TimeSeriesPartitionIterator(TimeSeriesDefinition definition,
+                                           KeyValueIterator<PartitionId, TimeSeriesPartitionMetaData> iterator) {
+            this.definition = definition;
+            this.iterator = iterator;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public boolean next() throws IOException {
+            return this.iterator.next();
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public PartitionId getKey() {
+            return this.iterator.getKey();
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public TimeSeriesPartition getValue() throws IOException {
+            return newTimeSeriesPartition(getKey(), this.definition, this.iterator.getValue());
+        }        
     }
 }

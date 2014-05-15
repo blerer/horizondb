@@ -19,8 +19,10 @@ import io.horizondb.db.btree.NodeVisitor.NodeVisitResult;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NoSuchElementException;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -65,7 +67,7 @@ final class LeafNode<K extends Comparable<K>, V> extends AbstractNode<K, V> {
      */
     private LeafNode(BTree<K, V> btree, SortedMap<K, ValueWrapper<V>> records) {
 
-        super(btree);
+        super(btree);        
         this.records = records;
     }
 
@@ -276,7 +278,8 @@ final class LeafNode<K extends Comparable<K>, V> extends AbstractNode<K, V> {
         SortedMap<K, ValueWrapper<V>> head = this.records.headMap(halfKey);
         SortedMap<K, ValueWrapper<V>> tail = this.records.tailMap(halfKey);
 
-        return toArray(new LeafNode<K, V>(getBTree(), head), new LeafNode<K, V>(getBTree(), tail));
+        return toArray(new LeafNode<K, V>(getBTree(), new TreeMap<>(head)), 
+                       new LeafNode<K, V>(getBTree(), new TreeMap<>(tail)));
     }
 
     /**
@@ -293,6 +296,16 @@ final class LeafNode<K extends Comparable<K>, V> extends AbstractNode<K, V> {
         }
 
         return value.getValue();
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public KeyValueIterator<K, V> iterator(K fromKey, K toKey) throws IOException {
+
+        Map<K, ValueWrapper<V>> subMap = this.records.subMap(fromKey, toKey);
+        return new LeafNodeKeyValueIterator<>(subMap);
     }
 
     /**
@@ -339,5 +352,79 @@ final class LeafNode<K extends Comparable<K>, V> extends AbstractNode<K, V> {
 
         this.records.remove(key);
         return this;
+    }
+    
+    /**
+     * <code>KeyValueIterator</code> used to iterate over the records of this leaf node.
+     */
+    public static final class LeafNodeKeyValueIterator<K extends Comparable<K>, V> implements KeyValueIterator<K, V> {
+
+        /**
+         * The iterator over the map entries
+         */
+        private final Iterator<Entry<K, ValueWrapper<V>>> iterator;
+        
+        /**
+         * The current record.
+         */
+        private Entry<K, ValueWrapper<V>> entry;
+
+        
+        public LeafNodeKeyValueIterator(Map<K, ValueWrapper<V>> map) {
+            
+            this.iterator = map.entrySet().iterator();
+        }
+        
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public boolean next() throws IOException {
+            
+            if (this.iterator.hasNext()) {
+                
+                this.entry = this.iterator.next();
+                
+                return true;
+            }
+            
+            return false;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public K getKey() {
+            
+            checkState();
+            return this.entry.getKey();
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public V getValue() throws IOException {
+            
+            checkState();
+            return this.entry.getValue().getValue();
+        }
+
+        /**
+         * Checks that the iterator is in a valid state.
+         */
+        private void checkState() {
+            
+            if (this.entry == null) {
+                
+                if (this.iterator.hasNext()) {
+                    
+                    throw new IllegalStateException("next must be called before trying to retrieve the record key or value");
+                }
+                
+                throw new NoSuchElementException();
+            }
+        }
     }
 }

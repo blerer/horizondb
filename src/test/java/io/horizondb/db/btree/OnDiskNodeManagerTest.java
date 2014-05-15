@@ -30,6 +30,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.assertFalse;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
@@ -199,6 +203,70 @@ public class OnDiskNodeManagerTest {
             btree.insert(2, "B");
 
             assertLeafNodeContains(btree.getRoot(), 1, "A", 2, "B", 3, "C", 5, "E");
+        }
+    }
+        
+    @Test
+    @SuppressWarnings({ "boxing" })
+    public void testIteratorWithOnlyARootNodeAndFullScan() throws IOException {
+
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
+
+            BTree<Integer, String> btree = new BTree<>(manager, 5);
+
+            btree.insert(2, "B");
+            btree.insert(4, "D");
+            btree.insert(3, "C");
+            btree.insert(1, "A");
+        }
+
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
+
+            BTree<Integer, String> btree = new BTree<>(manager, 5);
+
+            KeyValueIterator<Integer, String> iterator = btree.iterator(0, 5);
+
+            assertNextContains(iterator, 1, "A");
+            assertNextContains(iterator, 2, "B");
+            assertNextContains(iterator, 3, "C");
+            assertNextContains(iterator, 4, "D");
+            assertFalse(iterator.next());
+        }
+    }
+
+    @Test
+    @SuppressWarnings({ "boxing" })
+    public void testIteratorWithOnlyARootNodeAndPartialScan() throws IOException {
+
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
+            BTree<Integer, String> btree = new BTree<>(manager, 5);
+
+            btree.insert(2, "B");
+            btree.insert(4, "D");
+            btree.insert(3, "C");
+            btree.insert(1, "A");
+        }
+
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
+            BTree<Integer, String> btree = new BTree<>(manager, 5);
+
+            KeyValueIterator<Integer, String> iterator = btree.iterator(2, 4);
+
+            assertNextContains(iterator, 2, "B");
+            assertNextContains(iterator, 3, "C");
+            assertFalse(iterator.next());
         }
     }
 
@@ -553,6 +621,104 @@ public class OnDiskNodeManagerTest {
         }
     }
 
+    @Test
+    @SuppressWarnings({ "boxing" })
+    public void testIteratorWithInternalNodesAndPartialScanOverTwoNodes() throws IOException {
+
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
+
+            BTree<Integer, String> btree = new BTree<>(manager, 5);
+
+            btree.insert(2, "B");
+            btree.insert(4, "D");
+            btree.insert(3, "C");
+            btree.insert(1, "A");
+            btree.insert(6, "F");
+        }
+        
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
+
+            BTree<Integer, String> btree = new BTree<>(manager, 5);
+
+            KeyValueIterator<Integer, String> iterator = btree.iterator(2, 4);
+
+            assertNextContains(iterator, 2, "B");
+            assertNextContains(iterator, 3, "C");
+            assertFalse(iterator.next());
+        }
+    }
+
+    @Test
+    @SuppressWarnings({ "boxing" })
+    public void testIteratorWithInternalNodesAndPartialScanOverOneNode() throws IOException {
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
+            BTree<Integer, String> btree = new BTree<>(manager, 5);
+
+            btree.insert(2, "B");
+            btree.insert(4, "D");
+            btree.insert(3, "C");
+            btree.insert(1, "A");
+            btree.insert(6, "F");
+        }
+        
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
+            BTree<Integer, String> btree = new BTree<>(manager, 5);
+
+            KeyValueIterator<Integer, String> iterator = btree.iterator(0, 2);
+
+            assertNextContains(iterator, 1, "A");
+            assertFalse(iterator.next());
+        }
+    }
+
+    @Test
+    @SuppressWarnings({ "boxing" })
+    public void testIteratorWithInternalNodesAndFullScan() throws IOException {
+
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
+
+            BTree<Integer, String> btree = new BTree<>(manager, 5);
+
+            btree.insert(2, "B");
+            btree.insert(4, "D");
+            btree.insert(3, "C");
+            btree.insert(1, "A");
+            btree.insert(6, "F");
+        }
+        
+        try (OnDiskNodeManager<Integer, String> manager = new OnDiskNodeManager<>("test",
+                                                                                  this.testFile,
+                                                                                  IntegerAndStringNodeWriter.FACTORY,
+                                                                                  IntegerAndStringNodeReader.FACTORY)) {
+
+            BTree<Integer, String> btree = new BTree<>(manager, 5);
+
+            KeyValueIterator<Integer, String> iterator = btree.iterator(0, 10);
+
+            assertNextContains(iterator, 1, "A");
+            assertNextContains(iterator, 2, "B");
+            assertNextContains(iterator, 3, "C");
+            assertNextContains(iterator, 4, "D");
+            assertNextContains(iterator, 6, "F");
+            assertFalse(iterator.next());
+        }
+    }
+    
     @Test
     @SuppressWarnings({ "boxing" })
     public void testDeletionOfFirstKeyOfLeafNodeAfterRestart() throws IOException {
@@ -1930,6 +2096,23 @@ public class OnDiskNodeManagerTest {
         }
     }
 
+    /**
+     * Asserts that the key and the value of the next record returned by the iterator are equals to
+     * the specified ones.
+     * 
+     * @param iterator the iterator to check
+     * @param key the expected key
+     * @param value the expected value
+     * @throws IOException if an I/O problem occurs
+     */
+    private static void assertNextContains(KeyValueIterator<Integer, String> iterator, Integer key, String value) 
+            throws IOException {
+        
+        assertTrue(iterator.next());
+        assertEquals(key, iterator.getKey());
+        assertEquals(value, iterator.getValue());
+    }
+    
     /**
      * Converts the specified node into an internal node.
      * 

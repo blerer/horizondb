@@ -13,53 +13,48 @@
  */
 package io.horizondb.db.series.filters;
 
-import java.io.IOException;
-
 import io.horizondb.db.series.Filter;
-import io.horizondb.db.series.RecordFilter;
 import io.horizondb.model.core.Field;
 import io.horizondb.model.core.Record;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
+import java.io.IOException;
+
 /**
- * <code>RecordFilter</code> that filter record based on some field value.
+ * Base class for <code>RecordFilter</code>s that filter record based on some field value.
  * 
  * @author Benjamin
  *
  */
-public class OrRecordFilter implements RecordFilter {
-
-    /**
-     * The next record filter.
-     */
-    private final RecordFilter next;
-    
-    /**
-     * The filter used to filter records.
-     */
-    private final Filter<Field> filter;
+public final class FieldRecordFilter implements Filter<Record> {
     
     /**
      * The field index per record type.
      */
-    private int[] fieldIndices;
+    private final int[] fieldIndices;
     
     /**
      * The current value of the field per record type.
      */
-    private Field[] fields;
+    private final Field[] fields;
+    
+    /**
+     * The filter used to filter records.
+     */
+    protected final Filter<Field> filter;
         
     /**
-     * @param next
-     * @param filter
-     * @param fieldIndex
-     * @param field
+     * Creates a new <code>BaseFieldRecordFilter</code>.
+     * 
+     * @param definition the time series definition
+     * @param fieldName the name of the field on which is filtering the filter
+     * @param filter the filter used to filter records based on field value
+     * @param next the next filter in the pipeline
      */
-    public OrRecordFilter(TimeSeriesDefinition definition, 
-                             RecordFilter next, 
-                             Filter<Field> filter, 
-                             String fieldName) {
-        this.next = next;
+    public FieldRecordFilter(TimeSeriesDefinition definition, 
+                             String fieldName, 
+                             Filter<Field> filter) {
+
         this.filter = filter;
         
         int numberOfRecordTypes = definition.getNumberOfRecordTypes();
@@ -70,40 +65,53 @@ public class OrRecordFilter implements RecordFilter {
         for (int i = 0; i < numberOfRecordTypes; i++) {
             
             this.fieldIndices[i] = definition.getFieldIndex(i, fieldName);
-            this.fields[i] = definition.newField(i, this.fieldIndices[i]);
+            
+            if (this.fieldIndices[i] >= 0) {
+                
+                this.fields[i] = definition.newField(i, this.fieldIndices[i]);
+            }
         }
     }
-
+    
     /**
      * {@inheritDoc}
      */
     @Override
     public boolean accept(Record record) throws IOException {
         
-        updateField(record);
+        if (!updateField(record)) {
+            
+            return false;
+        }
         
-        return this.next.accept(record) || this.filter.accept(this.fields[record.getType()]);
+        return this.filter.accept(this.fields[record.getType()]);
     }
-
-    /**
+    
+    /**    
      * {@inheritDoc}
      */
     @Override
     public boolean isDone() {
-        
-        return this.next.isDone() && this.filter.isDone();
+        return this.filter.isDone();
     }
-    
+
     /**
      * Updates the field value.
      * 
      * @param record the new record
+     * @return <code>true</code> if the field has been updated, <code>false</code> otherwise.
      * @throws IOException if an I/O problem occurs
      */
-    private void updateField(Record record) throws IOException {
+    private final boolean updateField(Record record) throws IOException {
         
         int type = record.getType();
         Field field = this.fields[type];
+        
+        if (field == null) {
+            
+            return false;
+        }
+        
         Field recordField = record.getField(this.fieldIndices[type]);
         
         if (record.isDelta()) {
@@ -114,5 +122,7 @@ public class OrRecordFilter implements RecordFilter {
         
             recordField.copyTo(field);
         }
+
+        return true;
     }
 }

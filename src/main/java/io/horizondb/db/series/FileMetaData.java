@@ -15,11 +15,6 @@
  */
 package io.horizondb.db.series;
 
-import java.io.IOException;
-import java.util.Arrays;
-
-import javax.annotation.concurrent.Immutable;
-
 import io.horizondb.io.Buffer;
 import io.horizondb.io.ByteReader;
 import io.horizondb.io.ByteWriter;
@@ -32,6 +27,12 @@ import io.horizondb.io.encoding.VarInts;
 import io.horizondb.io.files.FileUtils;
 import io.horizondb.io.serialization.Parser;
 import io.horizondb.io.serialization.Serializable;
+import io.horizondb.model.core.Field;
+
+import java.io.IOException;
+import java.util.Arrays;
+
+import javax.annotation.concurrent.Immutable;
 
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
@@ -39,6 +40,9 @@ import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
 
 import com.google.common.collect.Range;
+
+import static io.horizondb.model.core.util.SerializationUtils.parseRangeFrom;
+import static io.horizondb.model.core.util.SerializationUtils.writeRange;
 
 /**
  * The meta data of a time series file.
@@ -62,7 +66,7 @@ public final class FileMetaData implements Serializable {
 
             ChecksumByteReader checksumByteReader = ChecksumByteReader.wrap(reader);
             ReadableBuffer buffer = checksumByteReader.slice(METADATA_LENGTH - CHECKSUM_LENGTH);
-
+            
             if (!checksumByteReader.readChecksum()) {
                 throw new ChecksumMismatchException("The meta data CRC does not match the expected one.");
             }
@@ -79,9 +83,7 @@ public final class FileMetaData implements Serializable {
             byte version = buffer.readByte();
             String database = VarInts.readString(buffer);
             String timeSeries = VarInts.readString(buffer);
-            long lowerEndPoint = VarInts.readUnsignedLong(buffer);
-            long upperEndPoint = VarInts.readUnsignedLong(buffer);
-            Range<Long> range = Range.closedOpen(Long.valueOf(lowerEndPoint), Long.valueOf(upperEndPoint));
+            Range<Field> range = parseRangeFrom(buffer);
 
             return new FileMetaData(version, database, timeSeries, range);
         }
@@ -125,7 +127,7 @@ public final class FileMetaData implements Serializable {
     /**
      * The partition range.
      */
-    private final Range<Long> range;
+    private final Range<Field> range;
 
     /**
      * Creates the file meta data.
@@ -134,7 +136,7 @@ public final class FileMetaData implements Serializable {
      * @param timeSeries the name of the time series to which belongs this file
      * @param range the partition range
      */
-    public FileMetaData(String database, String timeSeries, Range<Long> range) {
+    public FileMetaData(String database, String timeSeries, Range<Field> range) {
 
         this(DEFAULT_VERSION, database, timeSeries, range);
     }
@@ -147,7 +149,7 @@ public final class FileMetaData implements Serializable {
      * @param timeSeries the name of the time series to which belongs this file
      * @param range the partition range
      */
-    private FileMetaData(byte version, String database, String timeSeries, Range<Long> range) {
+    private FileMetaData(byte version, String database, String timeSeries, Range<Field> range) {
 
         this.version = version;
         this.database = database;
@@ -187,7 +189,7 @@ public final class FileMetaData implements Serializable {
      * 
      * @return the partition range.
      */
-    public Range<Long> getRange() {
+    public Range<Field> getRange() {
         return this.range;
     }
 
@@ -234,8 +236,7 @@ public final class FileMetaData implements Serializable {
 
         VarInts.writeString(checksumByteWriter, this.database);
         VarInts.writeString(checksumByteWriter, this.timeSeries);
-        VarInts.writeUnsignedLong(checksumByteWriter, this.range.lowerEndpoint().longValue());
-        VarInts.writeUnsignedLong(checksumByteWriter, this.range.upperEndpoint().longValue());
+        writeRange(checksumByteWriter, this.range);
 
         checksumByteWriter.writeZeroBytes(buffer.writeableBytes() - CHECKSUM_LENGTH);
         checksumByteWriter.writeChecksum();

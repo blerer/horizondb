@@ -19,6 +19,7 @@ import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.files.FileUtils;
+import io.horizondb.model.core.Field;
 import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.core.iterators.DefaultRecordIterator;
 import io.horizondb.model.schema.DatabaseDefinition;
@@ -38,6 +39,8 @@ import org.junit.Test;
 
 import com.google.common.collect.Range;
 import com.google.common.util.concurrent.Futures;
+
+import static io.horizondb.model.schema.FieldType.MILLISECONDS_TIMESTAMP;
 
 import static io.horizondb.db.util.TimeUtils.getTime;
 import static org.junit.Assert.assertEquals;
@@ -73,9 +76,6 @@ public class DefaultTimeSeriesPartitionManagerTest {
         partitionManager.start();
 
         try {
-
-            Range<Long> range = newTimeRange("2013.11.26 00:00:00.000", "2013.11.27 00:00:00.000");
-
             RecordTypeDefinition recordTypeDefinition = RecordTypeDefinition.newBuilder("exchangeState")
                                                                             .addField("timestampInMillis",
                                                                                       FieldType.MILLISECONDS_TIMESTAMP)
@@ -91,6 +91,9 @@ public class DefaultTimeSeriesPartitionManagerTest {
                                                                 .addRecordType(recordTypeDefinition)
                                                                 .build();
 
+
+            Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26'", "'2013-11-27'");
+            
             PartitionId id = new PartitionId("test", "DAX", range);
 
             TimeSeriesPartition partition = partitionManager.getPartitionForRead(id, definition);
@@ -109,8 +112,6 @@ public class DefaultTimeSeriesPartitionManagerTest {
     @Test
     public void testSave() throws InterruptedException, IOException, HorizonDBException, ExecutionException {
 
-        Range<Long> range = newTimeRange("2013.11.26 00:00:00.000", "2013.11.27 00:00:00.000");
-
         RecordTypeDefinition recordTypeDefinition = RecordTypeDefinition.newBuilder("exchangeState")
                                                                         .addField("timestampInMillis",
                                                                                   FieldType.MILLISECONDS_TIMESTAMP)
@@ -125,6 +126,8 @@ public class DefaultTimeSeriesPartitionManagerTest {
                                                             .timeUnit(TimeUnit.NANOSECONDS)
                                                             .addRecordType(recordTypeDefinition)
                                                             .build();
+        
+        Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26'", "'2013-11-27'");
 
         PartitionId id = new PartitionId("test", "DAX", range);
 
@@ -177,12 +180,5 @@ public class DefaultTimeSeriesPartitionManagerTest {
 
             partitionManager.shutdown();
         }
-    }
-    
-    private static Range<Long> newTimeRange(String start, String end) {
-        
-        return Range.closedOpen(Long.valueOf(getTime(start)), 
-                                Long.valueOf(getTime(end)));
-        
     }
 }

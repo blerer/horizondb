@@ -18,6 +18,7 @@ package io.horizondb.db.series;
 import io.horizondb.io.Buffer;
 import io.horizondb.io.buffers.Buffers;
 import io.horizondb.io.checksum.ChecksumMismatchException;
+import io.horizondb.model.core.Field;
 
 import java.io.IOException;
 
@@ -25,9 +26,7 @@ import org.junit.Test;
 
 import com.google.common.collect.Range;
 
-import static io.horizondb.db.util.TimeUtils.getTime;
-
-
+import static io.horizondb.model.schema.FieldType.MILLISECONDS_TIMESTAMP;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -41,9 +40,7 @@ public class FileMetaDataTest {
     @Test
     public void testParseFrom() throws IOException {
 
-        @SuppressWarnings("boxing")
-        Range<Long> range = Range.closedOpen(getTime("2013.11.26 00:00:00.000"), 
-                                             getTime("2013.11.27 00:00:00.000"));
+        Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26'", "'2013-11-27'");
 
         FileMetaData metadata = new FileMetaData("test", "test", range);
 
@@ -58,9 +55,7 @@ public class FileMetaDataTest {
     @Test
     public void testParseFromWithInvalidCrc() throws IOException {
 
-        @SuppressWarnings("boxing")
-        Range<Long> range = Range.closedOpen(getTime("2013.11.26 00:00:00.000"), 
-                                             getTime("2013.11.27 00:00:00.000"));
+        Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26'", "'2013-11-27'");
 
         FileMetaData metadata = new FileMetaData("test", "test", range);
 

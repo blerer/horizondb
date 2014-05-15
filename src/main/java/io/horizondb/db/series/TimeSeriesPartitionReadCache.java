@@ -15,8 +15,12 @@
  */
 package io.horizondb.db.series;
 
+import java.io.IOException;
+
 import io.horizondb.db.Configuration;
+import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.cache.AbstractMultilevelCache;
+import io.horizondb.db.cache.ValueLoader;
 
 import javax.annotation.concurrent.ThreadSafe;
 
@@ -42,6 +46,51 @@ final class TimeSeriesPartitionReadCache extends AbstractMultilevelCache<Partiti
 
         super(configuration, cache);
     }
+
+    /**    
+     * {@inheritDoc}
+     */
+    @Override
+    public void put(final PartitionId key, final TimeSeriesPartition value) {
+        try {
+            get(key, new ValueLoader<PartitionId, TimeSeriesPartition>() {
+                
+                /**    
+                 * {@inheritDoc}
+                 */
+                @Override
+                public TimeSeriesPartition loadValue(PartitionId key) throws IOException, HorizonDBException {
+                    return value;
+                }
+            });
+            
+        } catch (IOException | HorizonDBException e) {
+
+            // Do nothing as no exception can occurs.
+        } 
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public TimeSeriesPartition getIfPresent(PartitionId id) {
+        
+        TimeSeriesPartition partition = super.getIfPresent(id);
+        
+        if (partition != null) {
+            return partition;
+        }
+        
+        partition = getSecondLevelCache().getIfPresent(id);
+        
+        if (partition != null) {
+            put(id, partition);
+        }
+        return partition;
+    }
+
+
 
     /**
      * {@inheritDoc}

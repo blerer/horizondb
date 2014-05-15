@@ -19,10 +19,12 @@ import io.horizondb.db.btree.NodeVisitor.NodeVisitResult;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.Map;
-import java.util.SortedMap;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
+import java.util.NoSuchElementException;
+import java.util.SortedMap;
 import java.util.TreeMap;
 
 import javax.annotation.concurrent.Immutable;
@@ -93,7 +95,7 @@ final class InternalNode<K extends Comparable<K>, V> extends AbstractNode<K, V> 
      */
     private InternalNode(BTree<K, V> btree, NavigableMap<K, Node<K, V>> children) {
 
-        super(btree);
+        super(btree);        
         this.children = children;
     }
 
@@ -180,6 +182,24 @@ final class InternalNode<K extends Comparable<K>, V> extends AbstractNode<K, V> 
     @Override
     public V get(K key) throws IOException {
         return find(key).get(key);
+    }
+
+    /**    
+     * {@inheritDoc}
+     */
+    @Override
+    public KeyValueIterator<K, V> iterator(K fromKey, K toKey) throws IOException {
+        
+        K key = this.children.floorKey(fromKey);
+        
+        if (key == null) {
+            
+            key = fromKey;
+        }
+        
+        SortedMap<K, Node<K, V>> subMap = this.children.subMap(key, toKey);
+        
+        return new InternalNodeKeyValueIterator<K, V>(fromKey, toKey, subMap);
     }
 
     /**
@@ -422,7 +442,8 @@ final class InternalNode<K extends Comparable<K>, V> extends AbstractNode<K, V> 
         NavigableMap<K, Node<K, V>> head = (NavigableMap<K, Node<K, V>>) this.children.headMap(halfKey);
         NavigableMap<K, Node<K, V>> tail = (NavigableMap<K, Node<K, V>>) this.children.tailMap(halfKey);
 
-        return toArray(new InternalNode<K, V>(getBTree(), head), new InternalNode<K, V>(getBTree(), tail));
+        return toArray(new InternalNode<K, V>(getBTree(), new TreeMap<>(head)), 
+                       new InternalNode<K, V>(getBTree(), new TreeMap<>(tail)));
     }
 
     /**
@@ -563,5 +584,97 @@ final class InternalNode<K extends Comparable<K>, V> extends AbstractNode<K, V> 
     private InternalNode<K, V> copy() {
 
         return new InternalNode<K, V>(getBTree(), new TreeMap<>(this.children));
+    }
+    
+    /**
+     * <code>KeyValueIterator</code> used to iterate over the records of this leaf node.
+     */
+    public static final class InternalNodeKeyValueIterator<K extends Comparable<K>, V> implements KeyValueIterator<K, V> {
+
+        /**
+         * The from key (inclusive).
+         */
+        public final K fromKey;
+        
+        /**
+         * The to key (exclusive).
+         */
+        public final K toKey;
+        
+        /**
+         * The iterator over the node entries
+         */
+        private final Iterator<Node<K, V>> iterator;
+                
+        /**
+         * The iterator over the node records
+         */
+        private KeyValueIterator<K, V> nodeIterator;
+
+        
+        public InternalNodeKeyValueIterator(K fromKey, K toKey, Map<K, Node<K, V>> map) {
+            
+            this.fromKey = fromKey;
+            this.toKey = toKey;
+            this.iterator = map.values().iterator();
+        }
+        
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public boolean next() throws IOException {
+            
+            if (this.nodeIterator != null && this.nodeIterator.next()) {
+                
+                return true;
+            }
+                                  
+            if (this.iterator.hasNext()) {
+                
+                this.nodeIterator = this.iterator.next().iterator(this.fromKey, this.toKey);                
+                return next();
+            }
+            
+            this.nodeIterator = null;
+            return false;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public K getKey() {
+            
+            checkState();
+            return this.nodeIterator.getKey();
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public V getValue() throws IOException {
+            
+            checkState();
+            return this.nodeIterator.getValue();
+        }
+
+        /**
+         * Checks that the iterator is in a valid state.
+         */
+        private void checkState() {
+            
+            if (this.nodeIterator == null) {
+                
+                if (this.iterator.hasNext()) {
+                    
+                    throw new IllegalStateException("next must be called before trying to retrieve the record key " +
+                    		"or value");
+                }
+                
+                throw new NoSuchElementException();
+            }
+        }
     }
 }

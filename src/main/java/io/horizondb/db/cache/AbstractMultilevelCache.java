@@ -90,4 +90,14 @@ public abstract class AbstractMultilevelCache<K, V> extends AbstractCache<K, V> 
   protected void afterLoad(V value) {
 
   }
+
+  /**
+   * Returns the second level cache.
+   * @return the second level cache.
+   */
+  protected final io.horizondb.db.cache.Cache<K, V> getSecondLevelCache() {
+    return this.secondLevelCache;
+  }
+  
+  
 }

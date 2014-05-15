@@ -21,6 +21,7 @@ import io.horizondb.io.files.RandomAccessDataFile;
 import io.horizondb.io.files.SeekableFileDataInput;
 import io.horizondb.io.files.SeekableFileDataInputs;
 import io.horizondb.io.files.SeekableFileDataOutput;
+import io.horizondb.model.core.Field;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.Closeable;
@@ -31,6 +32,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.Range;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -83,7 +85,7 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
                                       TimeSeriesPartitionMetaData partitionMetadata) throws IOException {
 
         Path path = getFilePath(configuration, databaseName, definition, partitionMetadata);
-
+        
         RandomAccessDataFile file = RandomAccessDataFile.open(path, false, partitionMetadata.getFileSize());
 
         FileMetaData fileMetaData;
@@ -248,9 +250,11 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
      */
     private static String filename(TimeSeriesDefinition definition, TimeSeriesPartitionMetaData partitionMetadata) {
 
+        Range<Field> range = partitionMetadata.getRange();
+        
         return new StringBuilder().append(definition.getName())
                                   .append('-')
-                                  .append(partitionMetadata.getRange().lowerEndpoint())
+                                  .append(range.lowerEndpoint().getTimestampInMillis())
                                   .append(".ts")
                                   .toString();
     }

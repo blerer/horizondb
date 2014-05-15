@@ -18,6 +18,7 @@ package io.horizondb.db.series;
 import io.horizondb.db.AbstractComponent;
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
+import io.horizondb.db.btree.KeyValueIterator;
 import io.horizondb.db.cache.ValueLoader;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
@@ -34,7 +35,6 @@ import com.google.common.cache.CacheStats;
  * Decorator that add caching functionalities to a <code>TimeSeriesPartitionManager</code>
  * 
  * @author Benjamin
- * 
  */
 @ThreadSafe
 public final class TimeSeriesPartitionManagerCaches extends AbstractComponent implements TimeSeriesPartitionManager {
@@ -187,9 +187,9 @@ public final class TimeSeriesPartitionManagerCaches extends AbstractComponent im
      * {@inheritDoc}
      */
     @Override
-    
     public TimeSeriesPartition getPartitionForRead(final PartitionId partitionId,
-                                                   final TimeSeriesDefinition seriesDefinition) throws IOException, HorizonDBException {
+                                                   final TimeSeriesDefinition seriesDefinition) 
+                                                           throws IOException, HorizonDBException {
 
         return this.readCache.get(partitionId, new ValueLoader<PartitionId, TimeSeriesPartition>() {
 
@@ -202,7 +202,18 @@ public final class TimeSeriesPartitionManagerCaches extends AbstractComponent im
         });
     }
 
-    
+    /**    
+     * {@inheritDoc}
+     */
+    @Override
+    public KeyValueIterator<PartitionId, TimeSeriesPartition> getRangeForRead(PartitionId fromId,
+                                                                              PartitionId toId,
+                                                                              TimeSeriesDefinition definition) 
+                                                                                      throws IOException {
+        
+        return new TimeSeriesPartitionCacheIterator(this.readCache, this.getRangeForRead(fromId, toId, definition));
+    }
+
     /**
      * Returns the global cache size.
      * 
@@ -282,5 +293,69 @@ public final class TimeSeriesPartitionManagerCaches extends AbstractComponent im
     void evictFromReadCache(PartitionId id) {
 
         this.readCache.invalidate(id);
+    }
+    
+    /**
+     * <code>KeyValueIterator</code> used to iterate over a range of partitions.
+     */
+    private static final class TimeSeriesPartitionCacheIterator implements KeyValueIterator<PartitionId, TimeSeriesPartition> {
+        
+        /**
+         * The meta data iterator.
+         */
+        private final KeyValueIterator<PartitionId, TimeSeriesPartition> iterator;
+
+        /**
+         * The cache used when performing reads.
+         */
+        private final TimeSeriesPartitionReadCache readCache;
+        
+        /**
+         * Creates a <code>TimeSeriesPartitionCacheIterator</code>.
+         * 
+         * @param readCache the read cache
+         * @param iterator the partition iterator
+         */
+        public TimeSeriesPartitionCacheIterator(TimeSeriesPartitionReadCache readCache, 
+                                                KeyValueIterator<PartitionId, TimeSeriesPartition> iterator) {
+            
+            this.readCache = readCache;
+            this.iterator = iterator;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public boolean next() throws IOException {
+            return this.iterator.next();
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public PartitionId getKey() {
+            return this.iterator.getKey();
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public TimeSeriesPartition getValue() throws IOException {
+            
+            PartitionId id = getKey();
+            TimeSeriesPartition partition = this.readCache.getIfPresent(id);
+            
+            if (partition != null) {
+                return partition;
+            }
+            
+            partition = this.iterator.getValue();
+            this.readCache.put(id, partition);
+            
+            return partition;
+        }        
     }
 }
