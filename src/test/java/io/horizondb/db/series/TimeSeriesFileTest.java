@@ -28,6 +28,7 @@ import io.horizondb.model.core.RecordListMultimapBuilder;
 import io.horizondb.model.core.RecordUtils;
 import io.horizondb.model.core.iterators.DefaultRecordIterator;
 import io.horizondb.model.core.records.TimeSeriesRecord;
+import io.horizondb.model.core.util.TimeUtils;
 import io.horizondb.model.schema.DatabaseDefinition;
 import io.horizondb.model.schema.FieldType;
 import io.horizondb.model.schema.RecordTypeDefinition;
@@ -50,7 +51,6 @@ import org.junit.Test;
 import com.google.common.collect.Range;
 import com.google.common.util.concurrent.Futures;
 
-import static io.horizondb.db.util.TimeUtils.getTime;
 import static java.util.Arrays.asList;
 
 public class TimeSeriesFileTest {
@@ -58,7 +58,7 @@ public class TimeSeriesFileTest {
     /**
      * The time reference.
      */
-    private static long TIME_IN_MILLIS = getTime("2013.11.26 12:00:00.000");
+    private static long TIME_IN_MILLIS = TimeUtils.parseDateTime("2013-11-26 12:00:00.000");
     
     /**
      * The time reference.

@@ -33,7 +33,7 @@ public class ChunkedRecordStreamTest {
     @Test
     public void testEmptyStream() throws Exception {
 
-        MsgHeader requestHeader = MsgHeader.newRequestHeader(OpCode.QUERY, 26);
+        MsgHeader requestHeader = MsgHeader.newRequestHeader(OpCode.HQL_QUERY, 26);
         RecordIterator iterator = EasyMock.createMock(RecordIterator.class);
         EasyMock.expect(iterator.hasNext()).andReturn(false);
 
@@ -52,7 +52,9 @@ public class ChunkedRecordStreamTest {
         Buffer heapBuffer = Buffers.allocate(bufferSize);
         heapBuffer.writeByte(Msg.END_OF_STREAM_MARKER);
 
-        Msg<DataChunkPayload> expected = Msg.newResponseMsg(requestHeader, new DataChunkPayload(heapBuffer));
+        Msg<DataChunkPayload> expected = Msg.newResponseMsg(requestHeader, 
+                                                            OpCode.DATA_CHUNK, 
+                                                            new DataChunkPayload(heapBuffer));
 
         assertEquals(expected, msg);
         assertTrue(input.isEndOfInput());
@@ -64,7 +66,7 @@ public class ChunkedRecordStreamTest {
     @Test
     public void testStreamWithOnlyOneRecord() throws Exception {
 
-        MsgHeader requestHeader = MsgHeader.newRequestHeader(OpCode.QUERY, 26);
+        MsgHeader requestHeader = MsgHeader.newRequestHeader(OpCode.HQL_QUERY, 26);
         RecordIterator iterator = EasyMock.createMock(RecordIterator.class);
 
         TimeSeriesRecord first = new TimeSeriesRecord(0,
@@ -97,7 +99,9 @@ public class ChunkedRecordStreamTest {
 
         heapBuffer.writeByte(Msg.END_OF_STREAM_MARKER);
 
-        Msg<DataChunkPayload> expected = Msg.newResponseMsg(requestHeader, new DataChunkPayload(heapBuffer));
+        Msg<DataChunkPayload> expected = Msg.newResponseMsg(requestHeader, 
+                                                            OpCode.DATA_CHUNK, 
+                                                            new DataChunkPayload(heapBuffer));
 
         assertEquals(expected, msg);
         assertTrue(input.isEndOfInput());
@@ -109,7 +113,7 @@ public class ChunkedRecordStreamTest {
     @Test
     public void testStreamWithTreeRecords() throws Exception {
 
-        MsgHeader requestHeader = MsgHeader.newRequestHeader(OpCode.QUERY, 26);
+        MsgHeader requestHeader = MsgHeader.newRequestHeader(OpCode.HQL_QUERY, 26);
         RecordIterator iterator = EasyMock.createMock(RecordIterator.class);
 
         TimeSeriesRecord first = new TimeSeriesRecord(0,
@@ -162,7 +166,9 @@ public class ChunkedRecordStreamTest {
         writeRecord(heapBuffer, third);
         heapBuffer.writeByte(Msg.END_OF_STREAM_MARKER);
 
-        Msg<DataChunkPayload> expected = Msg.newResponseMsg(requestHeader, new DataChunkPayload(heapBuffer));
+        Msg<DataChunkPayload> expected = Msg.newResponseMsg(requestHeader, 
+                                                            OpCode.DATA_CHUNK, 
+                                                            new DataChunkPayload(heapBuffer));
 
         assertEquals(expected, msg);
         assertTrue(input.isEndOfInput());
@@ -174,7 +180,7 @@ public class ChunkedRecordStreamTest {
     @Test
     public void testStreamWithTwoChunk() throws Exception {
 
-        MsgHeader requestHeader = MsgHeader.newRequestHeader(OpCode.QUERY, 26);
+        MsgHeader requestHeader = MsgHeader.newRequestHeader(OpCode.HQL_QUERY, 26);
         RecordIterator iterator = EasyMock.createMock(RecordIterator.class);
 
         TimeSeriesRecord first = new TimeSeriesRecord(0,
@@ -225,7 +231,9 @@ public class ChunkedRecordStreamTest {
         writeRecord(heapBuffer, first);
         writeRecord(heapBuffer, second);
 
-        Msg<DataChunkPayload> expected = Msg.newResponseMsg(requestHeader, new DataChunkPayload(heapBuffer));
+        Msg<DataChunkPayload> expected = Msg.newResponseMsg(requestHeader, 
+                                                            OpCode.DATA_CHUNK, 
+                                                            new DataChunkPayload(heapBuffer));
 
         assertEquals(expected, msg);
         assertFalse(input.isEndOfInput());
@@ -236,7 +244,9 @@ public class ChunkedRecordStreamTest {
         writeRecord(heapBuffer, third);
         heapBuffer.writeByte(Msg.END_OF_STREAM_MARKER);
 
-        expected = Msg.newResponseMsg(requestHeader, new DataChunkPayload(heapBuffer));
+        expected = Msg.newResponseMsg(requestHeader, 
+                                      OpCode.DATA_CHUNK, 
+                                      new DataChunkPayload(heapBuffer));
 
         assertEquals(expected, msg);
         assertTrue(input.isEndOfInput());
@@ -248,7 +258,7 @@ public class ChunkedRecordStreamTest {
     @Test
     public void testStreamWithOnlyEndOfStreamInSecondChunk() throws Exception {
 
-        MsgHeader requestHeader = MsgHeader.newRequestHeader(OpCode.QUERY, 26);
+        MsgHeader requestHeader = MsgHeader.newRequestHeader(OpCode.HQL_QUERY, 26);
         RecordIterator iterator = EasyMock.createMock(RecordIterator.class);
 
         TimeSeriesRecord first = new TimeSeriesRecord(0,
@@ -300,7 +310,9 @@ public class ChunkedRecordStreamTest {
         writeRecord(heapBuffer, second);
         writeRecord(heapBuffer, third);
 
-        Msg<DataChunkPayload> expected = Msg.newResponseMsg(requestHeader, new DataChunkPayload(heapBuffer));
+        Msg<DataChunkPayload> expected = Msg.newResponseMsg(requestHeader, 
+                                                            OpCode.DATA_CHUNK, 
+                                                            new DataChunkPayload(heapBuffer));
 
         assertEquals(expected, msg);
         assertFalse(input.isEndOfInput());
@@ -310,7 +322,9 @@ public class ChunkedRecordStreamTest {
         heapBuffer.clear();
         heapBuffer.writeByte(Msg.END_OF_STREAM_MARKER);
 
-        expected = Msg.newResponseMsg(requestHeader, new DataChunkPayload(heapBuffer));
+        expected = Msg.newResponseMsg(requestHeader, 
+                                      OpCode.DATA_CHUNK, 
+                                      new DataChunkPayload(heapBuffer));
 
         assertEquals(expected, msg);
         assertTrue(input.isEndOfInput());

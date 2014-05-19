@@ -83,10 +83,10 @@ interface Node<K extends Comparable<K>, V> {
     
     /**
      * Returns an iterator to iterate over the records whose keys range from
-     * {@code fromKey}, inclusive, to {@code toKey}, exclusive.
+     * {@code fromKey}, inclusive, to {@code toKey}, inclusive.
      * 
      * @param fromKey low end-point (inclusive) of the keys in the returned iterator
-     * @param toKey high end-point (exclusive) of the keys in the returned iterator
+     * @param toKey high end-point (inclusive) of the keys in the returned iterator
      * @return an iterator to iterate over the records whose keys range from
      * {@code fromKey}, inclusive, to {@code toKey}, exclusive.
      * @throws IOException if an I/O problem occurs.

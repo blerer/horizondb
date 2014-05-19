@@ -189,7 +189,7 @@ public class BTreeTest {
         btree.insert(3, "C");
         btree.insert(1, "A");
 
-        KeyValueIterator<Integer, String> iterator = btree.iterator(2, 4);
+        KeyValueIterator<Integer, String> iterator = btree.iterator(2, 3);
         
         assertNextContains(iterator, 2, "B");
         assertNextContains(iterator, 3, "C");
@@ -250,7 +250,7 @@ public class BTreeTest {
         btree.insert(1, "A");
         btree.insert(6, "F");
 
-        KeyValueIterator<Integer, String> iterator = btree.iterator(2, 4);
+        KeyValueIterator<Integer, String> iterator = btree.iterator(2, 3);
         
         assertNextContains(iterator, 2, "B");
         assertNextContains(iterator, 3, "C");
@@ -269,7 +269,7 @@ public class BTreeTest {
         btree.insert(1, "A");
         btree.insert(6, "F");
 
-        KeyValueIterator<Integer, String> iterator = btree.iterator(0, 2);
+        KeyValueIterator<Integer, String> iterator = btree.iterator(1, 1);
         
         assertNextContains(iterator, 1, "A");
         assertFalse(iterator.next());
@@ -705,7 +705,7 @@ public class BTreeTest {
         btree.insert(18, "R");
         btree.insert(13, "M");
 
-        KeyValueIterator<Integer, String> iterator = btree.iterator(13, 15);
+        KeyValueIterator<Integer, String> iterator = btree.iterator(13, 14);
         
         assertNextContains(iterator, 13, "M");
         assertNextContains(iterator, 14, "N");

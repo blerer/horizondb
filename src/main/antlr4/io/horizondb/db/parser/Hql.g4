@@ -340,8 +340,13 @@ operator
 
 value
     : STRING
+    | timeValue
     | NUMBER
-    ; 
+    ;     
+
+timeValue
+    : NUMBER ('s' | 'ms' | 'µs' | 'ns') 
+    ;
     
 ID
     : ID_LETTER (ID_LETTER | DIGIT)* 

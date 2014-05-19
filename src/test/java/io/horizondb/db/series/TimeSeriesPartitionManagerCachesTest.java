@@ -22,6 +22,7 @@ import io.horizondb.io.files.FileUtils;
 import io.horizondb.model.core.Field;
 import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.core.iterators.DefaultRecordIterator;
+import io.horizondb.model.core.util.TimeUtils;
 import io.horizondb.model.schema.DatabaseDefinition;
 import io.horizondb.model.schema.FieldType;
 import io.horizondb.model.schema.RecordTypeDefinition;
@@ -41,8 +42,6 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import static io.horizondb.model.schema.FieldType.MILLISECONDS_TIMESTAMP;
-
-import static io.horizondb.db.util.TimeUtils.getTime;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -340,7 +339,7 @@ public class TimeSeriesPartitionManagerCachesTest {
 
             TimeSeriesPartition daxPartition = caches.getPartitionForWrite(daxPartitionId, daxDefinition);
 
-            long timestamp = getTime("2013.11.26 12:32:12.000");
+            long timestamp = TimeUtils.parseDateTime("2013-11-26 12:32:12.000");
 
             RecordIterator recordIterator = DefaultRecordIterator.newBuilder(daxDefinition)
                                                                  .newRecord("exchangeState")

@@ -197,7 +197,7 @@ final class InternalNode<K extends Comparable<K>, V> extends AbstractNode<K, V> 
             key = fromKey;
         }
         
-        SortedMap<K, Node<K, V>> subMap = this.children.subMap(key, toKey);
+        SortedMap<K, Node<K, V>> subMap = this.children.subMap(key, true, toKey, true);
         
         return new InternalNodeKeyValueIterator<K, V>(fromKey, toKey, subMap);
     }

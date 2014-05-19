@@ -21,6 +21,7 @@ import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.model.core.Record;
 import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;
+import io.horizondb.model.core.util.TimeUtils;
 import io.horizondb.model.schema.DatabaseDefinition;
 import io.horizondb.model.schema.FieldType;
 import io.horizondb.model.schema.RecordTypeDefinition;
@@ -34,7 +35,6 @@ import org.junit.Test;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
-import static io.horizondb.db.util.TimeUtils.getTime;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -49,7 +49,7 @@ public class MemTimeSeriesTest {
     /**
      * The time reference.
      */
-    private static long TIME_IN_MILLIS = getTime("2013.11.26 12:00:00.000");
+    private static long TIME_IN_MILLIS = TimeUtils.parseDateTime("2013-11-26 12:00:00.000");
 
     /**
      * The time reference.

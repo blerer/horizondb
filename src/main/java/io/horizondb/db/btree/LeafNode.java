@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NavigableMap;
 import java.util.NoSuchElementException;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -47,7 +48,7 @@ final class LeafNode<K extends Comparable<K>, V> extends AbstractNode<K, V> {
     /**
      * The node records.
      */
-    private final SortedMap<K, ValueWrapper<V>> records;
+    private final NavigableMap<K, ValueWrapper<V>> records;
 
     /**
      * Creates a new empty <code>LeafNode</code>.
@@ -65,7 +66,7 @@ final class LeafNode<K extends Comparable<K>, V> extends AbstractNode<K, V> {
      * @param btree the b+Tree to which this node belongs.
      * @param records the node records.
      */
-    private LeafNode(BTree<K, V> btree, SortedMap<K, ValueWrapper<V>> records) {
+    private LeafNode(BTree<K, V> btree, NavigableMap<K, ValueWrapper<V>> records) {
 
         super(btree);        
         this.records = records;
@@ -304,7 +305,7 @@ final class LeafNode<K extends Comparable<K>, V> extends AbstractNode<K, V> {
     @Override
     public KeyValueIterator<K, V> iterator(K fromKey, K toKey) throws IOException {
 
-        Map<K, ValueWrapper<V>> subMap = this.records.subMap(fromKey, toKey);
+        Map<K, ValueWrapper<V>> subMap = this.records.subMap(fromKey, true, toKey, true);
         return new LeafNodeKeyValueIterator<>(subMap);
     }
 

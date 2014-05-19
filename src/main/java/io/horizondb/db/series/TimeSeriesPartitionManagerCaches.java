@@ -211,7 +211,8 @@ public final class TimeSeriesPartitionManagerCaches extends AbstractComponent im
                                                                               TimeSeriesDefinition definition) 
                                                                                       throws IOException {
         
-        return new TimeSeriesPartitionCacheIterator(this.readCache, this.getRangeForRead(fromId, toId, definition));
+        return new TimeSeriesPartitionCacheIterator(this.readCache, 
+                                                    this.manager.getRangeForRead(fromId, toId, definition));
     }
 
     /**

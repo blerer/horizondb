@@ -1,6 +1,4 @@
 /**
- * Copyright 2013 Benjamin Lerer
- * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,13 +13,14 @@
  */
 package io.horizondb.db.series;
 
-import io.horizondb.db.util.TimeUtils;
+import io.horizondb.db.queries.Expression;
 import io.horizondb.io.Buffer;
 import io.horizondb.io.buffers.Buffers;
 import io.horizondb.io.encoding.VarInts;
 import io.horizondb.model.core.Record;
 import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;
 import io.horizondb.model.core.records.TimeSeriesRecord;
+import io.horizondb.model.core.util.TimeUtils;
 import io.horizondb.model.schema.DatabaseDefinition;
 import io.horizondb.model.schema.RecordTypeDefinition;
 import io.horizondb.model.schema.TimeSeriesDefinition;
@@ -32,8 +31,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.common.collect.Range;
-
+import static io.horizondb.db.queries.expressions.Expressions.and;
+import static io.horizondb.db.queries.expressions.Expressions.ge;
+import static io.horizondb.db.queries.expressions.Expressions.le;
+import static io.horizondb.db.queries.expressions.Expressions.lt;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -42,7 +43,7 @@ import static org.junit.Assert.assertTrue;
  * @author Benjamin
  * 
  */
-public class TimeRangeRecordIteratorTest {
+public class FilteringRecordIteratorTest {
 
     private TimeSeriesDefinition seriesDefinition;
 
@@ -77,67 +78,75 @@ public class TimeRangeRecordIteratorTest {
     @Test
     public void testWithDeltaAndNoFiltering() throws IOException {
 
-        long timestamp = TimeUtils.getTime("2013.11.14 11:46:00.000");
+        long timestamp = TimeUtils.parseDateTime("2013-11-14 11:46:00.000");
 
         Buffer buffer = createBufferWithDeltas(this.seriesDefinition, timestamp);
 
         BinaryTimeSeriesRecordIterator iterator = new BinaryTimeSeriesRecordIterator(this.seriesDefinition, buffer);
 
-        Range<Long> range = Range.closedOpen(Long.valueOf(timestamp - 100), 
-                                             Long.valueOf(timestamp + 500));
+        Expression expression = and(ge("timestamp", (timestamp - 100) + "ms"), 
+                                    lt("timestamp", (timestamp + 500) + "ms"));
+        
+        Filter<Record> filter = expression.toFilter(this.seriesDefinition);
 
-        try (TimeRangeRecordIterator rangeIterator = new TimeRangeRecordIterator(this.seriesDefinition, iterator, range)) {
+        try (FilteringRecordIterator filteringIterator = new FilteringRecordIterator(this.seriesDefinition,
+                                                                                     iterator,
+                                                                                     filter)) {
 
-            assertTrue(rangeIterator.hasNext());
+            assertTrue(filteringIterator.hasNext());
 
-            Record record = rangeIterator.next();
+            Record record = filteringIterator.next();
 
             assertEquals(timestamp, record.getTimestampInMillis(0));
             assertEquals(timestamp, record.getTimestampInMillis(1));
             assertEquals(10, record.getByte(2));
 
-            record = rangeIterator.next();
+            record = filteringIterator.next();
 
             assertTrue(record.isDelta());
             assertEquals(100, record.getTimestampInMillis(0));
             assertEquals(100, record.getTimestampInMillis(1));
             assertEquals(-5, record.getByte(2));
 
-            assertTrue(rangeIterator.hasNext());
+            assertTrue(filteringIterator.hasNext());
 
-            record = rangeIterator.next();
+            record = filteringIterator.next();
 
             assertTrue(record.isDelta());
             assertEquals(250, record.getTimestampInMillis(0));
             assertEquals(250, record.getTimestampInMillis(1));
             assertEquals(5, record.getByte(2));
 
-            assertTrue(rangeIterator.hasNext());
+            assertTrue(filteringIterator.hasNext());
 
-            record = rangeIterator.next();
+            record = filteringIterator.next();
 
             assertTrue(record.isDelta());
             assertEquals(100, record.getTimestampInMillis(0));
             assertEquals(100, record.getTimestampInMillis(1));
             assertEquals(-4, record.getByte(2));
 
-            assertFalse(rangeIterator.hasNext());
+            assertFalse(filteringIterator.hasNext());
         }
     }
 
     @Test
     public void testWithDeltaAndFiltering() throws IOException {
 
-        long timestamp = TimeUtils.getTime("2013.11.14 11:46:00.000");
+        long timestamp = TimeUtils.parseDateTime("2013-11-14 11:46:00.000");
 
         Buffer buffer = createBufferWithDeltas(this.seriesDefinition, timestamp);
 
         BinaryTimeSeriesRecordIterator iterator = new BinaryTimeSeriesRecordIterator(this.seriesDefinition, buffer);
 
-        Range<Long> range = Range.closedOpen(Long.valueOf(timestamp + 120), 
-                                             Long.valueOf(timestamp + 600));
+        Expression expression = and(ge("timestamp", (timestamp + 120) + "ms"), 
+                                    lt("timestamp", (timestamp + 600) + "ms"));
+        
+        Filter<Record> filter = expression.toFilter(this.seriesDefinition);
 
-        try (TimeRangeRecordIterator rangeIterator = new TimeRangeRecordIterator(this.seriesDefinition, iterator, range)) {
+        try (FilteringRecordIterator rangeIterator = new FilteringRecordIterator(this.seriesDefinition,
+                                                                                 iterator,
+                                                                                 filter)) {
 
             assertTrue(rangeIterator.hasNext());
 
@@ -164,16 +173,20 @@ public class TimeRangeRecordIteratorTest {
     @Test
     public void testWithTwoRecordTypeAndNoFiltering() throws IOException {
 
-        long timestamp = TimeUtils.getTime("2013.11.14 11:46:00.000");
+        long timestamp = TimeUtils.parseDateTime("2013-11-14 11:46:00.000");
 
         Buffer buffer = createBufferWithTwoRecordTypes(this.seriesDefinition, timestamp);
 
         BinaryTimeSeriesRecordIterator iterator = new BinaryTimeSeriesRecordIterator(this.seriesDefinition, buffer);
 
-        Range<Long> range = Range.closed(Long.valueOf(timestamp - 100), 
-                                         Long.valueOf(timestamp + 600));
+        Expression expression = and(ge("timestamp", (timestamp - 100) + "ms"), 
+                                    le("timestamp", (timestamp + 600) + "ms"));
+        
+        Filter<Record> filter = expression.toFilter(this.seriesDefinition);
 
-        try (TimeRangeRecordIterator rangeIterator = new TimeRangeRecordIterator(this.seriesDefinition, iterator, range)) {
+        try (FilteringRecordIterator rangeIterator = new FilteringRecordIterator(this.seriesDefinition,
+                                                                                 iterator,
+                                                                                 filter)) {
 
             assertTrue(rangeIterator.hasNext());
 
@@ -249,16 +262,20 @@ public class TimeRangeRecordIteratorTest {
     @Test
     public void testWithTwoRecordTypeAndFiltering() throws IOException {
 
-        long timestamp = TimeUtils.getTime("2013.11.14 11:46:00.000");
+        long timestamp = TimeUtils.parseDateTime("2013-11-14 11:46:00.000");
 
         Buffer buffer = createBufferWithTwoRecordTypes(this.seriesDefinition, timestamp);
 
         BinaryTimeSeriesRecordIterator iterator = new BinaryTimeSeriesRecordIterator(this.seriesDefinition, buffer);
 
-        Range<Long> range = Range.closedOpen(Long.valueOf(timestamp + 200), 
-                                             Long.valueOf(timestamp + 400));
+        Expression expression = and(ge("timestamp", (timestamp + 200) + "ms"), 
+                                    lt("timestamp", (timestamp + 400) + "ms"));
+        
+        Filter<Record> filter = expression.toFilter(this.seriesDefinition);
 
-        try (TimeRangeRecordIterator rangeIterator = new TimeRangeRecordIterator(this.seriesDefinition, iterator, range)) {
+        try (FilteringRecordIterator rangeIterator = new FilteringRecordIterator(this.seriesDefinition,
+                                                                                 iterator,
+                                                                                 filter)) {
 
             assertTrue(rangeIterator.hasNext());
 
@@ -287,16 +304,20 @@ public class TimeRangeRecordIteratorTest {
     @Test
     public void testWithDeltasAndFullRecordsAndFiltering() throws IOException {
 
-        long timestamp = TimeUtils.getTime("2013.11.14 11:46:00.000");
+        long timestamp = TimeUtils.parseDateTime("2013-11-14 11:46:00.000");
 
         Buffer buffer = createBufferWithDeltasAndFullRecords(this.seriesDefinition, timestamp);
 
         BinaryTimeSeriesRecordIterator iterator = new BinaryTimeSeriesRecordIterator(this.seriesDefinition, buffer);
 
-        Range<Long> range = Range.closedOpen(Long.valueOf(timestamp + 80), 
-                                             Long.valueOf(timestamp + 600));
+        Expression expression = and(ge("timestamp", (timestamp + 80) + "ms"), 
+                                    lt("timestamp", (timestamp + 600) + "ms"));
+        
+        Filter<Record> filter = expression.toFilter(this.seriesDefinition);
 
-        try (TimeRangeRecordIterator rangeIterator = new TimeRangeRecordIterator(this.seriesDefinition, iterator, range)) {
+        try (FilteringRecordIterator rangeIterator = new FilteringRecordIterator(this.seriesDefinition,
+                                                                                 iterator,
+                                                                                 filter)) {
 
             assertTrue(rangeIterator.hasNext());
 
@@ -330,16 +351,20 @@ public class TimeRangeRecordIteratorTest {
     @Test
     public void testWithNoDeltaAndNoFiltering() throws IOException {
 
-        long timestamp = TimeUtils.getTime("2013.11.14 11:46:00.000");
+        long timestamp = TimeUtils.parseDateTime("2013-11-14 11:46:00.000");
 
         Buffer buffer = createBufferWithOnlyFullRecords(this.seriesDefinition, timestamp);
 
         BinaryTimeSeriesRecordIterator iterator = new BinaryTimeSeriesRecordIterator(this.seriesDefinition, buffer);
 
-        Range<Long> range = Range.closedOpen(Long.valueOf(timestamp - 100), 
-                                             Long.valueOf(timestamp + 500));
+        Expression expression = and(ge("timestamp", (timestamp - 100) + "ms"), 
+                                    lt("timestamp", (timestamp + 500) + "ms"));
+        
+        Filter<Record> filter = expression.toFilter(this.seriesDefinition);
 
-        try (TimeRangeRecordIterator rangeIterator = new TimeRangeRecordIterator(this.seriesDefinition, iterator, range)) {
+        try (FilteringRecordIterator rangeIterator = new FilteringRecordIterator(this.seriesDefinition,
+                                                                                 iterator,
+                                                                                 filter)) {
 
             assertTrue(rangeIterator.hasNext());
 
@@ -380,16 +405,20 @@ public class TimeRangeRecordIteratorTest {
     @Test
     public void testWithRangeBeforeRecords() throws IOException {
 
-        long timestamp = TimeUtils.getTime("2013.11.14 11:46:00.000");
+        long timestamp = TimeUtils.parseDateTime("2013-11-14 11:46:00.000");
 
         Buffer buffer = createBufferWithOnlyFullRecords(this.seriesDefinition, timestamp);
 
         BinaryTimeSeriesRecordIterator iterator = new BinaryTimeSeriesRecordIterator(this.seriesDefinition, buffer);
 
-        Range<Long> range = Range.closedOpen(Long.valueOf(timestamp - 100), 
-                                             Long.valueOf(timestamp + 500));
+        Expression expression = and(ge("timestamp", (timestamp - 100) + "ms"), 
+                                    lt("timestamp", (timestamp + 500) + "ms"));
+        
+        Filter<Record> filter = expression.toFilter(this.seriesDefinition);
 
-        try (TimeRangeRecordIterator rangeIterator = new TimeRangeRecordIterator(this.seriesDefinition, iterator, range)) {
+        try (FilteringRecordIterator rangeIterator = new FilteringRecordIterator(this.seriesDefinition,
+                                                                                 iterator,
+                                                                                 filter)) {
 
             assertTrue(rangeIterator.hasNext());
 
@@ -430,16 +459,20 @@ public class TimeRangeRecordIteratorTest {
     @Test
     public void testWithRangeIncludingOnlyFirstRecord() throws IOException {
 
-        long timestamp = TimeUtils.getTime("2013.11.14 11:46:00.000");
+        long timestamp = TimeUtils.parseDateTime("2013-11-14 11:46:00.000");
 
         Buffer buffer = createBufferWithOnlyFullRecords(this.seriesDefinition, timestamp);
 
         BinaryTimeSeriesRecordIterator iterator = new BinaryTimeSeriesRecordIterator(this.seriesDefinition, buffer);
 
-        Range<Long> range = Range.closedOpen(Long.valueOf(timestamp - 100), 
-                                             Long.valueOf(timestamp + 1));
+        Expression expression = and(ge("timestamp", (timestamp - 100) + "ms"), 
+                                    lt("timestamp", (timestamp + 1) + "ms"));
+        
+        Filter<Record> filter = expression.toFilter(this.seriesDefinition);
 
-        try (TimeRangeRecordIterator rangeIterator = new TimeRangeRecordIterator(this.seriesDefinition, iterator, range)) {
+        try (FilteringRecordIterator rangeIterator = new FilteringRecordIterator(this.seriesDefinition,
+                                                                                 iterator,
+                                                                                 filter)) {
 
             assertTrue(rangeIterator.hasNext());
 
@@ -456,16 +489,20 @@ public class TimeRangeRecordIteratorTest {
     @Test
     public void testWithNoDeltaAndWithFiltering() throws IOException {
 
-        long timestamp = TimeUtils.getTime("2013.11.14 11:46:00.000");
+        long timestamp = TimeUtils.parseDateTime("2013-11-14 11:46:00.000");
 
         Buffer buffer = createBufferWithOnlyFullRecords(this.seriesDefinition, timestamp);
 
         BinaryTimeSeriesRecordIterator iterator = new BinaryTimeSeriesRecordIterator(this.seriesDefinition, buffer);
 
-        Range<Long> range = Range.closedOpen(Long.valueOf(timestamp + 50), 
-                                             Long.valueOf(timestamp + 400));
+        Expression expression = and(ge("timestamp", (timestamp + 50) + "ms"), 
+                                    lt("timestamp", (timestamp + 400) + "ms"));
+        
+        Filter<Record> filter = expression.toFilter(this.seriesDefinition);
 
-        try (TimeRangeRecordIterator rangeIterator = new TimeRangeRecordIterator(this.seriesDefinition, iterator, range)) {
+        try (FilteringRecordIterator rangeIterator = new FilteringRecordIterator(this.seriesDefinition,
+                                                                                 iterator,
+                                                                                 filter)) {
 
             assertTrue(rangeIterator.hasNext());
 

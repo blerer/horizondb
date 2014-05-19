@@ -61,10 +61,10 @@ public interface TimeSeriesPartitionManager extends Component {
     
     /**
      * Returns an iterator to iterate over the time series partition whose IDs range from {@code fromId}, inclusive, to
-     * {@code toId}, exclusive.
+     * {@code toId}, inclusive.
      * 
      * @param fromId low end-point (inclusive) of the IDs in the returned iterator
-     * @param toId high end-point (exclusive) of the IDs in the returned iterator
+     * @param toId high end-point (inclusive) of the IDs in the returned iterator
      * @return an iterator to iterate over the time series partition whose IDs range from {@code fromId}, inclusive, to
      * {@code toId}, exclusive.
      * @throws IOException if an I/O problem occurs.

@@ -1,6 +1,4 @@
 /**
- * Copyright 2013 Benjamin Lerer
- * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,6 +19,7 @@ import io.horizondb.db.commitlog.CommitLog;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.files.SeekableFileDataInput;
 import io.horizondb.model.core.Field;
+import io.horizondb.model.core.Record;
 import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;
 import io.horizondb.model.schema.TimeSeriesDefinition;
@@ -40,6 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Range;
+import com.google.common.collect.RangeSet;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import static io.horizondb.io.files.FileUtils.printNumberOfBytes;
@@ -214,14 +214,16 @@ public final class TimeSeriesPartition implements Comparable<TimeSeriesPartition
     /**
      * Returns a <code>RecordIterator</code> containing the data from the specified time range.
      * 
-     * @param timeRange the time range for which the data must be returned.
-     * @return a <code>RecordIterator</code> containing the data from the specified time range.
-     * @throws IOException if an I/O problem occurs while writing the data.
+     * @param rangeSet the time range for which the data must be returned
+     * @param filter the filter used to filter the data
+     * @return a <code>RecordIterator</code> containing the data from the specified time range
+     * @throws IOException if an I/O problem occurs while writing the data
      */
-    public RecordIterator read(Range<Long> timeRange) throws IOException {
+    public RecordIterator read(RangeSet<Field> rangeSet, Filter<Record> filter) throws IOException {
 
-        return new TimeRangeRecordIterator(this.definition, new BinaryTimeSeriesRecordIterator(this.definition,
-                                                                                               newInput()), timeRange);
+        return new FilteringRecordIterator(this.definition, 
+                                           new BinaryTimeSeriesRecordIterator(this.definition, newInput()), 
+                                           filter);
     }
 
     /**

@@ -23,6 +23,7 @@ import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.protocol.DataChunkPayload;
 import io.horizondb.model.protocol.Msg;
 import io.horizondb.model.protocol.MsgHeader;
+import io.horizondb.model.protocol.OpCode;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.stream.ChunkedInput;
 
@@ -151,7 +152,7 @@ public final class ChunkedRecordStream implements ChunkedInput<Msg<DataChunkPayl
             this.next = loadNextRecord();
         }
 
-        return Msg.newResponseMsg(this.requestHeader, new DataChunkPayload(this.buffer));
+        return Msg.newResponseMsg(this.requestHeader, OpCode.DATA_CHUNK, new DataChunkPayload(this.buffer));
     }
 
     /**

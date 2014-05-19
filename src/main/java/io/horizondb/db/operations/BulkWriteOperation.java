@@ -20,15 +20,11 @@ import io.horizondb.db.Operation;
 import io.horizondb.db.OperationContext;
 import io.horizondb.db.databases.Database;
 import io.horizondb.db.series.TimeSeries;
-import io.horizondb.model.core.Field;
 import io.horizondb.model.protocol.BinaryBulkWritePayload;
 import io.horizondb.model.protocol.Msg;
 import io.horizondb.model.protocol.Msgs;
-import io.horizondb.model.schema.FieldType;
 
 import java.io.IOException;
-
-import com.google.common.collect.Range;
 
 /**
  * <code>Operation</code> that handle <code>BULK_WRITE</code> operations.
@@ -49,17 +45,7 @@ final class BulkWriteOperation implements Operation {
 
         TimeSeries series = database.getTimeSeries(payload.getSeriesName());
 
-        Range<Long> partitionRangeTime = payload.getPartitionTimeRange();
-        
-        Field lowerEndPoint = FieldType.MILLISECONDS_TIMESTAMP.newField(); 
-        lowerEndPoint.setTimestampInMillis(partitionRangeTime.lowerEndpoint().longValue());
-        
-        Field upperEndPoint = FieldType.MILLISECONDS_TIMESTAMP.newField(); 
-        upperEndPoint.setTimestampInMillis(partitionRangeTime.upperEndpoint().longValue());
-        
-        Range<Field> range = Range.closedOpen(lowerEndPoint, upperEndPoint);
-        
-        series.write(context, range, payload.getBuffer());
+        series.write(context, payload.getPartitionTimeRange(), payload.getBuffer());
 
         return Msgs.newBulkWriteResponse(request);
     }

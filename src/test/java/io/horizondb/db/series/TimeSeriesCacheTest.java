@@ -92,7 +92,7 @@ public class TimeSeriesCacheTest {
 
         manager.start();
         manager.createTimeSeries(databaseName, definition, true);
-        TimeSeries series = new TimeSeries(databaseName, this.partitionManager, definition);
+        TimeSeries series = new TimeSeries(databaseName, definition, this.partitionManager);
         EasyMock.expect(manager.getTimeSeries(new TimeSeriesId(databaseName, "dax"))).andReturn(series);
         manager.shutdown();
 
@@ -151,7 +151,7 @@ public class TimeSeriesCacheTest {
 
         manager.start();
         manager.createTimeSeries(databaseName, definition, true);
-        TimeSeries series = new TimeSeries(databaseName, this.partitionManager, definition);
+        TimeSeries series = new TimeSeries(databaseName, definition, this.partitionManager);
         EasyMock.expect(manager.getTimeSeries(new TimeSeriesId(databaseName, "dax"))).andReturn(series);
         manager.shutdown();
 

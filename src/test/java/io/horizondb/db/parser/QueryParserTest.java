@@ -154,6 +154,17 @@ public class QueryParserTest {
     }
     
     @Test
+    public void testParseSelectWithTimestampUnit() throws HorizonDBException {
+
+        String expression = "timestamp >= 1384425960200ms AND timestamp < 1384425960400ms";
+        
+        SelectQuery query = (SelectQuery) QueryParser.parse("SELECT * FROM Dax WHERE " + expression + ";");
+        
+        assertEquals("Dax", query.getTimeSeriesName());
+        assertEquals(expression, query.getExpression().toString());
+    }
+    
+    @Test
     public void testParseSelectWithAndOrAndParentheses() throws HorizonDBException {
 
         String expression = "timestamp > 2 AND (timestamp < 4 OR timestamp > 6)";

@@ -170,7 +170,7 @@ public final class DefaultTimeSeriesManager extends AbstractComponent implements
                     + " does not exists within the database " + id.getDatabaseName() + ".");
         }
 
-        return new TimeSeries(id.getDatabaseName(), this.partitionManager, definition);
+        return new TimeSeries(id.getDatabaseName(), definition, this.partitionManager);
     }
 
     /**

@@ -18,11 +18,13 @@ package io.horizondb.db.series;
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.commitlog.ReplayPosition;
+import io.horizondb.db.series.filters.Filters;
 import io.horizondb.io.files.FileUtils;
 import io.horizondb.model.core.Field;
 import io.horizondb.model.core.Record;
 import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.core.iterators.DefaultRecordIterator;
+import io.horizondb.model.core.util.TimeUtils;
 import io.horizondb.model.schema.DatabaseDefinition;
 import io.horizondb.model.schema.FieldType;
 import io.horizondb.model.schema.RecordTypeDefinition;
@@ -39,13 +41,13 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableRangeSet;
 import com.google.common.collect.Range;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
+import static io.horizondb.db.series.filters.Filters.range;
 import static io.horizondb.model.schema.FieldType.MILLISECONDS_TIMESTAMP;
-
-import static io.horizondb.db.util.TimeUtils.getTime;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -129,9 +131,8 @@ public class TimeSeriesPartitionTest {
 
         EasyMock.replay(this.manager, this.listener);
 
-        Range<Long> range = newTimeRange("2013.11.26 12:00:00.000", "2013.11.26 14:00:00.000");
-
-        RecordIterator iterator = this.partition.read(range);
+        Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26 12:00:00.000'", "'2013-11-26 14:00:00.000'");
+        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), toFilter(range));
 
         Assert.assertFalse(iterator.hasNext());
 
@@ -146,9 +147,9 @@ public class TimeSeriesPartitionTest {
 
         EasyMock.replay(this.manager, this.listener);
 
-        Range<Long> range = newTimeRange("2013.11.26 12:00:00.000", "2013.11.26 14:00:00.000");
+        Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26 12:00:00.000'", "'2013-11-26 14:00:00.000'");
 
-        long timestamp = getTime("2013.11.26 12:32:12.000");
+        long timestamp = TimeUtils.parseDateTime("2013-11-26 12:32:12.000");
 
         RecordIterator recordIterator = DefaultRecordIterator.newBuilder(this.def)
                                                              .newRecord("exchangeState")
@@ -168,7 +169,7 @@ public class TimeSeriesPartitionTest {
         this.partition.write(recordIterator, newFuture(0, 1));
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
 
-        RecordIterator iterator = this.partition.read(range);
+        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), toFilter(range));
 
         assertTrue(iterator.hasNext());
         Record actual = iterator.next();
@@ -207,7 +208,7 @@ public class TimeSeriesPartitionTest {
 
         EasyMock.replay(this.manager, this.listener);
 
-        long timestamp = getTime("2013.11.26 12:32:12.000");
+        long timestamp = TimeUtils.parseDateTime("2013-11-26 12:32:12");
 
         RecordIterator recordIterator = DefaultRecordIterator.newBuilder(this.def)
                                                              .newRecord("exchangeState")
@@ -233,9 +234,9 @@ public class TimeSeriesPartitionTest {
         this.partition.write(recordIterator, newFuture(0, 2000));
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
 
-
-        Range<Long> range = Range.closedOpen(Long.valueOf(timestamp), Long.valueOf(timestamp  + 2000));
-        RecordIterator iterator = this.partition.read(range);
+        Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26 12:32:12'", "'2013-11-26 12:32:14'");
+        
+        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), toFilter(range));
 
         assertTrue(iterator.hasNext());
         Record actual = iterator.next();
@@ -277,9 +278,9 @@ public class TimeSeriesPartitionTest {
 
         EasyMock.replay(this.manager, this.listener);
 
-        Range<Long> range = newTimeRange("2013.11.26 12:00:00.000", "2013.11.26 14:00:00.000");
+        Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26 12:00:00'", "'2013-11-26 14:00:00'");
 
-        long timestamp = getTime("2013.11.26 12:32:12.000");
+        long timestamp = TimeUtils.parseDateTime("2013-11-26 12:32:12.000");
 
         RecordIterator recordIterator = DefaultRecordIterator.newBuilder(this.def)
                                                              .newRecord("exchangeState")
@@ -320,7 +321,7 @@ public class TimeSeriesPartitionTest {
         assertEquals(2 * MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
         assertEquals(Long.valueOf(0), this.partition.getFirstSegmentContainingNonPersistedData());
 
-        RecordIterator iterator = this.partition.read(range);
+        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), toFilter(range));
 
         assertTrue(iterator.hasNext());
         Record actual = iterator.next();
@@ -394,9 +395,9 @@ public class TimeSeriesPartitionTest {
 
         EasyMock.replay(this.manager, this.listener);
 
-        Range<Long> range = newTimeRange("2013.11.26 12:00:00.000", "2013.11.26 14:00:00.000");
+        Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26 12:00:00'", "'2013-11-26 14:00:00'");
 
-        long timestamp = getTime("2013.11.26 12:32:12.000");
+        long timestamp = TimeUtils.parseDateTime("2013-11-26 12:32:12.000");
 
         RecordIterator recordIterator = DefaultRecordIterator.newBuilder(this.def)
                                                              .newRecord("exchangeState")
@@ -458,7 +459,7 @@ public class TimeSeriesPartitionTest {
         this.partition.flush();
         assertEquals(Long.valueOf(1), this.partition.getFirstSegmentContainingNonPersistedData());
 
-        RecordIterator iterator = this.partition.read(range);
+        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), toFilter(range));
 
         assertTrue(iterator.hasNext());
         Record actual = iterator.next();
@@ -552,9 +553,9 @@ public class TimeSeriesPartitionTest {
 
         EasyMock.replay(this.manager, this.listener);
 
-        Range<Long> range = newTimeRange("2013.11.26 12:00:00.000", "2013.11.26 14:00:00.000");
+        Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26 12:00:00'", "'2013-11-26 14:00:00'");
 
-        long timestamp = getTime("2013.11.26 12:32:12.000");
+        long timestamp = TimeUtils.parseDateTime("2013-11-26 12:32:12.000");
 
         RecordIterator recordIterator = DefaultRecordIterator.newBuilder(this.def)
                                                              .newRecord("exchangeState")
@@ -580,7 +581,7 @@ public class TimeSeriesPartitionTest {
 
         this.partition.flush();
 
-        RecordIterator iterator = this.partition.read(range);
+        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), toFilter(range));
 
         assertTrue(iterator.hasNext());
         Record actual = iterator.next();
@@ -631,9 +632,9 @@ public class TimeSeriesPartitionTest {
 
         EasyMock.replay(this.manager, this.listener);
 
-        Range<Long> range = newTimeRange("2013.11.26 12:00:00.000", "2013.11.26 14:00:00.000");
+        Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26 12:00:00'", "'2013-11-26 14:00:00'");
 
-        long timestamp = getTime("2013.11.26 12:32:12.000");
+        long timestamp = TimeUtils.parseDateTime("2013-11-26 12:32:12.000");
 
         RecordIterator recordIterator = DefaultRecordIterator.newBuilder(this.def)
                                                              .newRecord("exchangeState")
@@ -689,7 +690,7 @@ public class TimeSeriesPartitionTest {
         this.partition.write(recordIterator, newFuture(0, 3));
         assertEquals(3 * MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
 
-        RecordIterator iterator = this.partition.read(range);
+        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), toFilter(range));
 
         assertTrue(iterator.hasNext());
         Record actual = iterator.next();
@@ -781,9 +782,9 @@ public class TimeSeriesPartitionTest {
 
         EasyMock.replay(this.manager, this.listener);
 
-        Range<Long> range = newTimeRange("2013.11.26 12:00:00.000", "2013.11.26 14:00:00.000");
+        Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26 12:00:00'", "'2013-11-26 14:00:00'");
 
-        long timestamp = getTime("2013.11.26 12:32:12.000");
+        long timestamp = TimeUtils.parseDateTime("2013-11-26 12:32:12.000");
 
         RecordIterator recordIterator = DefaultRecordIterator.newBuilder(this.def)
                                                              .newRecord("exchangeState")
@@ -810,7 +811,7 @@ public class TimeSeriesPartitionTest {
         assertEquals(0, this.partition.getMemoryUsage());
         assertEquals(null, this.partition.getFirstSegmentContainingNonPersistedData());
 
-        RecordIterator iterator = this.partition.read(range);
+        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), toFilter(range));
 
         assertTrue(iterator.hasNext());
         Record actual = iterator.next();
@@ -854,9 +855,9 @@ public class TimeSeriesPartitionTest {
 
         EasyMock.replay(this.manager, this.listener);
 
-        Range<Long> range = newTimeRange("2013.11.26 12:00:00.000", "2013.11.26 14:00:00.000");
+        Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26 12:00:00'", "'2013-11-26 14:00:00'");
 
-        long timestamp = getTime("2013.11.26 12:32:12.000");
+        long timestamp = TimeUtils.parseDateTime("2013-11-26 12:32:12.000");
 
         RecordIterator recordIterator = DefaultRecordIterator.newBuilder(this.def)
                                                              .newRecord("exchangeState")
@@ -896,7 +897,7 @@ public class TimeSeriesPartitionTest {
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
         assertEquals(Long.valueOf(0), this.partition.getFirstSegmentContainingNonPersistedData());
 
-        RecordIterator iterator = this.partition.read(range);
+        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), toFilter(range));
 
         assertTrue(iterator.hasNext());
         Record actual = iterator.next();
@@ -948,10 +949,14 @@ public class TimeSeriesPartitionTest {
         return Futures.immediateCheckedFuture(new ReplayPosition(segment, position));
     }
     
-    private static Range<Long> newTimeRange(String start, String end) {
-        
-        return Range.closedOpen(Long.valueOf(getTime(start)), 
-                                Long.valueOf(getTime(end)));
-        
+    /**
+     * Converts the specified timestamp range into a filter.
+     * 
+     * @param range the timestamp range
+     * @return the filter
+     */
+    private Filter<Record> toFilter(Range<Field> range) {
+        return Filters.toRecordFilter(this.def, "timestamp", range(range, true));
     }
+
 }

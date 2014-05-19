@@ -262,7 +262,7 @@ public class OnDiskNodeManagerTest {
                                                                                   IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
-            KeyValueIterator<Integer, String> iterator = btree.iterator(2, 4);
+            KeyValueIterator<Integer, String> iterator = btree.iterator(2, 3);
 
             assertNextContains(iterator, 2, "B");
             assertNextContains(iterator, 3, "C");
@@ -646,7 +646,7 @@ public class OnDiskNodeManagerTest {
 
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
-            KeyValueIterator<Integer, String> iterator = btree.iterator(2, 4);
+            KeyValueIterator<Integer, String> iterator = btree.iterator(2, 3);
 
             assertNextContains(iterator, 2, "B");
             assertNextContains(iterator, 3, "C");
@@ -676,7 +676,7 @@ public class OnDiskNodeManagerTest {
                                                                                   IntegerAndStringNodeReader.FACTORY)) {
             BTree<Integer, String> btree = new BTree<>(manager, 5);
 
-            KeyValueIterator<Integer, String> iterator = btree.iterator(0, 2);
+            KeyValueIterator<Integer, String> iterator = btree.iterator(0, 1);
 
             assertNextContains(iterator, 1, "A");
             assertFalse(iterator.next());
