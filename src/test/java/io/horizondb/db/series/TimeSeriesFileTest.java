@@ -24,9 +24,8 @@ import io.horizondb.io.buffers.Buffers;
 import io.horizondb.io.files.FileUtils;
 import io.horizondb.io.files.SeekableFileDataInput;
 import io.horizondb.model.core.Field;
-import io.horizondb.model.core.RecordListMultimapBuilder;
+import io.horizondb.model.core.RecordListBuilder;
 import io.horizondb.model.core.RecordUtils;
-import io.horizondb.model.core.iterators.DefaultRecordIterator;
 import io.horizondb.model.core.records.TimeSeriesRecord;
 import io.horizondb.model.core.util.TimeUtils;
 import io.horizondb.model.schema.DatabaseDefinition;
@@ -39,7 +38,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Collection;
+import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
@@ -125,7 +124,7 @@ public class TimeSeriesFileTest {
 
         MemTimeSeries memTimeSeries = new MemTimeSeries(this.configuration, this.definition);
 
-        Collection<TimeSeriesRecord> records = new RecordListMultimapBuilder(this.definition)
+        List<TimeSeriesRecord> records = new RecordListBuilder(this.definition)
                                                                     .newRecord("exchangeState")
                                                                     .setTimestampInNanos(0, TIME_IN_NANOS + 12000700)
                                                                     .setTimestampInMillis(1, TIME_IN_MILLIS + 12)
@@ -148,10 +147,8 @@ public class TimeSeriesFileTest {
                 + RecordUtils.computeSerializedSize(records));
         
         RecordUtils.writeRecords(buffer.writeObject(fileMetaData), records);
-
-        DefaultRecordIterator iterator = new DefaultRecordIterator(records);
         
-        memTimeSeries = memTimeSeries.write(allocator, iterator, Futures.immediateFuture(new ReplayPosition(1, 0)));
+        memTimeSeries = memTimeSeries.write(allocator, records, Futures.immediateFuture(new ReplayPosition(1, 0)));
 
         try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, 
                                                        this.databaseDefinition.getName(), 
@@ -171,7 +168,7 @@ public class TimeSeriesFileTest {
 
         MemTimeSeries memTimeSeries = new MemTimeSeries(this.configuration, this.definition);
 
-        Collection<TimeSeriesRecord> records = new RecordListMultimapBuilder(this.definition).newRecord("exchangeState")
+        List<TimeSeriesRecord> records = new RecordListBuilder(this.definition).newRecord("exchangeState")
                                                                                .setTimestampInNanos(0, TIME_IN_NANOS + 12000700)
                                                                                .setTimestampInMillis(1, TIME_IN_MILLIS + 12)
                                                                                .setByte(2, 3)
@@ -192,9 +189,7 @@ public class TimeSeriesFileTest {
         Buffer buffer = Buffers.allocate(fileMetaData.computeSerializedSize() + RecordUtils.computeSerializedSize(records));
         RecordUtils.writeRecords(buffer.writeObject(fileMetaData), records);
         
-        DefaultRecordIterator iterator = new DefaultRecordIterator(records);
-        
-        memTimeSeries = memTimeSeries.write(allocator, iterator, Futures.immediateFuture(new ReplayPosition(1, 0)));
+        memTimeSeries = memTimeSeries.write(allocator, records, Futures.immediateFuture(new ReplayPosition(1, 0)));
 
         try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, 
                                                        this.databaseDefinition.getName(), 
@@ -217,7 +212,7 @@ public class TimeSeriesFileTest {
 
         MemTimeSeries memTimeSeries2 = new MemTimeSeries(this.configuration, this.definition);
 
-        Collection<TimeSeriesRecord> records = new RecordListMultimapBuilder(this.definition).newRecord("exchangeState")
+        List<TimeSeriesRecord> records = new RecordListBuilder(this.definition).newRecord("exchangeState")
                                                                                .setTimestampInNanos(0, TIME_IN_NANOS + 12000700)
                                                                                .setTimestampInMillis(1, TIME_IN_MILLIS + 12)
                                                                                .setByte(2, 3)
@@ -231,7 +226,7 @@ public class TimeSeriesFileTest {
                                                                                .setByte(2, 1)
                                                                                .build();
 
-        Collection<TimeSeriesRecord> records2 = new RecordListMultimapBuilder(this.definition).newRecord("exchangeState")
+        List<TimeSeriesRecord> records2 = new RecordListBuilder(this.definition).newRecord("exchangeState")
                                                                                 .setTimestampInNanos(0, TIME_IN_NANOS + 13014400)
                                                                                 .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
                                                                                 .setByte(2, 2)
@@ -253,16 +248,12 @@ public class TimeSeriesFileTest {
         RecordUtils.writeRecords(buffer, records2);
 
         ReplayPosition replayPosition = new ReplayPosition(1, RecordUtils.computeSerializedSize(records));
-
-        DefaultRecordIterator iterator = new DefaultRecordIterator(records);
         
-        memTimeSeries = memTimeSeries.write(allocator, iterator, Futures.immediateFuture(replayPosition));
+        memTimeSeries = memTimeSeries.write(allocator, records, Futures.immediateFuture(replayPosition));
 
         replayPosition = new ReplayPosition(1, RecordUtils.computeSerializedSize(records) + RecordUtils.computeSerializedSize(records2));
 
-        DefaultRecordIterator iterator2 = new DefaultRecordIterator(records2);
-        
-        memTimeSeries2 = memTimeSeries2.write(allocator, iterator2, Futures.immediateFuture(replayPosition));
+        memTimeSeries2 = memTimeSeries2.write(allocator, records2, Futures.immediateFuture(replayPosition));
 
         try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, 
                                                        this.databaseDefinition.getName(), 
@@ -284,7 +275,7 @@ public class TimeSeriesFileTest {
 
         MemTimeSeries memTimeSeries2 = new MemTimeSeries(this.configuration, this.definition);
 
-        Collection<TimeSeriesRecord> records = new RecordListMultimapBuilder(this.definition).newRecord("exchangeState")
+        List<TimeSeriesRecord> records = new RecordListBuilder(this.definition).newRecord("exchangeState")
                                                                                .setTimestampInNanos(0, TIME_IN_NANOS + 12000700)
                                                                                .setTimestampInMillis(1, TIME_IN_MILLIS + 12)
                                                                                .setByte(2, 3)
@@ -298,7 +289,7 @@ public class TimeSeriesFileTest {
                                                                                .setByte(2, 1)
                                                                                .build();
 
-        Collection<TimeSeriesRecord> records2 = new RecordListMultimapBuilder(this.definition).newRecord("exchangeState")
+        List<TimeSeriesRecord> records2 = new RecordListBuilder(this.definition).newRecord("exchangeState")
                                                                                .setTimestampInNanos(0, TIME_IN_NANOS + 13014400)
                                                                                .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
                                                                                .setByte(2, 2)
@@ -322,16 +313,12 @@ public class TimeSeriesFileTest {
 
         ReplayPosition replayPosition = new ReplayPosition(1, RecordUtils.computeSerializedSize(records));
 
-        DefaultRecordIterator iterator = new DefaultRecordIterator(records);
-        
-        memTimeSeries = memTimeSeries.write(allocator, iterator, Futures.immediateFuture(replayPosition));
+        memTimeSeries = memTimeSeries.write(allocator, records, Futures.immediateFuture(replayPosition));
 
         replayPosition = new ReplayPosition(1, RecordUtils.computeSerializedSize(records)
                                             + RecordUtils.computeSerializedSize(records2));
         
-        DefaultRecordIterator iterator2 = new DefaultRecordIterator(records2);
-        
-        memTimeSeries2 = memTimeSeries2.write(allocator, iterator2, Futures.immediateFuture(replayPosition));
+        memTimeSeries2 = memTimeSeries2.write(allocator, records2, Futures.immediateFuture(replayPosition));
 
         try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, 
                                                        this.databaseDefinition.getName(), 
@@ -352,7 +339,7 @@ public class TimeSeriesFileTest {
 
         MemTimeSeries memTimeSeries = new MemTimeSeries(this.configuration, this.definition);
 
-        Collection<TimeSeriesRecord> records = new RecordListMultimapBuilder(this.definition).newRecord("exchangeState")
+        List<TimeSeriesRecord> records = new RecordListBuilder(this.definition).newRecord("exchangeState")
                                                                                .setTimestampInNanos(0, TIME_IN_NANOS + 12000700)
                                                                                .setTimestampInMillis(1, TIME_IN_MILLIS + 12)
                                                                                .setByte(2, 3)
@@ -369,9 +356,7 @@ public class TimeSeriesFileTest {
         Buffer buffer = Buffers.allocate(RecordUtils.computeSerializedSize(records));
         RecordUtils.writeRecords(buffer, records);
 
-        DefaultRecordIterator iterator = new DefaultRecordIterator(records);
-        
-        memTimeSeries = memTimeSeries.write(allocator, iterator, Futures.immediateFuture(new ReplayPosition(1, 0)));
+        memTimeSeries = memTimeSeries.write(allocator, records, Futures.immediateFuture(new ReplayPosition(1, 0)));
 
         try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, 
                                                        this.databaseDefinition.getName(),

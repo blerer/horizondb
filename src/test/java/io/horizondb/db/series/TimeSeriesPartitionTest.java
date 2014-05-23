@@ -23,7 +23,8 @@ import io.horizondb.io.files.FileUtils;
 import io.horizondb.model.core.Field;
 import io.horizondb.model.core.Record;
 import io.horizondb.model.core.RecordIterator;
-import io.horizondb.model.core.iterators.DefaultRecordIterator;
+import io.horizondb.model.core.RecordListBuilder;
+import io.horizondb.model.core.records.TimeSeriesRecord;
 import io.horizondb.model.core.util.TimeUtils;
 import io.horizondb.model.schema.DatabaseDefinition;
 import io.horizondb.model.schema.FieldType;
@@ -33,6 +34,7 @@ import io.horizondb.model.schema.TimeSeriesDefinition;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.easymock.EasyMock;
@@ -151,22 +153,21 @@ public class TimeSeriesPartitionTest {
 
         long timestamp = TimeUtils.parseDateTime("2013-11-26 12:32:12.000");
 
-        RecordIterator recordIterator = DefaultRecordIterator.newBuilder(this.def)
-                                                             .newRecord("exchangeState")
-                                                             .setTimestampInMillis(0, timestamp)
-                                                             .setTimestampInMillis(1, timestamp)
-                                                             .setByte(2, 10)
-                                                             .newRecord("exchangeState")
-                                                             .setTimestampInMillis(0, timestamp + 100)
-                                                             .setTimestampInMillis(1, timestamp + 100)
-                                                             .setByte(2, 5)
-                                                             .newRecord("exchangeState")
-                                                             .setTimestampInMillis(0, timestamp + 350)
-                                                             .setTimestampInMillis(1, timestamp + 350)
-                                                             .setByte(2, 10)
-                                                             .build();
+        List<TimeSeriesRecord> records = new RecordListBuilder(this.def).newRecord("exchangeState")
+                                                                        .setTimestampInMillis(0, timestamp)
+                                                                        .setTimestampInMillis(1, timestamp)
+                                                                        .setByte(2, 10)
+                                                                        .newRecord("exchangeState")
+                                                                        .setTimestampInMillis(0, timestamp + 100)
+                                                                        .setTimestampInMillis(1, timestamp + 100)
+                                                                        .setByte(2, 5)
+                                                                        .newRecord("exchangeState")
+                                                                        .setTimestampInMillis(0, timestamp + 350)
+                                                                        .setTimestampInMillis(1, timestamp + 350)
+                                                                        .setByte(2, 10)
+                                                                        .build();
 
-        this.partition.write(recordIterator, newFuture(0, 1));
+        this.partition.write(records, newFuture(0, 1));
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
 
         RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), toFilter(range));
@@ -210,28 +211,26 @@ public class TimeSeriesPartitionTest {
 
         long timestamp = TimeUtils.parseDateTime("2013-11-26 12:32:12");
 
-        RecordIterator recordIterator = DefaultRecordIterator.newBuilder(this.def)
-                                                             .newRecord("exchangeState")
-                                                             .setTimestampInMillis(0, timestamp)
-                                                             .setTimestampInMillis(1, timestamp)
-                                                             .setByte(2, 10)
-                                                             .newRecord("exchangeState")
-                                                             .setTimestampInMillis(0, timestamp + 100)
-                                                             .setTimestampInMillis(1, timestamp + 100)
-                                                             .setByte(2, 5)
-                                                             .build();
+        List<TimeSeriesRecord> records = new RecordListBuilder(this.def).newRecord("exchangeState")
+                                                                        .setTimestampInMillis(0, timestamp)
+                                                                        .setTimestampInMillis(1, timestamp)
+                                                                        .setByte(2, 10)
+                                                                        .newRecord("exchangeState")
+                                                                        .setTimestampInMillis(0, timestamp + 100)
+                                                                        .setTimestampInMillis(1, timestamp + 100)
+                                                                        .setByte(2, 5)
+                                                                        .build();
 
-        this.partition.write(recordIterator, newFuture(0, 1));
+        this.partition.write(records, newFuture(0, 1));
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
         
-        recordIterator = DefaultRecordIterator.newBuilder(this.def)
-                                              .newRecord("exchangeState")
-                                              .setTimestampInMillis(0, timestamp + 350)
-                                              .setTimestampInMillis(1, timestamp + 350)
-                                              .setByte(2, 10)
-                                              .build();
+        records = new RecordListBuilder(this.def).newRecord("exchangeState")
+                                                 .setTimestampInMillis(0, timestamp + 350)
+                                                 .setTimestampInMillis(1, timestamp + 350)
+                                                 .setByte(2, 10)
+                                                 .build();
 
-        this.partition.write(recordIterator, newFuture(0, 2000));
+        this.partition.write(records, newFuture(0, 2000));
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
 
         Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26 12:32:12'", "'2013-11-26 12:32:14'");
@@ -282,42 +281,39 @@ public class TimeSeriesPartitionTest {
 
         long timestamp = TimeUtils.parseDateTime("2013-11-26 12:32:12.000");
 
-        RecordIterator recordIterator = DefaultRecordIterator.newBuilder(this.def)
-                                                             .newRecord("exchangeState")
-                                                             .setTimestampInMillis(0, timestamp)
-                                                             .setTimestampInMillis(1, timestamp)
-                                                             .setByte(2, 10)
-                                                             .newRecord("exchangeState")
-                                                             .setTimestampInMillis(0, timestamp + 100)
-                                                             .setTimestampInMillis(1, timestamp + 100)
-                                                             .setByte(2, 5)
-                                                             .newRecord("exchangeState")
-                                                             .setTimestampInMillis(0, timestamp + 350)
-                                                             .setTimestampInMillis(1, timestamp + 350)
-                                                             .setByte(2, 10)
-                                                             .newRecord("exchangeState")
-                                                             .setTimestampInMillis(0, timestamp + 450)
-                                                             .setTimestampInMillis(1, timestamp + 450)
-                                                             .setByte(2, 6)
-                                                             .build();
+        List<TimeSeriesRecord> records = new RecordListBuilder(this.def).newRecord("exchangeState")
+                                                                        .setTimestampInMillis(0, timestamp)
+                                                                        .setTimestampInMillis(1, timestamp)
+                                                                        .setByte(2, 10)
+                                                                        .newRecord("exchangeState")
+                                                                        .setTimestampInMillis(0, timestamp + 100)
+                                                                        .setTimestampInMillis(1, timestamp + 100)
+                                                                        .setByte(2, 5)
+                                                                        .newRecord("exchangeState")
+                                                                        .setTimestampInMillis(0, timestamp + 350)
+                                                                        .setTimestampInMillis(1, timestamp + 350)
+                                                                        .setByte(2, 10)
+                                                                        .newRecord("exchangeState")
+                                                                        .setTimestampInMillis(0, timestamp + 450)
+                                                                        .setTimestampInMillis(1, timestamp + 450)
+                                                                        .setByte(2, 6)
+                                                                        .build();
 
-        this.partition.write(recordIterator, newFuture(0, 1));
+        this.partition.write(records, newFuture(0, 1));
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
         assertEquals(Long.valueOf(0), this.partition.getFirstSegmentContainingNonPersistedData());
 
+        records = new RecordListBuilder(this.def).newRecord("exchangeState")
+                                                 .setTimestampInMillis(0, timestamp + 600)
+                                                 .setTimestampInMillis(1, timestamp + 600)
+                                                 .setByte(2, 6)
+                                                 .newRecord("exchangeState")
+                                                 .setTimestampInMillis(0, timestamp + 700)
+                                                 .setTimestampInMillis(1, timestamp + 700)
+                                                 .setByte(2, 5)
+                                                 .build();
 
-        recordIterator = DefaultRecordIterator.newBuilder(this.def)
-                                              .newRecord("exchangeState")
-                                              .setTimestampInMillis(0, timestamp + 600)
-                                              .setTimestampInMillis(1, timestamp + 600)
-                                              .setByte(2, 6)
-                                              .newRecord("exchangeState")
-                                              .setTimestampInMillis(0, timestamp + 700)
-                                              .setTimestampInMillis(1, timestamp + 700)
-                                              .setByte(2, 5)
-                                              .build();
-
-        this.partition.write(recordIterator, newFuture(0, 2));
+        this.partition.write(records, newFuture(0, 2));
         assertEquals(2 * MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
         assertEquals(Long.valueOf(0), this.partition.getFirstSegmentContainingNonPersistedData());
 
@@ -399,7 +395,7 @@ public class TimeSeriesPartitionTest {
 
         long timestamp = TimeUtils.parseDateTime("2013-11-26 12:32:12.000");
 
-        RecordIterator recordIterator = DefaultRecordIterator.newBuilder(this.def)
+        List<TimeSeriesRecord> records = new RecordListBuilder(this.def)
                                                              .newRecord("exchangeState")
                                                              .setTimestampInMillis(0, timestamp)
                                                              .setTimestampInMillis(1, timestamp)
@@ -418,41 +414,39 @@ public class TimeSeriesPartitionTest {
                                                              .setByte(2, 6)
                                                              .build();
 
-        this.partition.write(recordIterator, newFuture(0, 1));
+        this.partition.write(records, newFuture(0, 1)); 
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
         assertEquals(Long.valueOf(0), this.partition.getFirstSegmentContainingNonPersistedData());
 
-        recordIterator = DefaultRecordIterator.newBuilder(this.def)
-                                              .newRecord("exchangeState")
-                                              .setTimestampInMillis(0, timestamp + 600)
-                                              .setTimestampInMillis(1, timestamp + 600)
-                                              .setByte(2, 6)
-                                              .newRecord("exchangeState")
-                                              .setTimestampInMillis(0, timestamp + 700)
-                                              .setTimestampInMillis(1, timestamp + 700)
-                                              .setByte(2, 5)
-                                              .newRecord("exchangeState")
-                                              .setTimestampInMillis(0, timestamp + 1000)
-                                              .setTimestampInMillis(1, timestamp + 1000)
-                                              .setByte(2, 6)
-                                              .newRecord("exchangeState")
-                                              .setTimestampInMillis(0, timestamp + 1200)
-                                              .setTimestampInMillis(1, timestamp + 1200)
-                                              .setByte(2, 5)
-                                              .build();
+        records = new RecordListBuilder(this.def).newRecord("exchangeState")
+                                                 .setTimestampInMillis(0, timestamp + 600)
+                                                 .setTimestampInMillis(1, timestamp + 600)
+                                                 .setByte(2, 6)
+                                                 .newRecord("exchangeState")
+                                                 .setTimestampInMillis(0, timestamp + 700)
+                                                 .setTimestampInMillis(1, timestamp + 700)
+                                                 .setByte(2, 5)
+                                                 .newRecord("exchangeState")
+                                                 .setTimestampInMillis(0, timestamp + 1000)
+                                                 .setTimestampInMillis(1, timestamp + 1000)
+                                                 .setByte(2, 6)
+                                                 .newRecord("exchangeState")
+                                                 .setTimestampInMillis(0, timestamp + 1200)
+                                                 .setTimestampInMillis(1, timestamp + 1200)
+                                                 .setByte(2, 5)
+                                                 .build();
 
-        this.partition.write(recordIterator, newFuture(0, 2));
+        this.partition.write(records, newFuture(0, 2));
         assertEquals(3 * MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
         assertEquals(Long.valueOf(0), this.partition.getFirstSegmentContainingNonPersistedData());
 
-        recordIterator = DefaultRecordIterator.newBuilder(this.def)
-                                              .newRecord("exchangeState")
-                                              .setTimestampInMillis(0, timestamp + 1400)
-                                              .setTimestampInMillis(1, timestamp + 1400)
-                                              .setByte(2, 6)
-                                              .build();
+        records = new RecordListBuilder(this.def).newRecord("exchangeState")
+                                                 .setTimestampInMillis(0, timestamp + 1400)
+                                                 .setTimestampInMillis(1, timestamp + 1400)
+                                                 .setByte(2, 6)
+                                                 .build();
 
-        this.partition.write(recordIterator, newFuture(1, 1));
+        this.partition.write(records, newFuture(1, 1));
         assertEquals(3 * MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
         assertEquals(Long.valueOf(0), this.partition.getFirstSegmentContainingNonPersistedData());
 
@@ -557,7 +551,7 @@ public class TimeSeriesPartitionTest {
 
         long timestamp = TimeUtils.parseDateTime("2013-11-26 12:32:12.000");
 
-        RecordIterator recordIterator = DefaultRecordIterator.newBuilder(this.def)
+        List<TimeSeriesRecord> records = new RecordListBuilder(this.def)
                                                              .newRecord("exchangeState")
                                                              .setTimestampInMillis(0, timestamp)
                                                              .setTimestampInMillis(1, timestamp)
@@ -576,7 +570,7 @@ public class TimeSeriesPartitionTest {
                                                              .setByte(2, 6)
                                                              .build();
 
-        this.partition.write(recordIterator, newFuture(0, 1));
+        this.partition.write(records, newFuture(0, 1));
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
 
         this.partition.flush();
@@ -636,7 +630,7 @@ public class TimeSeriesPartitionTest {
 
         long timestamp = TimeUtils.parseDateTime("2013-11-26 12:32:12.000");
 
-        RecordIterator recordIterator = DefaultRecordIterator.newBuilder(this.def)
+        List<TimeSeriesRecord> records = new RecordListBuilder(this.def)
                                                              .newRecord("exchangeState")
                                                              .setTimestampInMillis(0, timestamp)
                                                              .setTimestampInMillis(1, timestamp)
@@ -655,39 +649,37 @@ public class TimeSeriesPartitionTest {
                                                              .setByte(2, 6)
                                                              .build();
 
-        this.partition.write(recordIterator, newFuture(0, 1));
+        this.partition.write(records, newFuture(0, 1));
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
 
-        recordIterator = DefaultRecordIterator.newBuilder(this.def)
-                                              .newRecord("exchangeState")
-                                              .setTimestampInMillis(0, timestamp + 600)
-                                              .setTimestampInMillis(1, timestamp + 600)
-                                              .setByte(2, 6)
-                                              .newRecord("exchangeState")
-                                              .setTimestampInMillis(0, timestamp + 700)
-                                              .setTimestampInMillis(1, timestamp + 700)
-                                              .setByte(2, 5)
-                                              .newRecord("exchangeState")
-                                              .setTimestampInMillis(0, timestamp + 1000)
-                                              .setTimestampInMillis(1, timestamp + 1000)
-                                              .setByte(2, 6)
-                                              .newRecord("exchangeState")
-                                              .setTimestampInMillis(0, timestamp + 1200)
-                                              .setTimestampInMillis(1, timestamp + 1200)
-                                              .setByte(2, 5)
-                                              .build();
+        records = new RecordListBuilder(this.def).newRecord("exchangeState")
+                                                 .setTimestampInMillis(0, timestamp + 600)
+                                                 .setTimestampInMillis(1, timestamp + 600)
+                                                 .setByte(2, 6)
+                                                 .newRecord("exchangeState")
+                                                 .setTimestampInMillis(0, timestamp + 700)
+                                                 .setTimestampInMillis(1, timestamp + 700)
+                                                 .setByte(2, 5)
+                                                 .newRecord("exchangeState")
+                                                 .setTimestampInMillis(0, timestamp + 1000)
+                                                 .setTimestampInMillis(1, timestamp + 1000)
+                                                 .setByte(2, 6)
+                                                 .newRecord("exchangeState")
+                                                 .setTimestampInMillis(0, timestamp + 1200)
+                                                 .setTimestampInMillis(1, timestamp + 1200)
+                                                 .setByte(2, 5)
+                                                 .build();
 
-        this.partition.write(recordIterator, newFuture(0, 2));
+        this.partition.write(records, newFuture(0, 2));
         assertEquals(3 * MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
 
-        recordIterator = DefaultRecordIterator.newBuilder(this.def)
-                                              .newRecord("exchangeState")
-                                              .setTimestampInMillis(0, timestamp + 1400)
-                                              .setTimestampInMillis(1, timestamp + 1400)
-                                              .setByte(2, 6)
-                                              .build();
+        records = new RecordListBuilder(this.def).newRecord("exchangeState")
+                                                 .setTimestampInMillis(0, timestamp + 1400)
+                                                 .setTimestampInMillis(1, timestamp + 1400)
+                                                 .setByte(2, 6)
+                                                 .build();
 
-        this.partition.write(recordIterator, newFuture(0, 3));
+        this.partition.write(records, newFuture(0, 3));
         assertEquals(3 * MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
 
         RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), toFilter(range));
@@ -786,7 +778,7 @@ public class TimeSeriesPartitionTest {
 
         long timestamp = TimeUtils.parseDateTime("2013-11-26 12:32:12.000");
 
-        RecordIterator recordIterator = DefaultRecordIterator.newBuilder(this.def)
+        List<TimeSeriesRecord> records = new RecordListBuilder(this.def)
                                                              .newRecord("exchangeState")
                                                              .setTimestampInMillis(0, timestamp)
                                                              .setTimestampInMillis(1, timestamp)
@@ -801,7 +793,7 @@ public class TimeSeriesPartitionTest {
                                                              .setByte(2, 10)
                                                              .build();
 
-        this.partition.write(recordIterator, newFuture(0, 1));
+        this.partition.write(records, newFuture(0, 1));
 
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
         assertEquals(Long.valueOf(0), this.partition.getFirstSegmentContainingNonPersistedData());
@@ -859,22 +851,21 @@ public class TimeSeriesPartitionTest {
 
         long timestamp = TimeUtils.parseDateTime("2013-11-26 12:32:12.000");
 
-        RecordIterator recordIterator = DefaultRecordIterator.newBuilder(this.def)
-                                                             .newRecord("exchangeState")
-                                                             .setTimestampInMillis(0, timestamp)
-                                                             .setTimestampInMillis(1, timestamp)
-                                                             .setByte(2, 10)
-                                                             .newRecord("exchangeState")
-                                                             .setTimestampInMillis(0, timestamp + 100)
-                                                             .setTimestampInMillis(1, timestamp + 100)
-                                                             .setByte(2, 5)
-                                                             .newRecord("exchangeState")
-                                                             .setTimestampInMillis(0, timestamp + 350)
-                                                             .setTimestampInMillis(1, timestamp + 350)
-                                                             .setByte(2, 10)
-                                                             .build();
+        List<TimeSeriesRecord> records = new RecordListBuilder(this.def).newRecord("exchangeState")
+                                                                        .setTimestampInMillis(0, timestamp)
+                                                                        .setTimestampInMillis(1, timestamp)
+                                                                        .setByte(2, 10)
+                                                                        .newRecord("exchangeState")
+                                                                        .setTimestampInMillis(0, timestamp + 100)
+                                                                        .setTimestampInMillis(1, timestamp + 100)
+                                                                        .setByte(2, 5)
+                                                                        .newRecord("exchangeState")
+                                                                        .setTimestampInMillis(0, timestamp + 350)
+                                                                        .setTimestampInMillis(1, timestamp + 350)
+                                                                        .setByte(2, 10)
+                                                                        .build();
 
-        this.partition.write(recordIterator, newFuture(0, 1));
+        this.partition.write(records, newFuture(0, 1));
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
         assertEquals(Long.valueOf(0), this.partition.getFirstSegmentContainingNonPersistedData());
 
@@ -882,18 +873,17 @@ public class TimeSeriesPartitionTest {
         assertEquals(0, this.partition.getMemoryUsage());
         assertEquals(null, this.partition.getFirstSegmentContainingNonPersistedData());
 
-        recordIterator = DefaultRecordIterator.newBuilder(this.def)
-                                              .newRecord("exchangeState")
-                                              .setTimestampInMillis(0, timestamp + 400)
-                                              .setTimestampInMillis(1, timestamp + 400)
-                                              .setByte(2, 0)
-                                              .newRecord("exchangeState")
-                                              .setTimestampInMillis(0, timestamp + 1200)
-                                              .setTimestampInMillis(1, timestamp + 1200)
-                                              .setByte(2, 0)
-                                              .build();
+        records = new RecordListBuilder(this.def).newRecord("exchangeState")
+                                                 .setTimestampInMillis(0, timestamp + 400)
+                                                 .setTimestampInMillis(1, timestamp + 400)
+                                                 .setByte(2, 0)
+                                                 .newRecord("exchangeState")
+                                                 .setTimestampInMillis(0, timestamp + 1200)
+                                                 .setTimestampInMillis(1, timestamp + 1200)
+                                                 .setByte(2, 0)
+                                                 .build();
 
-        this.partition.write(recordIterator, newFuture(0, 2));
+        this.partition.write(records, newFuture(0, 2));
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
         assertEquals(Long.valueOf(0), this.partition.getFirstSegmentContainingNonPersistedData());
 

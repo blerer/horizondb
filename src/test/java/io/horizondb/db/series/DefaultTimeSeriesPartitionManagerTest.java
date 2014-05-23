@@ -20,8 +20,8 @@ import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.files.FileUtils;
 import io.horizondb.model.core.Field;
-import io.horizondb.model.core.RecordIterator;
-import io.horizondb.model.core.iterators.DefaultRecordIterator;
+import io.horizondb.model.core.RecordListBuilder;
+import io.horizondb.model.core.records.TimeSeriesRecord;
 import io.horizondb.model.core.util.TimeUtils;
 import io.horizondb.model.schema.DatabaseDefinition;
 import io.horizondb.model.schema.FieldType;
@@ -31,6 +31,7 @@ import io.horizondb.model.schema.TimeSeriesDefinition;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -42,7 +43,6 @@ import com.google.common.collect.Range;
 import com.google.common.util.concurrent.Futures;
 
 import static io.horizondb.model.schema.FieldType.MILLISECONDS_TIMESTAMP;
-
 import static org.junit.Assert.assertEquals;
 
 public class DefaultTimeSeriesPartitionManagerTest {
@@ -141,7 +141,7 @@ public class DefaultTimeSeriesPartitionManagerTest {
 
             long timestamp = TimeUtils.parseDateTime("2013-11-26 12:32:12.000");
 
-            RecordIterator recordIterator = DefaultRecordIterator.newBuilder(definition)
+            List<TimeSeriesRecord> records = new RecordListBuilder(definition)
                                                                  .newRecord("exchangeState")
                                                                  .setTimestampInMillis(0, timestamp)
                                                                  .setTimestampInMillis(1, timestamp)
@@ -156,7 +156,7 @@ public class DefaultTimeSeriesPartitionManagerTest {
                                                                  .setByte(2, 10)
                                                                  .build();
 
-            partition.write(recordIterator, Futures.immediateFuture(new ReplayPosition(1, 2)));
+            partition.write(records, Futures.immediateFuture(new ReplayPosition(1, 2)));
             partition.forceFlush();
 
         } finally {

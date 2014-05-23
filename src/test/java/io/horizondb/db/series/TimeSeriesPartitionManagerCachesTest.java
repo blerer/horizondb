@@ -20,8 +20,8 @@ import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.files.FileUtils;
 import io.horizondb.model.core.Field;
-import io.horizondb.model.core.RecordIterator;
-import io.horizondb.model.core.iterators.DefaultRecordIterator;
+import io.horizondb.model.core.RecordListBuilder;
+import io.horizondb.model.core.records.TimeSeriesRecord;
 import io.horizondb.model.core.util.TimeUtils;
 import io.horizondb.model.schema.DatabaseDefinition;
 import io.horizondb.model.schema.FieldType;
@@ -31,6 +31,7 @@ import io.horizondb.model.schema.TimeSeriesDefinition;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
@@ -341,7 +342,7 @@ public class TimeSeriesPartitionManagerCachesTest {
 
             long timestamp = TimeUtils.parseDateTime("2013-11-26 12:32:12.000");
 
-            RecordIterator recordIterator = DefaultRecordIterator.newBuilder(daxDefinition)
+            List<TimeSeriesRecord> recordIterator = new RecordListBuilder(daxDefinition)
                                                                  .newRecord("exchangeState")
                                                                  .setTimestampInMillis(0, timestamp)
                                                                  .setTimestampInMillis(1, timestamp)
@@ -383,7 +384,7 @@ public class TimeSeriesPartitionManagerCachesTest {
             assertEquals(0, caches.readCacheStats().hitCount());
             assertEquals(0, caches.readCacheStats().missCount());
 
-            recordIterator = DefaultRecordIterator.newBuilder(cacDefinition)
+            recordIterator = new RecordListBuilder(cacDefinition)
                                                   .newRecord("exchangeState")
                                                   .setTimestampInMillis(0, timestamp)
                                                   .setTimestampInMillis(1, timestamp)

@@ -33,6 +33,7 @@ import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.List;
 
 import javax.annotation.concurrent.Immutable;
 
@@ -106,23 +107,23 @@ final class MemTimeSeries implements TimeSeriesElement {
      * Writes the specified records.
      * 
      * @param allocator the slab allocator used to reduce heap fragmentation
-     * @param iterator the iterator containing the records
+     * @param records the records to write
      * @param future the future returning the <code>ReplayPosition</code> for this write.
      * @return the number of records written.
      * @throws IOException if an I/O problem occurs while writing the records.
      * @throws HorizonDBException if the one of the records is invalid
      */
     public MemTimeSeries write(SlabAllocator allocator, 
-                               RecordIterator iterator, 
+                               List<? extends Record> records, 
                                ListenableFuture<ReplayPosition> future) 
                                        throws IOException, HorizonDBException {
 
         CompositeBuffer buffer = this.compositeBuffer.duplicate();
         TimeSeriesRecord[] copy = TimeSeriesRecord.deepCopy(this.lastRecords);
 
-        while (iterator.hasNext()) {
+        for (int i = 0, m = records.size(); i < m; i++) {
 
-            write(allocator, copy, buffer, iterator.next());
+            write(allocator, copy, buffer, records.get(i));
         }
 
         return new MemTimeSeries(this.configuration, 

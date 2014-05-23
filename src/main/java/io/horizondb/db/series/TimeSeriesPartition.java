@@ -157,15 +157,15 @@ public final class TimeSeriesPartition implements Comparable<TimeSeriesPartition
     }
 
     /**
-     * Writes the specified record set in this partition.
+     * Writes the specified records in this partition.
      * 
-     * @param iterator the record iterator containing the record to write.
+     * @param records the records to write.
      * @param future the commit log future
      * @throws IOException if an I/O problem occurs.
      * @throws HorizonDBException if the record set is invalid.
      * @throws InterruptedException if the commit log thread was interrupted
      */
-    public synchronized void write(RecordIterator iterator, 
+    public synchronized void write(List<? extends Record> records, 
                                    ListenableFuture<ReplayPosition> future) 
                                            throws IOException, 
                                                   HorizonDBException {
@@ -173,7 +173,7 @@ public final class TimeSeriesPartition implements Comparable<TimeSeriesPartition
         this.logger.debug("writing records to partition {}", getId());
 
         TimeSeriesElements oldElements = this.elements.get();
-        TimeSeriesElements newElements = oldElements.write(this.allocator, iterator, future);
+        TimeSeriesElements newElements = oldElements.write(this.allocator, records, future);
  
         CommitLog.waitForCommitLogWriteIfNeeded(this.configuration, future);
         

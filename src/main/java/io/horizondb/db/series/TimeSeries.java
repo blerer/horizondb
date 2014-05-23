@@ -16,19 +16,17 @@
 package io.horizondb.db.series;
 
 import io.horizondb.db.HorizonDBException;
-import io.horizondb.db.OperationContext;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.db.queries.Expression;
 import io.horizondb.db.util.concurrent.FutureUtils;
-import io.horizondb.io.ReadableBuffer;
 import io.horizondb.model.Globals;
 import io.horizondb.model.core.Field;
 import io.horizondb.model.core.Record;
 import io.horizondb.model.core.RecordIterator;
-import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -36,6 +34,7 @@ import java.util.TimeZone;
 
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
+import com.google.common.util.concurrent.ListenableFuture;
 
 /**
  * Represents a time series.
@@ -85,27 +84,44 @@ public final class TimeSeries {
         return this.definition;
     }
 
-    public void write(OperationContext context, Range<Field> partitionTimeRange, ReadableBuffer buffer) throws IOException,
-                                                                                               HorizonDBException {
-
-        PartitionId partitionId = toPartitionId(partitionTimeRange);
-
-        TimeSeriesPartition partition = this.partitionManager.getPartitionForWrite(partitionId, this.definition);
-            
-        if (context.isReplay()) {
-            
-            final ReplayPosition currentReplayPosition = FutureUtils.safeGet(context.getFuture());
-            final ReplayPosition partitionReplayPosition = FutureUtils.safeGet(partition.getFuture());
-            
-            if (!currentReplayPosition.isAfter(partitionReplayPosition)) {
+    public void write(List<Record> records, ListenableFuture<ReplayPosition> future, boolean replay) throws IOException, 
+                                                                                                  HorizonDBException {
+        Range<Field> range = null;
+        
+        List<Record> batch = new ArrayList<>();
                 
-                return;
+        Field timestamp = this.definition.newField(Globals.TIMESTAMP_FIELD);
+        
+        for (int i = 0, m = records.size(); i < m; i++) {
+            
+            Record record = records.get(i);
+            
+            if (record.isDelta()) {
+                
+                timestamp.add(record.getField(0));
+                
+            } else {
+                
+                record.getField(0).copyTo(timestamp);
             }
+            
+            if (range == null) {
+                
+                range = this.definition.getPartitionTimeRange(timestamp);
+            }
+            
+            if (!range.contains(timestamp)) {
+                
+                writeToPartition(toPartitionId(range), batch, future, replay);
+                range = this.definition.getPartitionTimeRange(timestamp);
+            }
+         
+            batch.add(record);
         }
         
-        BinaryTimeSeriesRecordIterator iterator = new BinaryTimeSeriesRecordIterator(this.definition, buffer);
-        
-        partition.write(iterator, context.getFuture());
+        if (range != null) {            
+            writeToPartition(toPartitionId(range), batch, future, replay);
+        }
     }
 
     /**
@@ -151,6 +167,37 @@ public final class TimeSeries {
      */
     private PartitionId toPartitionId(Range<Field> range) {
         return new PartitionId(this.databaseName, this.definition.getName(), range);
+    }
+    
+    /**
+     * Writes the specified set of records to the specified partition.
+     * 
+     * @param partitionId the partition ID
+     * @param records the records to write to the partition
+     * @param future the commit log future
+     * @param replay <code>true</code> if this is a commit log replay
+     * @throws IOException if an I/O problem occurs
+     * @throws HorizonDBException if a problem occurs
+     */
+    private void writeToPartition(PartitionId partitionId,
+                                  List<Record> records,
+                                  ListenableFuture<ReplayPosition> future,
+                                  boolean replay) throws IOException, HorizonDBException {
+        
+        TimeSeriesPartition partition = this.partitionManager.getPartitionForWrite(partitionId, this.definition);
+        
+        if (replay) {
+            
+            final ReplayPosition currentReplayPosition = FutureUtils.safeGet(future);
+            final ReplayPosition partitionReplayPosition = FutureUtils.safeGet(partition.getFuture());
+            
+            if (!currentReplayPosition.isAfter(partitionReplayPosition)) {
+                
+                return;
+            }
+        }
+        
+        partition.write(records, future);
     }
     
     /**

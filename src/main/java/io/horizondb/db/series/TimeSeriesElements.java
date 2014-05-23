@@ -20,7 +20,7 @@ import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.files.CompositeSeekableFileDataInput;
 import io.horizondb.io.files.SeekableFileDataInput;
-import io.horizondb.model.core.RecordIterator;
+import io.horizondb.model.core.Record;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
@@ -155,14 +155,14 @@ final class TimeSeriesElements {
     }
 
     public TimeSeriesElements write(SlabAllocator allocator, 
-                                    RecordIterator iterator, 
+                                    List<? extends Record> records, 
                                     ListenableFuture<ReplayPosition> future) throws IOException,                                                                                                                     HorizonDBException {
 
         if (!hasMemTimeSeries()) {
 
             MemTimeSeries memSeries = newMemTimeSeries();
             
-            memSeries = memSeries.write(allocator, iterator, future);
+            memSeries = memSeries.write(allocator, records, future);
 
             return newTimeSeriesElements(Arrays.asList(getLast(), memSeries));
         }
@@ -176,7 +176,7 @@ final class TimeSeriesElements {
             memSeries = newMemTimeSeries();
         }
 
-        memSeries = memSeries.write(allocator, iterator, future);
+        memSeries = memSeries.write(allocator, records, future);
         newElements.add(memSeries);
         
         return newTimeSeriesElements(newElements);
