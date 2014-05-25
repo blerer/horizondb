@@ -392,8 +392,6 @@ public class BlockOrganizedFileDataInputTest {
 
             slice.getBytes(2, bytes, 0, 4);
 
-            System.out.println(Arrays.toString(bytes));
-
             assertArrayEquals(new byte[] { 6, 0, 10, 11 }, bytes);
             assertEquals(6, slice.readableBytes());
 

@@ -19,9 +19,11 @@ import io.horizondb.db.commitlog.CommitLog;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.files.SeekableFileDataInput;
 import io.horizondb.model.core.Field;
+import io.horizondb.model.core.Filter;
 import io.horizondb.model.core.Record;
 import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;
+import io.horizondb.model.core.iterators.FilteringRecordIterator;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;

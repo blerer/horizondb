@@ -17,7 +17,7 @@ package io.horizondb.db.commitlog;
 
 import io.horizondb.db.AbstractComponent;
 import io.horizondb.db.Configuration;
-import io.horizondb.db.DatabaseEngine;
+import io.horizondb.db.StorageEngine;
 import io.horizondb.db.metrics.PrefixFilter;
 import io.horizondb.db.metrics.ThreadPoolExecutorMetrics;
 import io.horizondb.db.util.concurrent.ExecutorsUtils;
@@ -63,7 +63,7 @@ final class CommitLogAllocator extends AbstractComponent {
     /**
      * The database engine.
      */
-    private final DatabaseEngine databaseEngine;
+    private final StorageEngine databaseEngine;
 
     /**
      * Segments ready to be used
@@ -86,7 +86,7 @@ final class CommitLogAllocator extends AbstractComponent {
      * @param configuration the database configuration.
      * @param databaseEngine the database engine.
      */
-    public CommitLogAllocator(Configuration configuration, DatabaseEngine databaseEngine) {
+    public CommitLogAllocator(Configuration configuration, StorageEngine databaseEngine) {
 
         this.databaseEngine = databaseEngine;
         this.configuration = configuration;

@@ -13,7 +13,6 @@
  */
 package io.horizondb.db.parser.builders;
 
-import io.horizondb.db.Query;
 import io.horizondb.db.parser.HqlBaseListener;
 import io.horizondb.db.parser.HqlParser.BetweenExpressionContext;
 import io.horizondb.db.parser.HqlParser.CreateDatabaseContext;
@@ -29,22 +28,46 @@ import io.horizondb.db.parser.HqlParser.SimpleExpressionContext;
 import io.horizondb.db.parser.HqlParser.TimeSeriesOptionContext;
 import io.horizondb.db.parser.HqlParser.UseDatabaseContext;
 import io.horizondb.db.parser.HqlParser.WhereDefinitionContext;
-import io.horizondb.db.parser.QueryBuilder;
+import io.horizondb.db.parser.MsgBuilder;
+import io.horizondb.model.protocol.Msg;
+import io.horizondb.model.protocol.MsgHeader;
 
 import org.antlr.v4.runtime.misc.NotNull;
 
 /**
- * <code>QueryBuilder</code> that dispatch to the prober builder based on the received callback.
+ * <code>MsgBuilder</code> that dispatch to the proper builder based on the received callback.
  * 
  * @author Benjamin
  *
  */
-public final class QueryBuilderDispatcher extends HqlBaseListener implements QueryBuilder {
+public final class MsgBuilderDispatcher extends HqlBaseListener implements MsgBuilder {
 
+    /**
+     * The original request header.
+     */
+    private final MsgHeader requestHeader;
+    
+    /**
+     * The database name on which the query must be executed.
+     */
+    private final String database;
+    
     /**
      * The builder to which the calls must be dispatched.
      */
-    private QueryBuilder builder;
+    private MsgBuilder builder;
+    
+    /**
+     * Creates a dispatcher.
+     * 
+     * @param requestHeader the original request header.
+     * @param database the name of the database on which the query must be executed.
+     */
+    public MsgBuilderDispatcher(MsgHeader requestHeader, String database) {
+        
+        this.requestHeader = requestHeader;
+        this.database = database;
+    }
 
     /**
      * {@inheritDoc}
@@ -52,7 +75,7 @@ public final class QueryBuilderDispatcher extends HqlBaseListener implements Que
     @Override
     public void enterCreateDatabase(@NotNull CreateDatabaseContext ctx) {
         
-        this.builder = new CreateDatabaseQueryBuilder();
+        this.builder = new CreateDatabaseMsgBuilder(this.requestHeader);
         
         this.builder.enterCreateDatabase(ctx);
     }
@@ -151,7 +174,7 @@ public final class QueryBuilderDispatcher extends HqlBaseListener implements Que
     @Override
     public void enterUseDatabase(@NotNull UseDatabaseContext ctx) {
         
-        this.builder = new UseDatabaseQueryBuilder();
+        this.builder = new UseDatabaseMsgBuilder(this.requestHeader);
         this.builder.enterUseDatabase(ctx);
     }
 
@@ -160,7 +183,8 @@ public final class QueryBuilderDispatcher extends HqlBaseListener implements Que
      */    
     @Override
     public void enterCreateTimeSeries(@NotNull CreateTimeSeriesContext ctx) {
-        this.builder = new CreateTimeSeriesQueryBuilder();
+        
+        this.builder = new CreateTimeSeriesMsgBuilder(this.requestHeader, this.database);
         this.builder.enterCreateTimeSeries(ctx);
     }
 
@@ -177,7 +201,7 @@ public final class QueryBuilderDispatcher extends HqlBaseListener implements Que
      */
     @Override
     public void enterSelect(@NotNull SelectContext ctx) {
-        this.builder = new SelectQueryBuilder();
+        this.builder = new SelectMsgBuilder(this.requestHeader, this.database);
         this.builder.enterSelect(ctx);
     }
 
@@ -249,7 +273,7 @@ public final class QueryBuilderDispatcher extends HqlBaseListener implements Que
      * {@inheritDoc}
      */
     @Override
-    public Query build() {
+    public Msg<?> build() {
         return this.builder.build();
     }
 }

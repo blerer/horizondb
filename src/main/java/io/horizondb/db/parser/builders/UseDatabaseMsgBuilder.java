@@ -13,27 +13,45 @@
  */
 package io.horizondb.db.parser.builders;
 
-import io.horizondb.db.Query;
 import io.horizondb.db.parser.HqlBaseListener;
 import io.horizondb.db.parser.HqlParser.UseDatabaseContext;
-import io.horizondb.db.parser.QueryBuilder;
-import io.horizondb.db.queries.UseDatabaseQuery;
+import io.horizondb.db.parser.MsgBuilder;
+import io.horizondb.model.protocol.Msg;
+import io.horizondb.model.protocol.MsgHeader;
+import io.horizondb.model.protocol.OpCode;
+import io.horizondb.model.protocol.Payload;
+import io.horizondb.model.protocol.UseDatabasePayload;
 
 import org.antlr.v4.runtime.misc.NotNull;
 
 /**
- * <code>Builder</code> for <code>UseDatabaseQuery</code> instances.
+ * <code>Builder</code> for <code>UseDatabaseMsg</code> instances.
  * 
  * @author Benjamin
  *
  */
-final class UseDatabaseQueryBuilder extends HqlBaseListener implements QueryBuilder {
+final class UseDatabaseMsgBuilder extends HqlBaseListener implements MsgBuilder {
 
+    /**
+     * The original request header.
+     */
+    private final MsgHeader requestHeader;
+    
     /**
      * The name of the database that must be used.
      */
     private String databaseName;
 
+    /**
+     * Creates a new <code>CreateDatabaseRequestBuilder</code> instance.
+     * 
+     * @param requestHeader the original request header
+     */
+    public UseDatabaseMsgBuilder(MsgHeader requestHeader) {
+        
+        this.requestHeader = requestHeader;
+    }
+    
     /**    
      * {@inheritDoc}
      */
@@ -46,9 +64,10 @@ final class UseDatabaseQueryBuilder extends HqlBaseListener implements QueryBuil
      * {@inheritDoc}
      */
     @Override
-    public Query build() {
+    public Msg<?> build() {
 
-        return new UseDatabaseQuery(this.databaseName);
+        Payload payload = new UseDatabasePayload(this.databaseName);
+        return Msg.newRequestMsg(this.requestHeader, OpCode.USE_DATABASE, payload);
     }
 
 }

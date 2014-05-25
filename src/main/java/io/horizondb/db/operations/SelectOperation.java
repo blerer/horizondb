@@ -1,4 +1,6 @@
 /**
+ * Copyright 2013 Benjamin Lerer
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,21 +18,20 @@ package io.horizondb.db.operations;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.Operation;
 import io.horizondb.db.OperationContext;
-import io.horizondb.db.Query;
-import io.horizondb.db.QueryContext;
-import io.horizondb.db.parser.QueryParser;
-import io.horizondb.model.protocol.HqlQueryPayload;
+import io.horizondb.db.databases.Database;
+import io.horizondb.db.series.TimeSeries;
+import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.protocol.Msg;
 import io.horizondb.model.protocol.Msgs;
+import io.horizondb.model.protocol.SelectPayload;
 
 import java.io.IOException;
 
 /**
- * <code>Operation</code> that execute an HQL query.
- * 
  * @author Benjamin
+ * 
  */
-final class HqlQueryOperation implements Operation {
+final class SelectOperation implements Operation {
 
     /**
      * {@inheritDoc}
@@ -38,10 +39,14 @@ final class HqlQueryOperation implements Operation {
     @Override
     public Object perform(OperationContext context, Msg<?> request) throws IOException, HorizonDBException {
 
-        HqlQueryPayload payload = Msgs.getPayload(request);
+        SelectPayload payload = Msgs.getPayload(request);
 
-        Query query = QueryParser.parse(payload.getQuery());
+        Database database = context.getDatabaseManager().getDatabase(payload.getDatabaseName());
+
+        TimeSeries series = database.getTimeSeries(payload.getSeriesName());
         
-        return query.execute(new QueryContext(context, request.getHeader(), payload.getDatabaseName()));
+        RecordIterator iterator = series.read(payload.getPredicate());
+        
+        return new ChunkedRecordStream(request.getHeader(), iterator);
     }
 }

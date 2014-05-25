@@ -13,22 +13,27 @@
  */
 package io.horizondb.db.parser;
 
-import java.util.TimeZone;
-import java.util.concurrent.TimeUnit;
-
 import io.horizondb.db.HorizonDBException;
-import io.horizondb.db.Query;
-import io.horizondb.db.queries.CreateDatabaseQuery;
-import io.horizondb.db.queries.CreateTimeSeriesQuery;
-import io.horizondb.db.queries.SelectQuery;
-import io.horizondb.db.queries.UseDatabaseQuery;
+import io.horizondb.model.protocol.CreateDatabasePayload;
+import io.horizondb.model.protocol.CreateTimeSeriesPayload;
+import io.horizondb.model.protocol.HqlQueryPayload;
+import io.horizondb.model.protocol.Msg;
+import io.horizondb.model.protocol.OpCode;
+import io.horizondb.model.protocol.SelectPayload;
+import io.horizondb.model.protocol.UseDatabasePayload;
 import io.horizondb.model.schema.DatabaseDefinition;
 import io.horizondb.model.schema.RecordTypeDefinition;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
+import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
+
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * @author Benjamin
@@ -39,24 +44,23 @@ public class QueryParserTest {
     @Test
     public void testParseCreateDatabase() throws HorizonDBException {
        
-        Query query = QueryParser.parse(" CREATE DATABASE TEST;");
+        Msg<CreateDatabasePayload> msg = QueryParser.parse(newMsg(" CREATE DATABASE TEST;"));
         
-        assertNotNull(query);
-        assertTrue(query instanceof CreateDatabaseQuery);
+        assertNotNull(msg);
         
-        query = QueryParser.parse("CREATE DATABASE test ;");
+        msg = QueryParser.parse(newMsg("CREATE DATABASE test ;"));
         
-        assertNotNull(query);
-        assertEquals(new DatabaseDefinition("test"), ((CreateDatabaseQuery) query).getDefinition());
+        assertNotNull(msg);
+        assertEquals(new DatabaseDefinition("test"), msg.getPayload().getDefinition());
     }
     
     @Test
     public void testParseUseDatabase() throws HorizonDBException {
        
-        Query query = QueryParser.parse("USE TEST;");
+        Msg<UseDatabasePayload> msg = QueryParser.parse(newMsg("USE TEST;"));
         
-        assertNotNull(query);
-        assertTrue(query instanceof UseDatabaseQuery);
+        assertNotNull(msg);
+        assertEquals("TEST", msg.getPayload().getDatabase());
     }
     
     @Test
@@ -83,12 +87,12 @@ public class QueryParserTest {
                                                             .timeZone(TimeZone.getTimeZone("Europe/Berlin"))
                                                             .build();
         
-        Query query = QueryParser.parse("CREATE TIMESERIES Dax (" +
+        Msg<CreateTimeSeriesPayload> msg = QueryParser.parse(newMsg("CREATE TIMESERIES Dax (" +
                                         "Quote(received NANOSECONDS_TIMESTAMP, bidPrice DECIMAL, askPrice DECIMAL, bidVolume INTEGER, askVolume INTEGER), " +
-                                        "Trade(received NANOSECONDS_TIMESTAMP, price DECIMAL, volume INTEGER))TIME_UNIT = NANOSECONDS TIMEZONE = 'Europe/Berlin';");
-        assertNotNull(query);
+                                        "Trade(received NANOSECONDS_TIMESTAMP, price DECIMAL, volume INTEGER))TIME_UNIT = NANOSECONDS TIMEZONE = 'Europe/Berlin';"));
+        assertNotNull(msg);
         
-        assertEquals(expected, ((CreateTimeSeriesQuery) query).getDefinition());
+        assertEquals(expected, msg.getPayload().getDefinition());
     }
     
     @Test
@@ -115,142 +119,123 @@ public class QueryParserTest {
                                                             .timeZone(TimeZone.getTimeZone("America/Los_Angeles"))
                                                             .build();
         
-        Query query = QueryParser.parse("CREATE TIMESERIES Dax (" +
+        Msg<CreateTimeSeriesPayload> msg = QueryParser.parse(newMsg("CREATE TIMESERIES Dax (" +
                                         "Quote(received NANOSECONDS_TIMESTAMP, bidPrice DECIMAL, askPrice DECIMAL, bidVolume INTEGER, askVolume INTEGER), " +
-                                        "Trade(received NANOSECONDS_TIMESTAMP, price DECIMAL, volume INTEGER))TIMEZONE = 'America/Los_Angeles';");
-        assertNotNull(query);
+                                        "Trade(received NANOSECONDS_TIMESTAMP, price DECIMAL, volume INTEGER))TIMEZONE = 'America/Los_Angeles';"));
+        assertNotNull(msg);
         
-        assertEquals(expected, ((CreateTimeSeriesQuery) query).getDefinition());
+        assertEquals(expected, msg.getPayload().getDefinition());
     }
     
     @Test
     public void testParseSelectAll() throws HorizonDBException {
-
         
-        SelectQuery query = (SelectQuery) QueryParser.parse("SELECT * FROM Dax;");
-        assertEquals("Dax", query.getTimeSeriesName());
-        assertEquals("", query.getExpression().toString());
+        Msg<SelectPayload> msg = QueryParser.parse(newMsg("SELECT * FROM Dax;"));
+        assertEquals("Dax", msg.getPayload().getSeriesName());
+        assertEquals("", msg.getPayload().getPredicate().toString());
     }
     
     @Test
     public void testParseSelectWithTimestampGreaterThan() throws HorizonDBException {
 
-        String expression = "timestamp > 2";
-        
-        SelectQuery query = (SelectQuery) QueryParser.parse("SELECT * FROM Dax WHERE " + expression + ";");
-        assertEquals("Dax", query.getTimeSeriesName());
-        assertEquals(expression, query.getExpression().toString());
+        testParseSelectWithPredicate("timestamp > 2");
     }
     
     @Test
     public void testParseSelectWithAndAndOr() throws HorizonDBException {
 
-        String expression = "timestamp > 2 AND timestamp < 4 OR timestamp > 6 AND timestamp < 8";
-        
-        SelectQuery query = (SelectQuery) QueryParser.parse("SELECT * FROM Dax WHERE " + expression + ";");
-        
-        assertEquals("Dax", query.getTimeSeriesName());
-        assertEquals(expression, query.getExpression().toString());
+        testParseSelectWithPredicate("timestamp > 2 AND timestamp < 4 OR timestamp > 6 AND timestamp < 8");
     }
     
     @Test
     public void testParseSelectWithTimestampUnit() throws HorizonDBException {
 
-        String expression = "timestamp >= 1384425960200ms AND timestamp < 1384425960400ms";
-        
-        SelectQuery query = (SelectQuery) QueryParser.parse("SELECT * FROM Dax WHERE " + expression + ";");
-        
-        assertEquals("Dax", query.getTimeSeriesName());
-        assertEquals(expression, query.getExpression().toString());
+        testParseSelectWithPredicate("timestamp >= 1384425960200ms AND timestamp < 1384425960400ms");
     }
     
     @Test
     public void testParseSelectWithAndOrAndParentheses() throws HorizonDBException {
 
-        String expression = "timestamp > 2 AND (timestamp < 4 OR timestamp > 6)";
-        
-        SelectQuery query = (SelectQuery) QueryParser.parse("SELECT * FROM Dax WHERE " + expression + ";");
-        
-        assertEquals("Dax", query.getTimeSeriesName());
-        assertEquals(expression, query.getExpression().toString());
+        testParseSelectWithPredicate("timestamp > 2 AND (timestamp < 4 OR timestamp > 6)");
     }
     
     @Test
     public void testParseSelectWithInExpression() throws HorizonDBException {
 
-        String expression = "timestamp IN (2, 4)";
-        
-        SelectQuery query = (SelectQuery) QueryParser.parse("SELECT * FROM Dax WHERE " + expression + ";");
-        
-        assertEquals("Dax", query.getTimeSeriesName());
-        assertEquals(expression, query.getExpression().toString());
+        testParseSelectWithPredicate("timestamp IN (2, 4)");
     }
     
     @Test
     public void testParseSelectWithBetweenExpression() throws HorizonDBException {
 
-        String expression = "timestamp BETWEEN 2 AND 4";
-        
-        SelectQuery query = (SelectQuery) QueryParser.parse("SELECT * FROM Dax WHERE " + expression + ";");
-        
-        assertEquals("Dax", query.getTimeSeriesName());
-        assertEquals(expression, query.getExpression().toString());
+        testParseSelectWithPredicate("timestamp BETWEEN 2 AND 4");
     }
     
     @Test
     public void testParseSelectWithNotBetweenExpression() throws HorizonDBException {
 
-        String expression = "timestamp NOT BETWEEN 2 AND 6";
-        
-        SelectQuery query = (SelectQuery) QueryParser.parse("SELECT * FROM Dax WHERE " + expression + ";");
-        
-        assertEquals("Dax", query.getTimeSeriesName());
-        assertEquals(expression, query.getExpression().toString());
+        testParseSelectWithPredicate("timestamp NOT BETWEEN 2 AND 6");
     }
     
     @Test
     public void testParseSelectWithBetweenAndInExpression() throws HorizonDBException {
 
-        String expression = "timestamp BETWEEN 2 AND 6 AND timestamp IN (5, 6)";
-        
-        SelectQuery query = (SelectQuery) QueryParser.parse("SELECT * FROM Dax WHERE " + expression + ";");
-        
-        assertEquals("Dax", query.getTimeSeriesName());
-        assertEquals(expression, query.getExpression().toString());
+        testParseSelectWithPredicate("timestamp BETWEEN 2 AND 6 AND timestamp IN (5, 6)");
     }
     
     @Test
     public void testParseSelectWithNotInExpression() throws HorizonDBException {
 
-        String expression = "timestamp NOT IN (2, 4)";
-        
-        SelectQuery query = (SelectQuery) QueryParser.parse("SELECT * FROM Dax WHERE " + expression + ";");
-        
-        assertEquals("Dax", query.getTimeSeriesName());
-        assertEquals(expression, query.getExpression().toString());
+        testParseSelectWithPredicate("timestamp NOT IN (2, 4)");
     }
     
     @Test
     public void testParseSelectWithInExpressionAndOnlyOneValue() throws HorizonDBException {
 
-        String expression = "timestamp IN (2)";
-        
-        SelectQuery query = (SelectQuery) QueryParser.parse("SELECT * FROM Dax WHERE " + expression + ";");
-        
-        assertEquals("Dax", query.getTimeSeriesName());
-        assertEquals(expression, query.getExpression().toString());
+        testParseSelectWithPredicate("timestamp IN (2)");
     }
+
+    /**
+     * Test that the parsing of a select statement with the specified predicate works.
+     * 
+     * @param predicate the predicate to test
+     * @throws HorizonDBException if a problem occurs
+     */
+    private static void testParseSelectWithPredicate(String predicate) throws HorizonDBException {
+        
+        Msg<SelectPayload> msg = QueryParser.parse(newMsg("SELECT * FROM Dax WHERE " + predicate + ";"));
+        assertEquals("Dax", msg.getPayload().getSeriesName());
+        assertEquals(predicate, msg.getPayload().getPredicate().toString());
+    }
+    
+//    @Test
+//    public void testParseInsert() throws HorizonDBException {
+//        
+//        SelectQuery query = (SelectQuery) QueryParser.parse("INSERT INTO Dax.Trade (timestamp, price, volume) VALUES ('23-05-2014 09:44:30', 125E-1, 10);");
+//    }
     
     @Test
     public void testParseWithInvalidQuery() throws HorizonDBException {
        
         try {
             
-            QueryParser.parse("CREATE DB TEST;");
+            QueryParser.parse(newMsg("CREATE DB TEST;"));
             fail();
             
         } catch (BadHqlGrammarException e) {
             assertTrue(true); 
         }
+    }
+    
+    /**
+     * Creates a new HQL query message for use within the tests.
+     * 
+     * @param query the HQL query
+     * @return a new HQL query message for use within the tests.
+     */
+    private static Msg<HqlQueryPayload> newMsg(String query) {
+        
+        HqlQueryPayload payload = new HqlQueryPayload("TEST", query);
+        return Msg.newRequestMsg(OpCode.HQL_QUERY, payload);
     }
 }

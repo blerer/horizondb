@@ -15,8 +15,10 @@
  */
 package io.horizondb.db;
 
+import io.horizondb.io.Buffer;
 import io.horizondb.io.buffers.Buffers;
 import io.horizondb.model.ErrorCodes;
+import io.horizondb.model.protocol.Msg;
 import io.horizondb.model.protocol.Msgs;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -51,7 +53,12 @@ class HorizonServerHandler extends ChannelInboundHandlerAdapter {
      */
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        Object response = this.engine.execute(Buffers.wrap((ByteBuf) msg));
+        
+        Buffer buffer = Buffers.wrap((ByteBuf) msg);
+        
+        Msg<?> request = Msg.parseFrom(buffer);
+        
+        Object response = this.engine.execute(request, buffer);
         ctx.channel().writeAndFlush(response);
     }
 

@@ -13,27 +13,45 @@
  */
 package io.horizondb.db.parser.builders;
 
-import io.horizondb.db.Query;
 import io.horizondb.db.parser.HqlBaseListener;
 import io.horizondb.db.parser.HqlParser.CreateDatabaseContext;
-import io.horizondb.db.parser.QueryBuilder;
-import io.horizondb.db.queries.CreateDatabaseQuery;
+import io.horizondb.db.parser.MsgBuilder;
+import io.horizondb.model.protocol.CreateDatabasePayload;
+import io.horizondb.model.protocol.Msg;
+import io.horizondb.model.protocol.MsgHeader;
+import io.horizondb.model.protocol.OpCode;
+import io.horizondb.model.protocol.Payload;
 import io.horizondb.model.schema.DatabaseDefinition;
 
 import org.antlr.v4.runtime.misc.NotNull;
 
 /**
- * <code>Builder</code> for <code>CreateDatabaseQuery</code> instances.
+ * <code>Builder</code> for <code>CreateDatabaseRequest</code> instances.
  * 
  * @author Benjamin
  *
  */
-final class CreateDatabaseQueryBuilder extends HqlBaseListener implements QueryBuilder {
+final class CreateDatabaseMsgBuilder extends HqlBaseListener implements MsgBuilder {
 
+    /**
+     * The original request header.
+     */
+    private final MsgHeader requestHeader;
+    
     /**
      * The definition of the database that must be created.
      */
     private DatabaseDefinition definition;
+    
+    /**
+     * Creates a new <code>CreateDatabaseRequestBuilder</code> instance.
+     * 
+     * @param requestHeader the original request header
+     */
+    public CreateDatabaseMsgBuilder(MsgHeader requestHeader) {
+        
+        this.requestHeader = requestHeader;
+    }
     
     /**    
      * {@inheritDoc}
@@ -49,9 +67,9 @@ final class CreateDatabaseQueryBuilder extends HqlBaseListener implements QueryB
      * {@inheritDoc}
      */
     @Override
-    public Query build() {
+    public Msg<?> build() {
 
-        return new CreateDatabaseQuery(this.definition);
+        Payload payload = new CreateDatabasePayload(this.definition);
+        return Msg.newRequestMsg(this.requestHeader, OpCode.CREATE_DATABASE, payload);
     }
-
 }

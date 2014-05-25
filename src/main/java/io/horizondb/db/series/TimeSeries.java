@@ -17,10 +17,11 @@ package io.horizondb.db.series;
 
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.commitlog.ReplayPosition;
-import io.horizondb.db.queries.Expression;
 import io.horizondb.db.util.concurrent.FutureUtils;
 import io.horizondb.model.Globals;
+import io.horizondb.model.core.Predicate;
 import io.horizondb.model.core.Field;
+import io.horizondb.model.core.Filter;
 import io.horizondb.model.core.Record;
 import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.schema.TimeSeriesDefinition;
@@ -84,7 +85,7 @@ public final class TimeSeries {
         return this.definition;
     }
 
-    public void write(List<Record> records, ListenableFuture<ReplayPosition> future, boolean replay) throws IOException, 
+    public void write(List<? extends Record> records, ListenableFuture<ReplayPosition> future, boolean replay) throws IOException, 
                                                                                                   HorizonDBException {
         Range<Field> range = null;
         
@@ -127,17 +128,17 @@ public final class TimeSeries {
     /**
      * Returns the records of this time series that match the specified expression.
      *  
-     * @param expression the expression used to filter the data
+     * @param predicate the predicate used to filter the data
      * @throws IOException if an I/O problem occurs
      * @throws HorizonDBException if another problem occurs
      */
-    public RecordIterator read(Expression expression) throws IOException, HorizonDBException {
+    public RecordIterator read(Predicate predicate) throws IOException, HorizonDBException {
 
         Field prototype = this.definition.newField(Globals.TIMESTAMP_FIELD);
         TimeZone timezone = this.definition.getTimeZone();
         
-        RangeSet<Field> timeRanges = expression.getTimestampRanges(prototype, timezone);
-        Filter<Record> filter = expression.toFilter(this.definition);
+        RangeSet<Field> timeRanges = predicate.getTimestampRanges(prototype, timezone);
+        Filter<Record> filter = predicate.toFilter(this.definition);
 
         return read(timeRanges, filter);
     }

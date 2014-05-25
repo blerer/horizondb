@@ -16,7 +16,7 @@
 package io.horizondb.db.commitlog;
 
 import io.horizondb.db.Configuration;
-import io.horizondb.db.DatabaseEngine;
+import io.horizondb.db.StorageEngine;
 import io.horizondb.io.Buffer;
 import io.horizondb.io.buffers.Buffers;
 import io.horizondb.io.files.FileUtils;
@@ -178,7 +178,7 @@ public class CommitLogSegmentTest {
     @Test
     public void testReplayWithNoData() throws Exception {
 
-        DatabaseEngine databaseEngine = EasyMock.createMock(DatabaseEngine.class);
+        StorageEngine databaseEngine = EasyMock.createMock(StorageEngine.class);
 
         EasyMock.replay(databaseEngine);
 
@@ -215,7 +215,7 @@ public class CommitLogSegmentTest {
         position += (thirdBuffer.readableBytes() + LOG_OVERHEAD_SIZE);
         ReplayPosition thirdPosition = new ReplayPosition(segmentId, position);
 
-        DatabaseEngine databaseEngine = EasyMock.createMock(DatabaseEngine.class);
+        StorageEngine databaseEngine = EasyMock.createMock(StorageEngine.class);
 
         databaseEngine.replay(firstPosition, firstBuffer.duplicate());
         databaseEngine.replay(secondPosition, secondBuffer.duplicate());
@@ -269,7 +269,7 @@ public class CommitLogSegmentTest {
 
         long tuncationPoint = position - (CommitLogSegment.CHECKSUM_SIZE + 2);
 
-        DatabaseEngine databaseEngine = EasyMock.createMock(DatabaseEngine.class);
+        StorageEngine databaseEngine = EasyMock.createMock(StorageEngine.class);
 
         databaseEngine.replay(firstPosition, firstBuffer.duplicate());
         databaseEngine.replay(secondPosition, secondBuffer.duplicate());
@@ -325,7 +325,7 @@ public class CommitLogSegmentTest {
         position += (thirdBuffer.readableBytes() + LOG_OVERHEAD_SIZE);
         ReplayPosition thirdPosition = new ReplayPosition(segmentId, position);
 
-        DatabaseEngine databaseEngine = EasyMock.createMock(DatabaseEngine.class);
+        StorageEngine databaseEngine = EasyMock.createMock(StorageEngine.class);
 
         databaseEngine.replay(firstPosition, firstBuffer.duplicate());
         databaseEngine.replay(secondPosition, secondBuffer.duplicate());
@@ -382,7 +382,7 @@ public class CommitLogSegmentTest {
         position += (thirdBuffer.readableBytes() + LOG_OVERHEAD_SIZE);
         ReplayPosition thirdPosition = new ReplayPosition(segmentId, position);
 
-        DatabaseEngine databaseEngine = EasyMock.createMock(DatabaseEngine.class);
+        StorageEngine databaseEngine = EasyMock.createMock(StorageEngine.class);
 
         databaseEngine.replay(firstPosition, firstBuffer.duplicate());
         databaseEngine.replay(secondPosition, secondBuffer.duplicate());

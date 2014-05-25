@@ -16,7 +16,7 @@
 package io.horizondb.db.commitlog;
 
 import io.horizondb.db.Configuration;
-import io.horizondb.db.DatabaseEngine;
+import io.horizondb.db.StorageEngine;
 import io.horizondb.io.files.FileUtils;
 
 import java.nio.file.Files;
@@ -50,7 +50,7 @@ public class CommitLogAllocatorTest {
     /**
      * The mock database engine.
      */
-    private DatabaseEngine databaseEngine;
+    private StorageEngine databaseEngine;
 
     /**
      * The class under test.
@@ -67,7 +67,7 @@ public class CommitLogAllocatorTest {
                                           .maximumNumberOfCommitLogSegments(3)
                                           .build();
 
-        this.databaseEngine = EasyMock.createMock(DatabaseEngine.class);
+        this.databaseEngine = EasyMock.createMock(StorageEngine.class);
     }
 
     @After

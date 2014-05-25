@@ -14,10 +14,12 @@
 package io.horizondb.db.parser;
 
 import io.horizondb.db.HorizonDBException;
-import io.horizondb.db.Query;
 import io.horizondb.db.parser.ErrorCollector.ParsingError;
 import io.horizondb.db.parser.HqlParser.StatementsContext;
-import io.horizondb.db.parser.builders.QueryBuilderDispatcher;
+import io.horizondb.db.parser.builders.MsgBuilderDispatcher;
+import io.horizondb.io.serialization.Serializable;
+import io.horizondb.model.protocol.HqlQueryPayload;
+import io.horizondb.model.protocol.Msg;
 
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CharStream;
@@ -39,15 +41,20 @@ public final class QueryParser {
     private static final Logger LOGGER = LoggerFactory.getLogger(QueryParser.class);
     
     /**
-     * Parses the specified query string and return the corresponding <code>Query</code> object.
+     * Parses the specified query string of the specified message and return the corresponding low level message.
      * 
-     * @param query the <code>String</code> to parse
-     * @return the <code>Query</code> object corresponding to the specified <code>String</code>.
-     * @throws HorizonDBException 
+     * @param msg the query message
+     * @return the low level message corresponding to the specified <code>query</code>.
+     * @throws HorizonDBException if a problem occurs while parsing the query.
      */
-    public static Query parse(String query) throws HorizonDBException  {
+    public static <T extends Serializable> Msg<T> parse(Msg<HqlQueryPayload> msg) throws HorizonDBException  {
               
-        LOGGER.debug("parsing query: [{}]", query);
+        HqlQueryPayload payload = msg.getPayload();
+        
+        String database = payload.getDatabaseName();
+        String query = payload.getQuery();
+        
+        LOGGER.debug("parsing query: [{}] for database {}.", query, database);
         
         final ErrorCollector errorCollector = new ErrorCollector();
         
@@ -75,8 +82,8 @@ public final class QueryParser {
         StatementsContext statements = parser.statements();
         
         ParseTreeWalker walker = new ParseTreeWalker();
-        QueryBuilder queryBuilder = new QueryBuilderDispatcher();
-        walker.walk(queryBuilder, statements);
+        MsgBuilder msgBuilder = new MsgBuilderDispatcher(msg.getHeader(), database);
+        walker.walk(msgBuilder, statements);
         
         if (errorCollector.hasError()) {
             
@@ -88,6 +95,6 @@ public final class QueryParser {
                                              error.getMessage());
         }
         
-        return queryBuilder.build();
+        return (Msg<T>) msgBuilder.build();
     }
 }

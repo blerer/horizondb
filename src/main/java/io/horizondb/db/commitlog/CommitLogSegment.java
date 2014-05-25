@@ -16,7 +16,7 @@
 package io.horizondb.db.commitlog;
 
 import io.horizondb.db.Configuration;
-import io.horizondb.db.DatabaseEngine;
+import io.horizondb.db.StorageEngine;
 import io.horizondb.io.ReadableBuffer;
 import io.horizondb.io.checksum.ChecksumByteReader;
 import io.horizondb.io.checksum.ChecksumByteWriter;
@@ -307,7 +307,7 @@ final class CommitLogSegment implements Closeable, Comparable<CommitLogSegment>,
      * @return the number of message replayed.
      * @throws IOException if an I/O problem occurs while replaying the data.
      */
-    public int replay(DatabaseEngine databaseEngine) throws IOException {
+    public int replay(StorageEngine databaseEngine) throws IOException {
 
         int count = 0;
 

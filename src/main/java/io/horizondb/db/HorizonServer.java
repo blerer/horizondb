@@ -47,7 +47,7 @@ public class HorizonServer extends AbstractComponent {
     /**
      * The database engine.
      */
-    private final DefaultDatabaseEngine engine;
+    private final DatabaseEngine engine;
 
     private EventLoopGroup acceptGroup;
 
@@ -60,7 +60,7 @@ public class HorizonServer extends AbstractComponent {
         notNull(configuration, "the configuration parameter must not be null.");
 
         this.configuration = configuration;
-        this.engine = new DefaultDatabaseEngine(configuration);
+        this.engine = new HqlConverter(new DefaultDatabaseEngine(configuration));
     }
 
     /**

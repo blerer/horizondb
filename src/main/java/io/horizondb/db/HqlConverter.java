@@ -15,44 +15,34 @@
  */
 package io.horizondb.db;
 
-import io.horizondb.db.commitlog.CommitLog;
-import io.horizondb.db.commitlog.ReplayPosition;
-import io.horizondb.io.Buffer;
+import io.horizondb.db.parser.QueryParser;
 import io.horizondb.io.ReadableBuffer;
-import io.horizondb.io.buffers.Buffers;
 import io.horizondb.model.ErrorCodes;
+import io.horizondb.model.protocol.HqlQueryPayload;
 import io.horizondb.model.protocol.Msg;
 import io.horizondb.model.protocol.Msgs;
+import io.horizondb.model.protocol.OpCode;
 
 import java.io.IOException;
 
 import com.codahale.metrics.MetricRegistry;
-import com.google.common.util.concurrent.ListenableFuture;
 
 /**
+ * Decorator that convert HQL query messages in low-level messages. 
+ * 
  * @author Benjamin
  * 
  */
-public class DefaultDatabaseEngine extends AbstractComponent implements DatabaseEngine {
+public class HqlConverter extends AbstractComponent implements DatabaseEngine {
 
     /**
-     * The commit log.
+     * The database engine.
      */
-    private final CommitLog commitLog;
-    
-    /**
-     * The storage engine being used.
-     */
-    private final StorageEngine storageEngine;
+    private final DatabaseEngine databaseEngine;
 
-    /**
-     * 
-     * @param configuration the database configuration
-     */
-    public DefaultDatabaseEngine(Configuration configuration) {
+    public HqlConverter(DatabaseEngine databaseEngine) {
 
-        this.storageEngine = new DefaultStorageEngine(configuration);
-        this.commitLog = new CommitLog(configuration, this.storageEngine);
+        this.databaseEngine = databaseEngine;
     }
 
     /**
@@ -61,7 +51,7 @@ public class DefaultDatabaseEngine extends AbstractComponent implements Database
     @Override
     public void register(MetricRegistry registry) {
 
-        register(registry, this.storageEngine, this.commitLog);
+        this.databaseEngine.register(registry);
     }
 
     /**
@@ -70,7 +60,7 @@ public class DefaultDatabaseEngine extends AbstractComponent implements Database
     @Override
     public void unregister(MetricRegistry registry) {
 
-        unregister(registry, this.commitLog, this.storageEngine);
+        this.databaseEngine.unregister(registry);
     }
 
     /**
@@ -79,7 +69,7 @@ public class DefaultDatabaseEngine extends AbstractComponent implements Database
     @Override
     protected void doStart() throws IOException, InterruptedException {
 
-        start(this.storageEngine, this.commitLog);
+        this.databaseEngine.start();
     }
 
     /**
@@ -88,7 +78,7 @@ public class DefaultDatabaseEngine extends AbstractComponent implements Database
     @Override
     protected void doShutdown() throws InterruptedException {
 
-        shutdown(this.commitLog, this.storageEngine);
+        this.databaseEngine.shutdown();
     }
 
     /**
@@ -99,28 +89,18 @@ public class DefaultDatabaseEngine extends AbstractComponent implements Database
 
         try {
 
-            this.logger.debug("Message received with operation code: " + request.getHeader().getOpCode());
-
-            ListenableFuture<ReplayPosition> future = null;
+            OpCode opCode = request.getOpCode();
             
-            if (request.isMutation()) {
+            this.logger.debug("Message received with operation code: " + opCode);
 
-                ReadableBuffer bytes;
+            if (opCode.isHql()) {
                 
-                if (buffer == null) {
-                    
-                    bytes = Buffers.allocateDirect(request.computeSerializedSize());
-                    request.writeTo((Buffer) bytes);
-                
-                } else {
-                    
-                    bytes = buffer.duplicate().readerIndex(0);
-                }
+                @SuppressWarnings("unchecked")
+                Msg<?> msg = QueryParser.parse((Msg<HqlQueryPayload>) request);
+                return this.databaseEngine.execute(msg, null);
+            } 
 
-                future = this.commitLog.write(bytes);
-            }
-
-            return this.storageEngine.execute(request, future);
+            return this.databaseEngine.execute(request, buffer);
 
         } catch (Exception e) {
 

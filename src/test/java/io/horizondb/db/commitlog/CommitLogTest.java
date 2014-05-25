@@ -16,7 +16,7 @@
 package io.horizondb.db.commitlog;
 
 import io.horizondb.db.Configuration;
-import io.horizondb.db.DatabaseEngine;
+import io.horizondb.db.StorageEngine;
 import io.horizondb.io.Buffer;
 import io.horizondb.io.buffers.Buffers;
 import io.horizondb.io.files.FileUtils;
@@ -60,7 +60,7 @@ public class CommitLogTest {
     /**
      * The database engine.
      */
-    private DatabaseEngine databaseEngine;
+    private StorageEngine databaseEngine;
 
     @Before
     public void setUp() throws Exception {
@@ -72,7 +72,7 @@ public class CommitLogTest {
                                           .commitLogFlushPeriodInMillis(1000)
                                           .build();
 
-        this.databaseEngine = EasyMock.createMock(DatabaseEngine.class);
+        this.databaseEngine = EasyMock.createMock(StorageEngine.class);
 
         this.commitLog = new CommitLog(this.configuration, this.databaseEngine);
     }

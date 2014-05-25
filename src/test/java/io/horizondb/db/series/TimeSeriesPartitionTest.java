@@ -18,12 +18,13 @@ package io.horizondb.db.series;
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.commitlog.ReplayPosition;
-import io.horizondb.db.series.filters.Filters;
 import io.horizondb.io.files.FileUtils;
 import io.horizondb.model.core.Field;
+import io.horizondb.model.core.Filter;
 import io.horizondb.model.core.Record;
 import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.core.RecordListBuilder;
+import io.horizondb.model.core.filters.Filters;
 import io.horizondb.model.core.records.TimeSeriesRecord;
 import io.horizondb.model.core.util.TimeUtils;
 import io.horizondb.model.schema.DatabaseDefinition;
@@ -48,7 +49,8 @@ import com.google.common.collect.Range;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
-import static io.horizondb.db.series.filters.Filters.range;
+import static io.horizondb.model.core.filters.Filters.range;
+
 import static io.horizondb.model.schema.FieldType.MILLISECONDS_TIMESTAMP;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

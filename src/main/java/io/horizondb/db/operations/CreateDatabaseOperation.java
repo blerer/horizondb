@@ -18,11 +18,12 @@ package io.horizondb.db.operations;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.Operation;
 import io.horizondb.db.OperationContext;
-import io.horizondb.db.databases.Database;
 import io.horizondb.db.databases.DatabaseManager;
-import io.horizondb.model.protocol.CreateTimeSeriesPayload;
+import io.horizondb.model.protocol.CreateDatabasePayload;
 import io.horizondb.model.protocol.Msg;
+import io.horizondb.model.protocol.MsgHeader;
 import io.horizondb.model.protocol.Msgs;
+import io.horizondb.model.protocol.OpCode;
 
 import java.io.IOException;
 
@@ -30,7 +31,7 @@ import java.io.IOException;
  * @author Benjamin
  * 
  */
-final class CreateTimeSeriesOperation implements Operation {
+final class CreateDatabaseOperation implements Operation {
 
     /**
      * {@inheritDoc}
@@ -38,12 +39,11 @@ final class CreateTimeSeriesOperation implements Operation {
     @Override
     public Object perform(OperationContext context, Msg<?> request) throws IOException, HorizonDBException {
 
-        CreateTimeSeriesPayload payload = Msgs.getPayload(request);
+        CreateDatabasePayload payload = Msgs.getPayload(request);
 
         DatabaseManager manager = context.getDatabaseManager();
-        Database database = manager.getDatabase(payload.getDatabaseName());
-        database.createTimeSeries(payload.getDefinition(), !context.isReplay());
+        manager.createDatabase(payload.getDefinition(), context.isReplay());
         
-        return Msgs.newCreateTimeSeriesResponse(request);
+        return Msg.emptyMsg(MsgHeader.newResponseHeader(request.getHeader(), OpCode.NOOP, 0, 0));
     }
 }

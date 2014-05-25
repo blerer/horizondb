@@ -13,31 +13,43 @@
  */
 package io.horizondb.db.parser.builders;
 
-import java.util.TimeZone;
-import java.util.concurrent.TimeUnit;
-
-import io.horizondb.db.Query;
 import io.horizondb.db.parser.HqlBaseListener;
 import io.horizondb.db.parser.HqlParser.CreateTimeSeriesContext;
 import io.horizondb.db.parser.HqlParser.FieldDefinitionContext;
 import io.horizondb.db.parser.HqlParser.RecordDefinitionContext;
 import io.horizondb.db.parser.HqlParser.TimeSeriesOptionContext;
-import io.horizondb.db.parser.QueryBuilder;
-import io.horizondb.db.queries.CreateTimeSeriesQuery;
+import io.horizondb.db.parser.MsgBuilder;
+import io.horizondb.model.protocol.CreateTimeSeriesPayload;
+import io.horizondb.model.protocol.Msg;
+import io.horizondb.model.protocol.MsgHeader;
+import io.horizondb.model.protocol.OpCode;
+import io.horizondb.model.protocol.Payload;
 import io.horizondb.model.schema.FieldType;
 import io.horizondb.model.schema.RecordTypeDefinition;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
+import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
+
 import org.antlr.v4.runtime.misc.NotNull;
 
 /**
- * <code>Builder</code> for <code>CreateTimeseriesQuery</code> instances.
+ * <code>Builder</code> for messages requesting the creation of a time series.
  * 
  * @author Benjamin
- *
  */
-final class CreateTimeSeriesQueryBuilder extends HqlBaseListener implements QueryBuilder {
+final class CreateTimeSeriesMsgBuilder extends HqlBaseListener implements MsgBuilder {
 
+    /**
+     * The original request header.
+     */
+    private final MsgHeader requestHeader;
+    
+    /**
+     * The name of the database in which the time series must be created.
+     */
+    private final String database;    
+    
     /**
      * The time series definition builder.
      */
@@ -47,7 +59,19 @@ final class CreateTimeSeriesQueryBuilder extends HqlBaseListener implements Quer
      * The record type builder.
      */
     private RecordTypeDefinition.Builder recordTypeDefBuilder;
-    
+            
+    /**
+     * Creates a new <code>CreateTimeSeriesMsgBuilder</code> instance.
+     * 
+     * @param requestHeader the original request header
+     * @param database the database in which the time series must be created
+     */
+    public CreateTimeSeriesMsgBuilder(MsgHeader requestHeader, String database) {
+        
+        this.requestHeader = requestHeader;
+        this.database = database;
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -115,8 +139,9 @@ final class CreateTimeSeriesQueryBuilder extends HqlBaseListener implements Quer
      * {@inheritDoc}
      */
     @Override
-    public Query build() {
-
-        return new CreateTimeSeriesQuery(this.timeSeriesDefBuilder.build());
+    public Msg<?> build() {
+        
+        Payload payload = new CreateTimeSeriesPayload(this.database, this.timeSeriesDefBuilder.build());
+        return Msg.newRequestMsg(this.requestHeader, OpCode.CREATE_TIMESERIES, payload);
     }
 }

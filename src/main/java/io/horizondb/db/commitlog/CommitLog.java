@@ -17,7 +17,7 @@ package io.horizondb.db.commitlog;
 
 import io.horizondb.db.AbstractComponent;
 import io.horizondb.db.Configuration;
-import io.horizondb.db.DatabaseEngine;
+import io.horizondb.db.StorageEngine;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.io.ReadableBuffer;
 import io.horizondb.model.ErrorCodes;
@@ -69,7 +69,7 @@ public final class CommitLog extends AbstractComponent {
      */
     public CommitLogSegment activeSegment;
 
-    public CommitLog(Configuration configuration, DatabaseEngine databaseEngine) {
+    public CommitLog(Configuration configuration, StorageEngine databaseEngine) {
 
         Validate.notNull(configuration, "the configuration parameter must be not null");
         Validate.notNull(databaseEngine, "the databaseEngine parameter must be not null");

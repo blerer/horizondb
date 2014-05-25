@@ -13,19 +13,19 @@
  */
 package io.horizondb.db.parser;
 
-import io.horizondb.db.Query;
+import io.horizondb.model.protocol.Msg;
 
 /**
- * Builder used to build <code>Query</code> instances.
+ * Builder used to build <code>Msg</code> instances.
  * 
  * @author Benjamin
  */
-public interface QueryBuilder extends HqlListener {
+public interface MsgBuilder extends HqlListener {
 
     /**
-     * Builds a new query instance.
+     * Builds a new message instance.
      * 
-     * @return a new query instance
+     * @return a new message instance
      */
-    public Query build();
+    public Msg<?> build();
 }
