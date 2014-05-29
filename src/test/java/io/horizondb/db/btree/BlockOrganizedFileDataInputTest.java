@@ -15,9 +15,6 @@
  */
 package io.horizondb.db.btree;
 
-import io.horizondb.db.btree.BlockOrganizedFileDataInput;
-import io.horizondb.db.btree.BlockOrganizedFileDataOutput;
-import io.horizondb.db.btree.BlockOrganizedReadableBuffer;
 import io.horizondb.io.ByteReader;
 import io.horizondb.io.files.DirectFileDataOutput;
 import io.horizondb.io.files.DirectSeekableFileDataInput;
@@ -26,7 +23,6 @@ import io.horizondb.io.files.FileUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 
 import org.junit.After;
 import org.junit.Before;

@@ -17,6 +17,7 @@ import io.horizondb.db.HorizonDBException;
 import io.horizondb.model.protocol.CreateDatabasePayload;
 import io.horizondb.model.protocol.CreateTimeSeriesPayload;
 import io.horizondb.model.protocol.HqlQueryPayload;
+import io.horizondb.model.protocol.InsertPayload;
 import io.horizondb.model.protocol.Msg;
 import io.horizondb.model.protocol.OpCode;
 import io.horizondb.model.protocol.SelectPayload;
@@ -30,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
 
+import static io.horizondb.test.AssertCollections.assertListContains;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -194,25 +196,26 @@ public class QueryParserTest {
 
         testParseSelectWithPredicate("timestamp IN (2)");
     }
-
-    /**
-     * Test that the parsing of a select statement with the specified predicate works.
-     * 
-     * @param predicate the predicate to test
-     * @throws HorizonDBException if a problem occurs
-     */
-    private static void testParseSelectWithPredicate(String predicate) throws HorizonDBException {
+    
+    @Test
+    public void testParseInsert() throws HorizonDBException {
         
-        Msg<SelectPayload> msg = QueryParser.parse(newMsg("SELECT * FROM Dax WHERE " + predicate + ";"));
-        assertEquals("Dax", msg.getPayload().getSeriesName());
-        assertEquals(predicate, msg.getPayload().getPredicate().toString());
+        Msg<InsertPayload> msg = QueryParser.parse(newMsg("INSERT INTO Dax.Trade (timestamp, price, volume) VALUES ('23-05-2014 09:44:30', 125E-1, 10);"));
+        assertEquals("Dax", msg.getPayload().getSeries());
+        assertEquals("Trade", msg.getPayload().getRecordType());
+        assertListContains(msg.getPayload().getFieldNames(), "timestamp", "price", "volume");
+        assertListContains(msg.getPayload().getFieldValues(), "'23-05-2014 09:44:30'", "125E-1", "10");
     }
     
-//    @Test
-//    public void testParseInsert() throws HorizonDBException {
-//        
-//        SelectQuery query = (SelectQuery) QueryParser.parse("INSERT INTO Dax.Trade (timestamp, price, volume) VALUES ('23-05-2014 09:44:30', 125E-1, 10);");
-//    }
+    @Test
+    public void testParseInsertWithoutFieldNames() throws HorizonDBException {
+        
+        Msg<InsertPayload> msg = QueryParser.parse(newMsg("INSERT INTO Dax.Trade VALUES ('23-05-2014 09:44:30', 125E-1, 10);"));
+        assertEquals("Dax", msg.getPayload().getSeries());
+        assertEquals("Trade", msg.getPayload().getRecordType());
+        assertTrue(msg.getPayload().getFieldNames().isEmpty());
+        assertListContains(msg.getPayload().getFieldValues(), "'23-05-2014 09:44:30'", "125E-1", "10");
+    }
     
     @Test
     public void testParseWithInvalidQuery() throws HorizonDBException {
@@ -237,5 +240,18 @@ public class QueryParserTest {
         
         HqlQueryPayload payload = new HqlQueryPayload("TEST", query);
         return Msg.newRequestMsg(OpCode.HQL_QUERY, payload);
+    }
+    
+    /**
+     * Test that the parsing of a select statement with the specified predicate works.
+     * 
+     * @param predicate the predicate to test
+     * @throws HorizonDBException if a problem occurs
+     */
+    private static void testParseSelectWithPredicate(String predicate) throws HorizonDBException {
+        
+        Msg<SelectPayload> msg = QueryParser.parse(newMsg("SELECT * FROM Dax WHERE " + predicate + ";"));
+        assertEquals("Dax", msg.getPayload().getSeriesName());
+        assertEquals(predicate, msg.getPayload().getPredicate().toString());
     }
 }

@@ -63,5 +63,6 @@ public final class Operations {
         this.operations.put(OpCode.GET_TIMESERIES, new GetTimeSeriesOperation());
         this.operations.put(OpCode.BULK_WRITE, new BulkWriteOperation());
         this.operations.put(OpCode.SELECT, new SelectOperation());
+        this.operations.put(OpCode.INSERT, new InsertOperation());
     }
 }

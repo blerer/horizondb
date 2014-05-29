@@ -161,6 +161,14 @@ FROM
 IN
     : I_ N_ 
     ;
+
+INTO
+    : I_ N_ T_ O_
+    ;
+    
+INSERT
+    : I_ N_ S_ E_ R_ T_
+    ;    
     
 INTEGER
     : I_ N_ T_ E_ G_ E_ R_ 
@@ -230,6 +238,9 @@ USE
     : U_ S_ E_ 
     ;
 
+VALUES
+    : V_ A_ L_ U_ E_ S_;
+
 WHERE
     : W_ H_ E_ R_ E_ 
     ;
@@ -239,10 +250,11 @@ statements
     ;
 
 statement
-    : createDatabase 
-    | useDatabase 
+    : select 
+    | insert
+    | useDatabase
     | createTimeSeries 
-    | select
+    | createDatabase
     ;
 
 createDatabase
@@ -300,32 +312,48 @@ useDatabase
     : USE ID
     ;
 
+insert
+    : INSERT INTO recordName ('(' fieldList ')')? VALUES '(' valueList ')' 
+    ;
+    
+recordName
+    : ID'.'ID 
+    ;    
+
+fieldList
+    : ID (',' ID )* 
+    ;    
+    
+valueList
+    : value (',' value )*
+    ;    
+    
 select
-    : SELECT '*' FROM ID (whereDefinition)?
+    : SELECT '*' FROM ID (whereClause)?
     ;
 
-whereDefinition
-    : WHERE expression
+whereClause
+    : WHERE predicate
     ;
      
-expression
-    : '('expression')'
-    | expression AND expression
-    | expression OR expression
-    | inExpression
-    | betweenExpression
-    | simpleExpression
+predicate
+    : '('predicate')'
+    | predicate AND predicate
+    | predicate OR predicate
+    | inPredicate
+    | betweenPredicate
+    | simplePredicate
     ;
 
-inExpression 
+inPredicate 
     : ID NOT? IN '(' value (',' value )* ')'
     ;
     
-betweenExpression 
+betweenPredicate 
     : ID NOT? BETWEEN value AND value
     ;    
     
-simpleExpression
+simplePredicate
     : ID operator value
     ;
 
@@ -346,7 +374,16 @@ value
 
 timeValue
     : NUMBER ('s' | 'ms' | 'µs' | 'ns') 
+    | '\'' DATE (TIME)? '\'' 
     ;
+    
+DATE 
+    : '0'..'3' '0'..'9' '-' '0'..'1' '0'..'9' '-' '0'..'9' '0'..'9' '0'..'9' '0'..'9'
+    ;    
+    
+TIME 
+    : '0'..'2' '0'..'9' ':' '0'..'5' '0'..'9' ':' '0'..'5' '0'..'9' '.' ('0'..'9' '0'..'9' '0'..'9')?
+    ;     
     
 ID
     : ID_LETTER (ID_LETTER | DIGIT)* 
@@ -363,7 +400,7 @@ fragment DIGIT
     ;
 
 NUMBER 
-    : '0'..'9' ('0'..'9'|'.')*
+    : '0'..'9' ('0'..'9')* ('.' '0'..'9' ('0'..'9')*)* ('E' '-'* '0'..'9' ('0'..'9')*)* 
     ;
     
 STRING

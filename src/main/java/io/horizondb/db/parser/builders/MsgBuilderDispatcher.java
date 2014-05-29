@@ -14,20 +14,21 @@
 package io.horizondb.db.parser.builders;
 
 import io.horizondb.db.parser.HqlBaseListener;
-import io.horizondb.db.parser.HqlParser.BetweenExpressionContext;
+import io.horizondb.db.parser.HqlParser.BetweenPredicateContext;
 import io.horizondb.db.parser.HqlParser.CreateDatabaseContext;
 import io.horizondb.db.parser.HqlParser.CreateTimeSeriesContext;
-import io.horizondb.db.parser.HqlParser.ExpressionContext;
 import io.horizondb.db.parser.HqlParser.FieldDefinitionContext;
 import io.horizondb.db.parser.HqlParser.FieldsDefinitionContext;
-import io.horizondb.db.parser.HqlParser.InExpressionContext;
+import io.horizondb.db.parser.HqlParser.InPredicateContext;
+import io.horizondb.db.parser.HqlParser.InsertContext;
+import io.horizondb.db.parser.HqlParser.PredicateContext;
 import io.horizondb.db.parser.HqlParser.RecordDefinitionContext;
 import io.horizondb.db.parser.HqlParser.RecordsDefinitionContext;
 import io.horizondb.db.parser.HqlParser.SelectContext;
-import io.horizondb.db.parser.HqlParser.SimpleExpressionContext;
+import io.horizondb.db.parser.HqlParser.SimplePredicateContext;
 import io.horizondb.db.parser.HqlParser.TimeSeriesOptionContext;
 import io.horizondb.db.parser.HqlParser.UseDatabaseContext;
-import io.horizondb.db.parser.HqlParser.WhereDefinitionContext;
+import io.horizondb.db.parser.HqlParser.WhereClauseContext;
 import io.horizondb.db.parser.MsgBuilder;
 import io.horizondb.model.protocol.Msg;
 import io.horizondb.model.protocol.MsgHeader;
@@ -217,56 +218,65 @@ public final class MsgBuilderDispatcher extends HqlBaseListener implements MsgBu
      * {@inheritDoc}
      */
     @Override
-    public void exitWhereDefinition(@NotNull WhereDefinitionContext ctx) {
-        this.builder.exitWhereDefinition(ctx);
+    public void exitWhereClause(@NotNull WhereClauseContext ctx) {
+        this.builder.exitWhereClause(ctx);
     }
 
     /**    
      * {@inheritDoc}
      */
     @Override
-    public void enterWhereDefinition(@NotNull WhereDefinitionContext ctx) {
-        this.builder.enterWhereDefinition(ctx);
+    public void enterWhereClause(@NotNull WhereClauseContext ctx) {
+        this.builder.enterWhereClause(ctx);
     }
 
     /**    
      * {@inheritDoc}
      */    
     @Override
-    public void enterExpression(@NotNull ExpressionContext ctx) {
-        this.builder.enterExpression(ctx);
+    public void enterPredicate(@NotNull PredicateContext ctx) {
+        this.builder.enterPredicate(ctx);
     }
 
     /**    
      * {@inheritDoc}
      */
     @Override
-    public void exitExpression(@NotNull ExpressionContext ctx) {
-        this.builder.exitExpression(ctx);
+    public void exitPredicate(@NotNull PredicateContext ctx) {
+        this.builder.exitPredicate(ctx);
     }
     
     /**
      * {@inheritDoc}
      */
     @Override
-    public void enterSimpleExpression(@NotNull SimpleExpressionContext ctx) {
-        this.builder.enterSimpleExpression(ctx);
+    public void enterSimplePredicate(@NotNull SimplePredicateContext ctx) {
+        this.builder.enterSimplePredicate(ctx);
     }
 
     /**    
      * {@inheritDoc}
      */
     @Override
-    public void enterInExpression(@NotNull InExpressionContext ctx) {
-        this.builder.enterInExpression(ctx);
+    public void enterInPredicate(@NotNull InPredicateContext ctx) {
+        this.builder.enterInPredicate(ctx);
     }
 
     /**    
      * {@inheritDoc}
      */
     @Override
-    public void enterBetweenExpression(@NotNull BetweenExpressionContext ctx) {
-        this.builder.enterBetweenExpression(ctx);
+    public void enterBetweenPredicate(@NotNull BetweenPredicateContext ctx) {
+        this.builder.enterBetweenPredicate(ctx);
+    }
+
+    /**    
+     * {@inheritDoc}
+     */
+    @Override
+    public void enterInsert(@NotNull InsertContext ctx) {
+        this.builder = new InsertMsgBuilder(this.requestHeader, this.database);
+        this.builder.enterInsert(ctx);
     }
 
     /**

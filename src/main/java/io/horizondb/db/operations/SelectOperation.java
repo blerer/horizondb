@@ -47,6 +47,8 @@ final class SelectOperation implements Operation {
         
         RecordIterator iterator = series.read(payload.getPredicate());
         
-        return new ChunkedRecordStream(request.getHeader(), iterator);
+        return new ChunkedRecordSet(request.getHeader(),
+                                    series.getDefinition(),
+                                    new ChunkedRecordStream(request.getHeader(), iterator));
     }
 }

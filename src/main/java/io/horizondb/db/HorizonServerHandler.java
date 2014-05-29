@@ -59,7 +59,16 @@ class HorizonServerHandler extends ChannelInboundHandlerAdapter {
         Msg<?> request = Msg.parseFrom(buffer);
         
         Object response = this.engine.execute(request, buffer);
-        ctx.channel().writeAndFlush(response);
+        
+        if (response instanceof Iterable) {
+         
+            for (Object chunk : (Iterable<?>) response) {
+                ctx.channel().writeAndFlush(chunk);
+            }
+            
+        } else {
+            ctx.channel().writeAndFlush(response);
+        }    
     }
 
     /**

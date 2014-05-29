@@ -14,11 +14,11 @@
 package io.horizondb.db.parser.builders;
 
 import io.horizondb.db.parser.HqlBaseListener;
-import io.horizondb.db.parser.HqlParser.BetweenExpressionContext;
-import io.horizondb.db.parser.HqlParser.ExpressionContext;
-import io.horizondb.db.parser.HqlParser.InExpressionContext;
+import io.horizondb.db.parser.HqlParser.BetweenPredicateContext;
+import io.horizondb.db.parser.HqlParser.InPredicateContext;
+import io.horizondb.db.parser.HqlParser.PredicateContext;
 import io.horizondb.db.parser.HqlParser.SelectContext;
-import io.horizondb.db.parser.HqlParser.SimpleExpressionContext;
+import io.horizondb.db.parser.HqlParser.SimplePredicateContext;
 import io.horizondb.db.parser.MsgBuilder;
 import io.horizondb.model.core.Predicate;
 import io.horizondb.model.core.predicates.Operator;
@@ -98,7 +98,7 @@ final class SelectMsgBuilder extends HqlBaseListener implements MsgBuilder {
      * {@inheritDoc}
      */
     @Override
-    public void enterExpression(@NotNull ExpressionContext ctx) {
+    public void enterPredicate(@NotNull PredicateContext ctx) {
 
            
     }
@@ -107,7 +107,7 @@ final class SelectMsgBuilder extends HqlBaseListener implements MsgBuilder {
      * {@inheritDoc}
      */
     @Override
-    public void exitExpression(@NotNull ExpressionContext ctx) {
+    public void exitPredicate(@NotNull PredicateContext ctx) {
         
         if (ctx.AND() != null) {
             
@@ -132,7 +132,7 @@ final class SelectMsgBuilder extends HqlBaseListener implements MsgBuilder {
      * {@inheritDoc}
      */
     @Override
-    public void enterInExpression(@NotNull InExpressionContext ctx) {
+    public void enterInPredicate(@NotNull InPredicateContext ctx) {
         
         int childCount = ctx.getChildCount();
         
@@ -168,7 +168,7 @@ final class SelectMsgBuilder extends HqlBaseListener implements MsgBuilder {
      * {@inheritDoc}
      */
     @Override
-    public void enterBetweenExpression(@NotNull BetweenExpressionContext ctx) {
+    public void enterBetweenPredicate(@NotNull BetweenPredicateContext ctx) {
 
         String fieldName = ctx.getChild(0).getText();
         
@@ -194,7 +194,7 @@ final class SelectMsgBuilder extends HqlBaseListener implements MsgBuilder {
      * {@inheritDoc}
      */
     @Override
-    public void enterSimpleExpression(@NotNull SimpleExpressionContext ctx) {
+    public void enterSimplePredicate(@NotNull SimplePredicateContext ctx) {
 
       String fieldName = ctx.ID().getText();
       Operator operator = Operator.fromSymbol(ctx.operator().getText());
