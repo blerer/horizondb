@@ -18,7 +18,6 @@ package io.horizondb.db.series;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.db.util.concurrent.FutureUtils;
-import io.horizondb.model.Globals;
 import io.horizondb.model.core.Predicate;
 import io.horizondb.model.core.Field;
 import io.horizondb.model.core.Filter;
@@ -91,7 +90,7 @@ public final class TimeSeries {
         
         List<Record> batch = new ArrayList<>();
                 
-        Field timestamp = this.definition.newField(Globals.TIMESTAMP_FIELD);
+        Field timestamp = this.definition.newField(Record.TIMESTAMP_FIELD_NAME);
         
         for (int i = 0, m = records.size(); i < m; i++) {
             
@@ -134,7 +133,7 @@ public final class TimeSeries {
      */
     public RecordIterator read(Predicate predicate) throws IOException, HorizonDBException {
 
-        Field prototype = this.definition.newField(Globals.TIMESTAMP_FIELD);
+        Field prototype = this.definition.newField(Record.TIMESTAMP_FIELD_NAME);
         TimeZone timezone = this.definition.getTimeZone();
         
         RangeSet<Field> timeRanges = predicate.getTimestampRanges(prototype, timezone);

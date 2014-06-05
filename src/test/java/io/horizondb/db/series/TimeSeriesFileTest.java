@@ -26,6 +26,7 @@ import io.horizondb.io.files.SeekableFileDataInput;
 import io.horizondb.model.core.Field;
 import io.horizondb.model.core.RecordListBuilder;
 import io.horizondb.model.core.RecordUtils;
+import io.horizondb.model.core.records.BlockHeaderUtils;
 import io.horizondb.model.core.records.TimeSeriesRecord;
 import io.horizondb.model.core.util.TimeUtils;
 import io.horizondb.model.schema.DatabaseDefinition;
@@ -143,10 +144,21 @@ public class TimeSeriesFileTest {
                                                      this.definition.getName(),
                                                      this.metadata.getRange());
 
-        Buffer buffer = Buffers.allocate(fileMetaData.computeSerializedSize()
-                + RecordUtils.computeSerializedSize(records));
+        int blockSize = RecordUtils.computeSerializedSize(records);
         
-        RecordUtils.writeRecords(buffer.writeObject(fileMetaData), records);
+        TimeSeriesRecord blockHeader = this.definition.newBlockHeader();
+        BlockHeaderUtils.setFirstTimestampInNanos(blockHeader, TIME_IN_NANOS + 12000700);
+        BlockHeaderUtils.setLastTimestampInNanos(blockHeader, TIME_IN_NANOS + 13004400);
+        BlockHeaderUtils.setBlockSize(blockHeader, blockSize);
+        BlockHeaderUtils.setRecordCount(blockHeader, 0, 3);
+                
+        Buffer buffer = Buffers.allocate(fileMetaData.computeSerializedSize() 
+                                         + RecordUtils.computeSerializedSize(blockHeader) 
+                                         + blockSize);
+        
+        buffer.writeObject(fileMetaData);
+        RecordUtils.writeRecord(buffer, blockHeader);      
+        RecordUtils.writeRecords(buffer, records);
         
         memTimeSeries = memTimeSeries.write(allocator, records, Futures.immediateFuture(new ReplayPosition(1, 0)));
 
@@ -186,8 +198,21 @@ public class TimeSeriesFileTest {
                                                      this.definition.getName(),
                                                      this.metadata.getRange());
 
-        Buffer buffer = Buffers.allocate(fileMetaData.computeSerializedSize() + RecordUtils.computeSerializedSize(records));
-        RecordUtils.writeRecords(buffer.writeObject(fileMetaData), records);
+        int blockSize = RecordUtils.computeSerializedSize(records);
+        
+        TimeSeriesRecord blockHeader = this.definition.newBlockHeader();
+        BlockHeaderUtils.setFirstTimestampInNanos(blockHeader, TIME_IN_NANOS + 12000700);
+        BlockHeaderUtils.setLastTimestampInNanos(blockHeader, TIME_IN_NANOS + 13004400);
+        BlockHeaderUtils.setBlockSize(blockHeader, blockSize);
+        BlockHeaderUtils.setRecordCount(blockHeader, 0, 3);
+                
+        Buffer buffer = Buffers.allocate(fileMetaData.computeSerializedSize() 
+                                         + RecordUtils.computeSerializedSize(blockHeader) 
+                                         + blockSize);
+        
+        buffer.writeObject(fileMetaData);
+        RecordUtils.writeRecord(buffer, blockHeader);      
+        RecordUtils.writeRecords(buffer, records);
         
         memTimeSeries = memTimeSeries.write(allocator, records, Futures.immediateFuture(new ReplayPosition(1, 0)));
 
@@ -240,11 +265,33 @@ public class TimeSeriesFileTest {
                                                      this.definition.getName(),
                                                      this.metadata.getRange());
 
-        Buffer buffer = Buffers.allocate(fileMetaData.computeSerializedSize()
-                + RecordUtils.computeSerializedSize(records) + RecordUtils.computeSerializedSize(records2));
 
+        int blockSize = RecordUtils.computeSerializedSize(records);
+        
+        TimeSeriesRecord blockHeader = this.definition.newBlockHeader();
+        BlockHeaderUtils.setFirstTimestampInNanos(blockHeader, TIME_IN_NANOS + 12000700);
+        BlockHeaderUtils.setLastTimestampInNanos(blockHeader, TIME_IN_NANOS + 13004400);
+        BlockHeaderUtils.setBlockSize(blockHeader, blockSize);
+        BlockHeaderUtils.setRecordCount(blockHeader, 0, 3);
+        
+        int blockSize2 = RecordUtils.computeSerializedSize(records2);
+        
+        TimeSeriesRecord blockHeader2 = this.definition.newBlockHeader();
+        BlockHeaderUtils.setFirstTimestampInNanos(blockHeader2, TIME_IN_NANOS + 13014400);
+        BlockHeaderUtils.setLastTimestampInNanos(blockHeader2, TIME_IN_NANOS + 14000900);
+        BlockHeaderUtils.setBlockSize(blockHeader2, blockSize2);
+        BlockHeaderUtils.setRecordCount(blockHeader2, 0, 2);
+                
+        Buffer buffer = Buffers.allocate(fileMetaData.computeSerializedSize() 
+                                         + RecordUtils.computeSerializedSize(blockHeader) 
+                                         + blockSize
+                                         + RecordUtils.computeSerializedSize(blockHeader2) 
+                                         + blockSize2);
+        
         buffer.writeObject(fileMetaData);
+        RecordUtils.writeRecord(buffer, blockHeader);      
         RecordUtils.writeRecords(buffer, records);
+        RecordUtils.writeRecord(buffer, blockHeader2);   
         RecordUtils.writeRecords(buffer, records2);
 
         ReplayPosition replayPosition = new ReplayPosition(1, RecordUtils.computeSerializedSize(records));
@@ -303,12 +350,32 @@ public class TimeSeriesFileTest {
                                                      this.definition.getName(),
                                                      this.metadata.getRange());
 
+        int blockSize = RecordUtils.computeSerializedSize(records);
+        
+        TimeSeriesRecord blockHeader = this.definition.newBlockHeader();
+        BlockHeaderUtils.setFirstTimestampInNanos(blockHeader, TIME_IN_NANOS + 12000700);
+        BlockHeaderUtils.setLastTimestampInNanos(blockHeader, TIME_IN_NANOS + 13004400);
+        BlockHeaderUtils.setBlockSize(blockHeader, blockSize);
+        BlockHeaderUtils.setRecordCount(blockHeader, 0, 3);
+        
+        int blockSize2 = RecordUtils.computeSerializedSize(records2);
+        
+        TimeSeriesRecord blockHeader2 = this.definition.newBlockHeader();
+        BlockHeaderUtils.setFirstTimestampInNanos(blockHeader2, TIME_IN_NANOS + 13014400);
+        BlockHeaderUtils.setLastTimestampInNanos(blockHeader2, TIME_IN_NANOS + 14000900);
+        BlockHeaderUtils.setBlockSize(blockHeader2, blockSize2);
+        BlockHeaderUtils.setRecordCount(blockHeader2, 0, 2);
+                
         Buffer buffer = Buffers.allocate(fileMetaData.computeSerializedSize() 
-                                         + RecordUtils.computeSerializedSize(records)
-                                         + RecordUtils.computeSerializedSize(records2));
-
+                                         + RecordUtils.computeSerializedSize(blockHeader) 
+                                         + blockSize
+                                         + RecordUtils.computeSerializedSize(blockHeader2) 
+                                         + blockSize2);
+        
         buffer.writeObject(fileMetaData);
+        RecordUtils.writeRecord(buffer, blockHeader);      
         RecordUtils.writeRecords(buffer, records);
+        RecordUtils.writeRecord(buffer, blockHeader2);   
         RecordUtils.writeRecords(buffer, records2);
 
         ReplayPosition replayPosition = new ReplayPosition(1, RecordUtils.computeSerializedSize(records));
@@ -353,7 +420,17 @@ public class TimeSeriesFileTest {
                                                                                .setByte(2, 1)
                                                                                .build();
 
-        Buffer buffer = Buffers.allocate(RecordUtils.computeSerializedSize(records));
+        int blockSize = RecordUtils.computeSerializedSize(records);
+        
+        TimeSeriesRecord blockHeader = this.definition.newBlockHeader();
+        BlockHeaderUtils.setFirstTimestampInNanos(blockHeader, TIME_IN_NANOS + 12000700);
+        BlockHeaderUtils.setLastTimestampInNanos(blockHeader, TIME_IN_NANOS + 13004400);
+        BlockHeaderUtils.setBlockSize(blockHeader, blockSize);
+        BlockHeaderUtils.setRecordCount(blockHeader, 0, 3);
+        
+        
+        Buffer buffer = Buffers.allocate(RecordUtils.computeSerializedSize(blockHeader) + blockSize);
+        RecordUtils.writeRecord(buffer, blockHeader);      
         RecordUtils.writeRecords(buffer, records);
 
         memTimeSeries = memTimeSeries.write(allocator, records, Futures.immediateFuture(new ReplayPosition(1, 0)));
@@ -366,6 +443,7 @@ public class TimeSeriesFileTest {
             try (SeekableFileDataInput input = file.append(Arrays.<TimeSeriesElement> asList(memTimeSeries)).newInput()) {
 
                 ReadableBuffer content = input.slice((int) input.size());
+                
                 Assert.assertEquals(buffer, content);
             }
         }

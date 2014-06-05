@@ -176,7 +176,11 @@ final class PartitionId implements Comparable<PartitionId>, Serializable {
         return new StringBuilder().append(this.databaseName)
                                   .append('.')
                                   .append(this.seriesName)
-                                  .append(this.range)
+                                  .append('[')
+                                  .append(this.range.lowerEndpoint().getTimestampInMillis())
+                                  .append("..")
+                                  .append(this.range.upperEndpoint().getTimestampInMillis())
+                                  .append(')')
                                   .toString();
     }
 

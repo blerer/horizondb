@@ -62,7 +62,7 @@ public class TimeSeriesPartitionManagerCachesTest {
 
         this.configuration = Configuration.newBuilder()
                                           .dataDirectory(this.testDirectory.resolve("data"))
-                                          .memTimeSeriesSize(60)
+                                          .memTimeSeriesSize(70)
                                           .maximumMemoryUsageByMemTimeSeries(100)
                                           .cachesConcurrencyLevel(1)
                                           .build();

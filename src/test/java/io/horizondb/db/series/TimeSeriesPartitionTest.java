@@ -27,7 +27,6 @@ import io.horizondb.model.core.RecordListBuilder;
 import io.horizondb.model.core.filters.Filters;
 import io.horizondb.model.core.records.TimeSeriesRecord;
 import io.horizondb.model.core.util.TimeUtils;
-import io.horizondb.model.schema.DatabaseDefinition;
 import io.horizondb.model.schema.FieldType;
 import io.horizondb.model.schema.RecordTypeDefinition;
 import io.horizondb.model.schema.TimeSeriesDefinition;
@@ -50,7 +49,6 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import static io.horizondb.model.core.filters.Filters.range;
-
 import static io.horizondb.model.schema.FieldType.MILLISECONDS_TIMESTAMP;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -65,7 +63,7 @@ public class TimeSeriesPartitionTest {
     /**
 	 * 
 	 */
-    private static final int MEMTIMESERIES_SIZE = 50;
+    private static final int MEMTIMESERIES_SIZE = 60;
 
     /**
      * The test directory.
@@ -85,11 +83,6 @@ public class TimeSeriesPartitionTest {
 
         this.testDirectory = Files.createTempDirectory(this.getClass().getSimpleName());
 
-        Configuration configuration = Configuration.newBuilder()
-                                                   .dataDirectory(this.testDirectory)
-                                                   .memTimeSeriesSize(MEMTIMESERIES_SIZE)
-                                                   .build();
-
         RecordTypeDefinition recordTypeDefinition = RecordTypeDefinition.newBuilder("exchangeState")
                                                                         .addField("timestampInMillis",
                                                                                   FieldType.MILLISECONDS_TIMESTAMP)
@@ -98,28 +91,13 @@ public class TimeSeriesPartitionTest {
 
         Files.createDirectory(this.testDirectory.resolve("test"));
 
-        DatabaseDefinition databaseDefinition = new DatabaseDefinition("test");
-
-        this.def = databaseDefinition.newTimeSeriesDefinitionBuilder("test")
-                                     .timeUnit(TimeUnit.NANOSECONDS)
-                                     .addRecordType(recordTypeDefinition)
-                                     .build();
-
-        Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26 00:00:00.000'", 
-                                                          "'2013-11-27 00:00:00.000'");
-
-        TimeSeriesPartitionMetaData metadata = TimeSeriesPartitionMetaData.newBuilder(range).build();
+        this.def = TimeSeriesDefinition.newBuilder("test")
+                                       .timeUnit(TimeUnit.NANOSECONDS)
+                                       .addRecordType(recordTypeDefinition)
+                                       .build();
 
         this.manager = EasyMock.createMock(TimeSeriesPartitionManager.class);
         this.listener = EasyMock.createMock(TimeSeriesPartitionListener.class);
-
-        this.partition = new TimeSeriesPartition(this.manager, 
-                                                 configuration, 
-                                                 databaseDefinition.getName(), 
-                                                 this.def, 
-                                                 metadata);
-        
-        this.partition.addListener(this.listener);
     }
 
     @After
@@ -133,6 +111,11 @@ public class TimeSeriesPartitionTest {
     @Test
     public void testReadWithNoData() throws IOException {
 
+        newTimeSeriesPartition(Configuration.newBuilder()
+                                            .dataDirectory(this.testDirectory)
+                                            .memTimeSeriesSize(MEMTIMESERIES_SIZE)
+                                            .build());
+        
         EasyMock.replay(this.manager, this.listener);
 
         Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26 12:00:00.000'", "'2013-11-26 14:00:00.000'");
@@ -145,6 +128,11 @@ public class TimeSeriesPartitionTest {
 
     @Test
     public void testWrite() throws IOException, HorizonDBException {
+        
+        newTimeSeriesPartition(Configuration.newBuilder()
+                                            .dataDirectory(this.testDirectory)
+                                            .memTimeSeriesSize(MEMTIMESERIES_SIZE)
+                                            .build());
 
         this.listener.memoryUsageChanged(this.partition, 0, MEMTIMESERIES_SIZE);
         this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, null, Long.valueOf(0));
@@ -206,6 +194,11 @@ public class TimeSeriesPartitionTest {
     @Test
     public void testTwoWriteOnSameMemTimeSeries() throws IOException, HorizonDBException {
 
+        newTimeSeriesPartition(Configuration.newBuilder()
+                                            .dataDirectory(this.testDirectory)
+                                            .memTimeSeriesSize(MEMTIMESERIES_SIZE)
+                                            .build());
+        
         this.listener.memoryUsageChanged(this.partition, 0, MEMTIMESERIES_SIZE);
         this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, null, Long.valueOf(0));
 
@@ -271,6 +264,11 @@ public class TimeSeriesPartitionTest {
     @Test
     public void testWriteOnTwoMemSeries() throws IOException, HorizonDBException {
 
+        newTimeSeriesPartition(Configuration.newBuilder()
+                                            .dataDirectory(this.testDirectory)
+                                            .memTimeSeriesSize(MEMTIMESERIES_SIZE)
+                                            .build());
+        
         this.listener.memoryUsageChanged(this.partition, 0, MEMTIMESERIES_SIZE);
         this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, null, Long.valueOf(0));
         this.listener.memoryUsageChanged(this.partition, MEMTIMESERIES_SIZE, 2 * MEMTIMESERIES_SIZE);
@@ -377,16 +375,23 @@ public class TimeSeriesPartitionTest {
     @Test
     public void testFlush() throws IOException, HorizonDBException, InterruptedException {
 
-        this.listener.memoryUsageChanged(this.partition, 0, MEMTIMESERIES_SIZE);
+        final int memTimeSeriesSize = 50;
+        
+        newTimeSeriesPartition(Configuration.newBuilder()
+                                            .dataDirectory(this.testDirectory)
+                                            .memTimeSeriesSize(memTimeSeriesSize)
+                                            .build());
+
+        this.listener.memoryUsageChanged(this.partition, 0, memTimeSeriesSize);
         this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, null, Long.valueOf(0));
 
         this.manager.flush(this.partition);
 
-        this.listener.memoryUsageChanged(this.partition, MEMTIMESERIES_SIZE, 3 * MEMTIMESERIES_SIZE);
+        this.listener.memoryUsageChanged(this.partition, memTimeSeriesSize, 3 * memTimeSeriesSize);
 
         this.manager.flush(this.partition);
 
-        this.listener.memoryUsageChanged(this.partition, 3 * MEMTIMESERIES_SIZE, MEMTIMESERIES_SIZE);
+        this.listener.memoryUsageChanged(this.partition, 3 * memTimeSeriesSize, memTimeSeriesSize);
         this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, Long.valueOf(0), Long.valueOf(1));
 
         this.manager.save(this.partition);
@@ -417,7 +422,7 @@ public class TimeSeriesPartitionTest {
                                                              .build();
 
         this.partition.write(records, newFuture(0, 1)); 
-        assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
+        assertEquals(memTimeSeriesSize, this.partition.getMemoryUsage());
         assertEquals(Long.valueOf(0), this.partition.getFirstSegmentContainingNonPersistedData());
 
         records = new RecordListBuilder(this.def).newRecord("exchangeState")
@@ -439,7 +444,7 @@ public class TimeSeriesPartitionTest {
                                                  .build();
 
         this.partition.write(records, newFuture(0, 2));
-        assertEquals(3 * MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
+        assertEquals(3 * memTimeSeriesSize, this.partition.getMemoryUsage());
         assertEquals(Long.valueOf(0), this.partition.getFirstSegmentContainingNonPersistedData());
 
         records = new RecordListBuilder(this.def).newRecord("exchangeState")
@@ -449,7 +454,7 @@ public class TimeSeriesPartitionTest {
                                                  .build();
 
         this.partition.write(records, newFuture(1, 1));
-        assertEquals(3 * MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
+        assertEquals(3 * memTimeSeriesSize, this.partition.getMemoryUsage());
         assertEquals(Long.valueOf(0), this.partition.getFirstSegmentContainingNonPersistedData());
 
         this.partition.flush();
@@ -537,6 +542,11 @@ public class TimeSeriesPartitionTest {
     @Test
     public void testFlushWithOneMemTimeSeriesFull() throws IOException, HorizonDBException, InterruptedException {
 
+        newTimeSeriesPartition(Configuration.newBuilder()
+                                            .dataDirectory(this.testDirectory)
+                                            .memTimeSeriesSize(MEMTIMESERIES_SIZE)
+                                            .build());
+        
         this.listener.memoryUsageChanged(this.partition, 0, MEMTIMESERIES_SIZE);
         this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, null, Long.valueOf(0));
 
@@ -619,9 +629,16 @@ public class TimeSeriesPartitionTest {
     @Test
     public void testWriteOnThreeMemSeries() throws IOException, HorizonDBException {
 
-        this.listener.memoryUsageChanged(this.partition, 0, MEMTIMESERIES_SIZE);
+        final int memTimeSeriesSize = 50;
+        
+        newTimeSeriesPartition(Configuration.newBuilder()
+                                            .dataDirectory(this.testDirectory)
+                                            .memTimeSeriesSize(memTimeSeriesSize)
+                                            .build());
+        
+        this.listener.memoryUsageChanged(this.partition, 0, memTimeSeriesSize);
         this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, null, Long.valueOf(0));
-        this.listener.memoryUsageChanged(this.partition, MEMTIMESERIES_SIZE, 3 * MEMTIMESERIES_SIZE);
+        this.listener.memoryUsageChanged(this.partition, memTimeSeriesSize, 3 * memTimeSeriesSize);
 
         this.manager.flush(this.partition);
         this.manager.flush(this.partition);
@@ -652,7 +669,7 @@ public class TimeSeriesPartitionTest {
                                                              .build();
 
         this.partition.write(records, newFuture(0, 1));
-        assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
+        assertEquals(memTimeSeriesSize, this.partition.getMemoryUsage());
 
         records = new RecordListBuilder(this.def).newRecord("exchangeState")
                                                  .setTimestampInMillis(0, timestamp + 600)
@@ -673,7 +690,7 @@ public class TimeSeriesPartitionTest {
                                                  .build();
 
         this.partition.write(records, newFuture(0, 2));
-        assertEquals(3 * MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
+        assertEquals(3 * memTimeSeriesSize, this.partition.getMemoryUsage());
 
         records = new RecordListBuilder(this.def).newRecord("exchangeState")
                                                  .setTimestampInMillis(0, timestamp + 1400)
@@ -682,7 +699,7 @@ public class TimeSeriesPartitionTest {
                                                  .build();
 
         this.partition.write(records, newFuture(0, 3));
-        assertEquals(3 * MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
+        assertEquals(3 * memTimeSeriesSize, this.partition.getMemoryUsage());
 
         RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), toFilter(range));
 
@@ -766,6 +783,11 @@ public class TimeSeriesPartitionTest {
     @Test
     public void testForceFlush() throws IOException, HorizonDBException, InterruptedException {
 
+        newTimeSeriesPartition(Configuration.newBuilder()
+                                            .dataDirectory(this.testDirectory)
+                                            .memTimeSeriesSize(MEMTIMESERIES_SIZE)
+                                            .build());
+        
         this.listener.memoryUsageChanged(this.partition, 0, MEMTIMESERIES_SIZE);
         this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, null, Long.valueOf(0));
 
@@ -839,6 +861,11 @@ public class TimeSeriesPartitionTest {
     @Test
     public void testWriteAfterForceFlush() throws IOException, HorizonDBException, InterruptedException {
 
+        newTimeSeriesPartition(Configuration.newBuilder()
+                                            .dataDirectory(this.testDirectory)
+                                            .memTimeSeriesSize(MEMTIMESERIES_SIZE)
+                                            .build());
+        
         this.listener.memoryUsageChanged(this.partition, 0, MEMTIMESERIES_SIZE);
         this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, null, Long.valueOf(0));
         this.listener.memoryUsageChanged(this.partition, MEMTIMESERIES_SIZE, 0);
@@ -949,6 +976,27 @@ public class TimeSeriesPartitionTest {
      */
     private Filter<Record> toFilter(Range<Field> range) {
         return Filters.toRecordFilter(this.def, "timestamp", range(range, true));
+    }
+    
+    /**
+     * Creates a time series partition to use during the tests.
+     * 
+     * @param configuration the database configuration 
+     * @throws IOException if an I/O problem occurs
+     */
+    private void newTimeSeriesPartition(Configuration configuration) throws IOException {
+        Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26 00:00:00.000'", 
+                                                          "'2013-11-27 00:00:00.000'");
+
+        TimeSeriesPartitionMetaData metadata = TimeSeriesPartitionMetaData.newBuilder(range).build();
+
+        this.partition = new TimeSeriesPartition(this.manager, 
+                                                 configuration, 
+                                                 "test", 
+                                                 this.def, 
+                                                 metadata);
+        
+        this.partition.addListener(this.listener);
     }
 
 }

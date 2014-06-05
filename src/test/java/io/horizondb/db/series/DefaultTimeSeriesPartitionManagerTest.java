@@ -174,7 +174,7 @@ public class DefaultTimeSeriesPartitionManagerTest {
 
             assertEquals(id, partition.getId());
             assertEquals(new ReplayPosition(1, 2), partition.getFuture().get());
-            assertEquals(1064, partition.getMetaData().getFileSize());
+            assertEquals(1083, partition.getMetaData().getFileSize());
 
         } finally {
 

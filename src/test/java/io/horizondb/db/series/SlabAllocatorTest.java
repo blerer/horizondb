@@ -16,6 +16,7 @@
 package io.horizondb.db.series;
 
 import io.horizondb.io.Buffer;
+import io.horizondb.io.BufferAllocator;
 
 import org.junit.Test;
 
@@ -56,7 +57,7 @@ public class SlabAllocatorTest {
     @Test
     public void testAllocateWithWrite() {
 
-        SlabAllocator allocator = new SlabAllocator(60 * ONE_KB);
+        BufferAllocator allocator = new SlabAllocator(60 * ONE_KB);
 
         Buffer buffer = allocator.allocate(10);
 

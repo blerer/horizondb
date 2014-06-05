@@ -15,6 +15,7 @@ package io.horizondb.db;
 
 import io.horizondb.db.commitlog.CommitLog;
 import io.horizondb.db.commitlog.CommitLog.SyncMode;
+import io.horizondb.io.files.FileUtils;
 import io.netty.util.internal.PlatformDependent;
 
 import java.nio.file.Path;
@@ -109,6 +110,11 @@ public final class Configuration {
      * The concurrency level used for the caches.
      */
     private final int cachesConcurrencyLevel;
+    
+    /**
+     * The size in bytes of the partitions blocks.
+     */
+    private final long blockSizeInBytes;
 
     /**
      * Creates a new <code>Builder</code> instance.
@@ -139,6 +145,7 @@ public final class Configuration {
         this.shutdownWaitingTimeInSeconds = builder.shutdownWaitingTimeInSeconds;
         this.maximumMemoryUsageByMemTimeSeries = builder.maximumMemoryUsageByMemTimeSeries;
         this.memTimeSeriesIdleTimeInSecond = builder.memTimeSeriesIdleTimeInSecond;
+        this.blockSizeInBytes = builder.blockSizeInBytes;
         this.timeSeriesCacheMaximumSize = builder.timeSeriesCacheMaximumSize;
         this.cachesConcurrencyLevel = builder.cachesConcurrencyLevel;
     }
@@ -290,11 +297,25 @@ public final class Configuration {
     }
 
     /**
+     * Returns the partition block size in bytes.  
+     *   
+     * @return the partition block size in bytes. 
+     */
+    public long getBlockSizeInBytes() {
+        return this.blockSizeInBytes;
+    }
+
+    /**
      * The builder for <code>Configuration</code> instance.
      * 
      * @author benjamin
      */
     public static final class Builder {
+
+        /**
+         * The default size in bytes of the partition blocks.
+         */
+        private static final int DEFAULT_BLOCK_SIZE_IN_BYTES = 64 * FileUtils.ONE_KB;
 
         /**
          * The default mode used by the commit log to sync data to the disk.
@@ -416,6 +437,11 @@ public final class Configuration {
          * The concurrency level used for the caches.
          */
         private int cachesConcurrencyLevel = DEFAULT_CACHES_CONCURRENCY_LEVEL;
+        
+        /**
+         * The size in bytes of the partitions blocks.
+         */
+        private long blockSizeInBytes = DEFAULT_BLOCK_SIZE_IN_BYTES;
 
         /**
          * Specifies the port on which the database server is listening.
@@ -646,6 +672,18 @@ public final class Configuration {
             return this;
         }
 
+        /**
+         * Specify the partition block size in bytes.
+         * 
+         * @param blockSizeInBytes the partition block size in bytes.
+         * @return this <code>Builder</code>.
+         */
+        public Builder blockSizeInBytes(long blockSizeInBytes) {
+
+            this.blockSizeInBytes = blockSizeInBytes;
+            return this;
+        }
+        
         /**
          * Builds a new <code>Configuration</code> instance.
          * 

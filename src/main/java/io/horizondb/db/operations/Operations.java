@@ -60,8 +60,6 @@ public final class Operations {
         this.operations.put(OpCode.CREATE_DATABASE, new CreateDatabaseOperation());
         this.operations.put(OpCode.USE_DATABASE, new UseDatabaseOperation());
         this.operations.put(OpCode.CREATE_TIMESERIES, new CreateTimeSeriesOperation());
-        this.operations.put(OpCode.GET_TIMESERIES, new GetTimeSeriesOperation());
-        this.operations.put(OpCode.BULK_WRITE, new BulkWriteOperation());
         this.operations.put(OpCode.SELECT, new SelectOperation());
         this.operations.put(OpCode.INSERT, new InsertOperation());
     }

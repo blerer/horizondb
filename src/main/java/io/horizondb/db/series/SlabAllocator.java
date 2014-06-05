@@ -16,6 +16,7 @@
 package io.horizondb.db.series;
 
 import io.horizondb.io.Buffer;
+import io.horizondb.io.BufferAllocator;
 import io.horizondb.io.buffers.Buffers;
 
 import org.slf4j.Logger;
@@ -29,7 +30,7 @@ import static io.horizondb.io.files.FileUtils.printNumberOfBytes;
  * 
  * @author Benjamin
  */
-public final class SlabAllocator {
+public final class SlabAllocator implements BufferAllocator {
 
     /**
      * The logger.
@@ -71,11 +72,9 @@ public final class SlabAllocator {
     }
 
     /**
-     * Retrieves a slice of memory of the specified size.
-     * 
-     * @param size the size of the buffer that need to be returned.
-     * @return a buffer of the specified size.
+     * {@inheritDoc}
      */
+    @Override
     public Buffer allocate(int size) {
 
         if (this.region == null || this.region.readableBytes() < size) {
@@ -90,8 +89,9 @@ public final class SlabAllocator {
     }
 
     /**
-     * Release the resources used by this allocator.
+     * {@inheritDoc}
      */
+    @Override
     public void release() {
 
         this.region = null;

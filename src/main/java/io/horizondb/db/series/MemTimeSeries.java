@@ -19,11 +19,7 @@ import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.db.util.concurrent.FutureUtils;
-import io.horizondb.io.Buffer;
-import io.horizondb.io.buffers.CompositeBuffer;
 import io.horizondb.io.files.SeekableFileDataInput;
-import io.horizondb.io.files.SeekableFileDataInputs;
-import io.horizondb.model.ErrorCodes;
 import io.horizondb.model.core.Record;
 import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;
@@ -40,10 +36,6 @@ import javax.annotation.concurrent.Immutable;
 import com.google.common.collect.Range;
 import com.google.common.util.concurrent.ListenableFuture;
 
-import static io.horizondb.io.encoding.VarInts.computeUnsignedIntSize;
-import static io.horizondb.io.encoding.VarInts.writeByte;
-import static io.horizondb.io.encoding.VarInts.writeUnsignedInt;
-
 /**
  * @author Benjamin
  * 
@@ -57,9 +49,9 @@ final class MemTimeSeries implements TimeSeriesElement {
     private final Configuration configuration;
 
     /**
-     * The composite buffer used to store the in memory data.
+     * The data blocks used to store the in memory data.
      */
-    private final CompositeBuffer compositeBuffer;
+    private final DataBlocks blocks;
 
     /**
      * The last records for each type.
@@ -88,7 +80,7 @@ final class MemTimeSeries implements TimeSeriesElement {
 
         this(configuration,
              new TimeSeriesRecord[definition.getNumberOfRecordTypes()],
-             new CompositeBuffer(),
+             new DataBlocks(definition),
              null,
              null,
              null);
@@ -118,17 +110,13 @@ final class MemTimeSeries implements TimeSeriesElement {
                                ListenableFuture<ReplayPosition> future) 
                                        throws IOException, HorizonDBException {
 
-        CompositeBuffer buffer = this.compositeBuffer.duplicate();
         TimeSeriesRecord[] copy = TimeSeriesRecord.deepCopy(this.lastRecords);
-
-        for (int i = 0, m = records.size(); i < m; i++) {
-
-            write(allocator, copy, buffer, records.get(i));
-        }
+        
+        DataBlocks newBlocks = this.blocks.write(allocator, copy, records);
 
         return new MemTimeSeries(this.configuration, 
                                  copy, 
-                                 buffer, 
+                                 newBlocks, 
                                  getFirstFuture(future), 
                                  future, 
                                  getNewRegionRange(allocator));
@@ -149,7 +137,7 @@ final class MemTimeSeries implements TimeSeriesElement {
      */
     @Override
     public SeekableFileDataInput newInput() throws IOException {
-        return SeekableFileDataInputs.toSeekableFileDataInput(this.compositeBuffer);
+        return this.blocks.newInput();
     }
 
     /**
@@ -181,105 +169,14 @@ final class MemTimeSeries implements TimeSeriesElement {
      */
     public void writePrettyPrint(TimeSeriesDefinition definition, PrintStream stream) throws IOException {
         
-        try (RecordIterator iterator =new LoggingRecordIterator(definition, 
-                                                           new BinaryTimeSeriesRecordIterator(definition, 
-                                                                                              this.compositeBuffer),
-                                                           stream)) {
-            while (iterator.hasNext()) {
-                
-                iterator.next();
+        try (RecordIterator iter = new LoggingRecordIterator(definition,
+                                                             new BinaryTimeSeriesRecordIterator(definition, newInput()),
+                                                             stream)) {
+            while (iter.hasNext()) {
+
+                iter.next();
             }
         }
-    }
-    
-    /**
-     * Writes the specified record data to the specified buffer.
-     * 
-     * @param allocator the slab allocator used to reduce heap fragmentation.
-     * @param previousRecords the previous value of the records.
-     * @param composite the composite buffer to which the records binaries must be added.
-     * @param record the record to be written.
-     * @throws IOException if an I/O problem occurs.
-     * @throws HorizonDBException if the record is not valid.
-     */
-    private static void write(SlabAllocator allocator,
-                              TimeSeriesRecord[] previousRecords,
-                              CompositeBuffer composite,
-                              Record record) throws IOException, HorizonDBException {
-
-        int type = record.getType();
-
-        if (previousRecords[type] == null) {
-
-            if (record.isDelta()) {
-
-                throw new HorizonDBException(ErrorCodes.INVALID_RECORD_SET,
-                                             "The first record of the record set is a delta and should be a full state.");
-            }
-
-            previousRecords[type] = record.toTimeSeriesRecord();
-            performWrite(allocator, composite, record);
-
-        } else {
-
-            if (record.isDelta()) {
-
-                previousRecords[type].add(record);
-                performWrite(allocator, composite, record);
-
-            } else {
-
-                if (record.getTimestampInNanos(0) < getGreatestTimestamp(previousRecords)) {
-
-                    throw new HorizonDBException(ErrorCodes.INVALID_RECORD_SET,
-                                                 "The first record of the record set as a timestamp earliest than"
-                                                         + " the last record written."
-                                                         + " Updates are not yet supported.");
-                }
-
-                TimeSeriesRecord delta = toDelta(previousRecords[type], record);
-                previousRecords[type].add(delta);
-                performWrite(allocator, composite, delta);
-            }
-        }
-    }
-
-    /**
-     * Computes the delta between the two specified records.
-     * 
-     * @param first the first record
-     * @param second the second record
-     * @return the delta between the two specified records.
-     * @throws IOException if an I/O problem occurs while computing the delta
-     */
-    private static TimeSeriesRecord toDelta(TimeSeriesRecord first, Record second) throws IOException {
-
-        TimeSeriesRecord delta = second.toTimeSeriesRecord();
-        delta.subtract(first);
-        return delta;
-    }
-
-    /**
-     * Adds the specified record to the specified composite.
-     * 
-     * @param allocator the slab allocator
-     * @param composite the composite buffer to which the record must bee added
-     * @param record the record to add
-     * @throws IOException if an I/O problem occurs
-     */
-    private static void
-            performWrite(SlabAllocator allocator, CompositeBuffer composite, Record record) throws IOException {
-
-        int recordSize = record.computeSerializedSize();
-        int totalSize = 1 + computeUnsignedIntSize(recordSize) + recordSize;
-
-        Buffer buffer = allocator.allocate(totalSize);
-
-        writeByte(buffer, record.getType());
-        writeUnsignedInt(buffer, recordSize);
-        record.writeTo(buffer);
-
-        composite.add(buffer);
     }
 
     /**
@@ -341,7 +238,7 @@ final class MemTimeSeries implements TimeSeriesElement {
      * @return the size in bytes of the records.
      */
     private int getRecordsSize() {
-        return this.compositeBuffer.readableBytes();
+        return this.blocks.size();
     }
 
     /**
@@ -372,14 +269,14 @@ final class MemTimeSeries implements TimeSeriesElement {
 	 */
     private MemTimeSeries(Configuration configuration,
             TimeSeriesRecord[] lastRecords,
-            CompositeBuffer buffer,
+            DataBlocks blocks,
             ListenableFuture<ReplayPosition> firstFuture,
             ListenableFuture<ReplayPosition> lastFuture,
             Range<Integer> regionRange) {
 
         this.configuration = configuration;
         this.lastRecords = lastRecords;
-        this.compositeBuffer = buffer;
+        this.blocks = blocks;
         this.firstFuture = firstFuture;
         this.lastFuture = lastFuture;
         this.regionRange = regionRange;
