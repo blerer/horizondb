@@ -37,17 +37,6 @@ public interface TimeSeriesPartitionManager extends Component {
     void save(TimeSeriesPartition partition) throws IOException;
 
     /**
-     * Returns the partition with the specified ID from the specified time series for read access.
-     * 
-     * @param PartitionId partitionId the partition id
-     * @param seriesDefinition the time series definition
-     * @return the time series partition with the specified ID.
-     * @throws IOException if an I/O problem occurs while retrieving the partition.
-     * @throws HorizonDBException if a problem occurs.
-     */
-    TimeSeriesPartition getPartitionForRead(PartitionId partitionId, TimeSeriesDefinition seriesDefinition) throws IOException, HorizonDBException;
-
-    /**
      * Returns the partition with the specified ID from the specified time series for write access.
      * 
      * @param PartitionId partitionId the partition id

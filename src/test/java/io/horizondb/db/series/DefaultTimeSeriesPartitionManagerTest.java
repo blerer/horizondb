@@ -17,6 +17,7 @@ package io.horizondb.db.series;
 
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
+import io.horizondb.db.btree.KeyValueIterator;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.files.FileUtils;
 import io.horizondb.model.core.Field;
@@ -44,6 +45,8 @@ import com.google.common.util.concurrent.Futures;
 
 import static io.horizondb.model.schema.FieldType.MILLISECONDS_TIMESTAMP;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class DefaultTimeSeriesPartitionManagerTest {
 
@@ -69,7 +72,7 @@ public class DefaultTimeSeriesPartitionManagerTest {
     }
 
     @Test
-    public void testGetPartition() throws InterruptedException, IOException, ExecutionException {
+    public void testGetRangeForReadWithNoValues() throws InterruptedException, IOException {
 
         DefaultTimeSeriesPartitionManager partitionManager = new DefaultTimeSeriesPartitionManager(this.configuration);
 
@@ -96,12 +99,10 @@ public class DefaultTimeSeriesPartitionManagerTest {
             
             PartitionId id = new PartitionId("test", "DAX", range);
 
-            TimeSeriesPartition partition = partitionManager.getPartitionForRead(id, definition);
-
-            TimeSeriesPartitionMetaData metaData = partition.getMetaData();
-
-            assertEquals(range, metaData.getRange());
-            assertEquals(0, metaData.getFileSize());
+            KeyValueIterator<PartitionId, TimeSeriesPartition> iterator = 
+                    partitionManager.getRangeForRead(id, id, definition);
+            
+            assertFalse(iterator.next());
 
         } finally {
 
@@ -170,11 +171,18 @@ public class DefaultTimeSeriesPartitionManagerTest {
 
             partitionManager.start();
 
-            TimeSeriesPartition partition = partitionManager.getPartitionForRead(id, definition);
+            KeyValueIterator<PartitionId, TimeSeriesPartition> iterator = 
+                    partitionManager.getRangeForRead(id, id, definition);
+            
+            assertTrue(iterator.next());
+            
+            TimeSeriesPartition partition = iterator.getValue();
 
             assertEquals(id, partition.getId());
             assertEquals(new ReplayPosition(1, 2), partition.getFuture().get());
             assertEquals(1083, partition.getMetaData().getFileSize());
+            
+            assertFalse(iterator.next());
 
         } finally {
 

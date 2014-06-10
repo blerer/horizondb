@@ -17,6 +17,7 @@ package io.horizondb.db.series;
 
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
+import io.horizondb.db.btree.KeyValueIterator;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.files.FileUtils;
 import io.horizondb.model.core.Field;
@@ -44,6 +45,8 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import static io.horizondb.model.schema.FieldType.MILLISECONDS_TIMESTAMP;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Benjamin
@@ -126,14 +129,35 @@ public class TimeSeriesPartitionManagerCachesTest {
             assertEquals(0, caches.readCacheStats().hitCount());
             assertEquals(0, caches.readCacheStats().missCount());
 
-            caches.getPartitionForRead(id, definition);
+            KeyValueIterator<PartitionId, TimeSeriesPartition> iterator = caches.getRangeForRead(id, id, definition);
+            
+            assertTrue(iterator.next());
+            assertEquals(id, iterator.getKey());
+            
+            assertEquals(1, caches.globalCacheSize());
+            assertEquals(0, caches.readCacheSize());
+            assertEquals(1, caches.writeCacheSize());
+
+            assertEquals(1, caches.globalCacheStats().loadCount());
+            assertEquals(0, caches.globalCacheStats().hitCount());
+            assertEquals(1, caches.globalCacheStats().missCount());
+
+            assertEquals(1, caches.writeCacheStats().loadCount());
+            assertEquals(0, caches.writeCacheStats().hitCount());
+            assertEquals(1, caches.writeCacheStats().missCount());
+
+            assertEquals(0, caches.readCacheStats().loadCount());
+            assertEquals(0, caches.readCacheStats().hitCount());
+            assertEquals(0, caches.readCacheStats().missCount());
+            
+            iterator.getValue();
 
             assertEquals(1, caches.globalCacheSize());
             assertEquals(1, caches.readCacheSize());
             assertEquals(1, caches.writeCacheSize());
 
             assertEquals(1, caches.globalCacheStats().loadCount());
-            assertEquals(1, caches.globalCacheStats().hitCount());
+            assertEquals(2, caches.globalCacheStats().hitCount());
             assertEquals(1, caches.globalCacheStats().missCount());
 
             assertEquals(1, caches.writeCacheStats().loadCount());
@@ -142,7 +166,7 @@ public class TimeSeriesPartitionManagerCachesTest {
 
             assertEquals(1, caches.readCacheStats().loadCount());
             assertEquals(0, caches.readCacheStats().hitCount());
-            assertEquals(1, caches.readCacheStats().missCount());
+            assertEquals(2, caches.readCacheStats().missCount());
 
         } finally {
 
@@ -151,12 +175,73 @@ public class TimeSeriesPartitionManagerCachesTest {
     }
 
     @Test
-    public void testGlobalCacheWeakReferencesWithRead() throws InterruptedException, IOException, HorizonDBException  {
+    public void testGlobalCacheWeakReferencesWithRead() throws Exception  {
+
+        Files.createDirectories(this.configuration.getDataDirectory().resolve("test"));
 
         DefaultTimeSeriesPartitionManager partitionManager = new DefaultTimeSeriesPartitionManager(this.configuration);
 
         TimeSeriesPartitionManagerCaches caches = new TimeSeriesPartitionManagerCaches(this.configuration,
                                                                                        partitionManager);
+        caches.start();
+
+        try {
+
+            RecordTypeDefinition recordTypeDefinition = RecordTypeDefinition.newBuilder("exchangeState")
+                                                                            .addField("timestampInMillis",
+                                                                                      FieldType.MILLISECONDS_TIMESTAMP)
+                                                                            .addField("status", FieldType.BYTE)
+                                                                            .build();
+
+            Files.createDirectory(this.testDirectory.resolve("test"));
+
+            DatabaseDefinition databaseDefinition = new DatabaseDefinition("test");
+
+            TimeSeriesDefinition daxDefinition = databaseDefinition.newTimeSeriesDefinitionBuilder("DAX")
+                                                                   .timeUnit(TimeUnit.NANOSECONDS)
+                                                                   .addRecordType(recordTypeDefinition)
+                                                                   .build();
+
+            Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26 00:00:00.000'", 
+                                                              "'2013-11-27 00:00:00.000'");
+            
+            PartitionId daxPartitionId = new PartitionId("test", "DAX", range);
+
+            TimeSeriesPartition daxPartition = caches.getPartitionForWrite(daxPartitionId, daxDefinition);
+
+            long timestamp = TimeUtils.parseDateTime("2013-11-26 12:32:12.000");
+
+            List<TimeSeriesRecord> recordIterator = new RecordListBuilder(daxDefinition)
+                                                                 .newRecord("exchangeState")
+                                                                 .setTimestampInMillis(0, timestamp)
+                                                                 .setTimestampInMillis(1, timestamp)
+                                                                 .setByte(2, 10)
+                                                                 .newRecord("exchangeState")
+                                                                 .setTimestampInMillis(0, timestamp + 100)
+                                                                 .setTimestampInMillis(1, timestamp + 100)
+                                                                 .setByte(2, 5)
+                                                                 .newRecord("exchangeState")
+                                                                 .setTimestampInMillis(0, timestamp + 350)
+                                                                 .setTimestampInMillis(1, timestamp + 350)
+                                                                 .setByte(2, 10)
+                                                                 .newRecord("exchangeState")
+                                                                 .setTimestampInMillis(0, timestamp + 450)
+                                                                 .setTimestampInMillis(1, timestamp + 450)
+                                                                 .setByte(2, 6)
+                                                                 .build();
+
+            daxPartition.write(recordIterator, Futures.immediateFuture(new ReplayPosition(0, 0)));
+
+            partitionManager.sync();
+
+        } finally {
+
+            caches.shutdown();
+        }
+        
+        partitionManager = new DefaultTimeSeriesPartitionManager(this.configuration);
+
+        caches = new TimeSeriesPartitionManagerCaches(this.configuration, partitionManager);
         caches.start();
 
         try {
@@ -170,8 +255,6 @@ public class TimeSeriesPartitionManagerCachesTest {
                                                                             .addField("status", FieldType.BYTE)
                                                                             .build();
 
-            Files.createDirectory(this.testDirectory.resolve("test"));
-
             DatabaseDefinition databaseDefinition = new DatabaseDefinition("test");
 
             TimeSeriesDefinition definition = databaseDefinition.newTimeSeriesDefinitionBuilder("DAX")
@@ -181,7 +264,11 @@ public class TimeSeriesPartitionManagerCachesTest {
 
             PartitionId id = new PartitionId("test", "DAX", range);
 
-            caches.getPartitionForRead(id, definition);
+            KeyValueIterator<PartitionId, TimeSeriesPartition> iterator = caches.getRangeForRead(id, id, definition);
+            
+            assertTrue(iterator.next());
+            assertEquals(id, iterator.getKey());
+            iterator.getValue();
 
             assertEquals(1, caches.globalCacheSize());
             assertEquals(1, caches.readCacheSize());
@@ -189,7 +276,7 @@ public class TimeSeriesPartitionManagerCachesTest {
 
             assertEquals(1, caches.globalCacheStats().loadCount());
             assertEquals(0, caches.globalCacheStats().hitCount());
-            assertEquals(1, caches.globalCacheStats().missCount());
+            assertEquals(2, caches.globalCacheStats().missCount());
 
             assertEquals(0, caches.writeCacheStats().loadCount());
             assertEquals(0, caches.writeCacheStats().hitCount());
@@ -197,13 +284,17 @@ public class TimeSeriesPartitionManagerCachesTest {
 
             assertEquals(1, caches.readCacheStats().loadCount());
             assertEquals(0, caches.readCacheStats().hitCount());
-            assertEquals(1, caches.readCacheStats().missCount());
+            assertEquals(2, caches.readCacheStats().missCount());
 
             caches.evictFromReadCache(id);
 
             System.gc();
 
-            caches.getPartitionForRead(id, definition);
+            iterator = caches.getRangeForRead(id, id, definition);
+            
+            assertTrue(iterator.next());
+            assertEquals(id, iterator.getKey());
+            iterator.getValue();
 
             assertEquals(1, caches.readCacheSize());
             assertEquals(1, caches.globalCacheSize());
@@ -211,7 +302,7 @@ public class TimeSeriesPartitionManagerCachesTest {
 
             assertEquals(2, caches.globalCacheStats().loadCount());
             assertEquals(0, caches.globalCacheStats().hitCount());
-            assertEquals(2, caches.globalCacheStats().missCount());
+            assertEquals(4, caches.globalCacheStats().missCount());
 
             assertEquals(0, caches.writeCacheStats().loadCount());
             assertEquals(0, caches.writeCacheStats().hitCount());
@@ -219,7 +310,7 @@ public class TimeSeriesPartitionManagerCachesTest {
 
             assertEquals(2, caches.readCacheStats().loadCount());
             assertEquals(0, caches.readCacheStats().hitCount());
-            assertEquals(2, caches.readCacheStats().missCount());
+            assertEquals(4, caches.readCacheStats().missCount());
 
         } finally {
 
@@ -258,19 +349,21 @@ public class TimeSeriesPartitionManagerCachesTest {
 
             PartitionId id = new PartitionId("test", "DAX", range);
 
-            caches.getPartitionForRead(id, definition);
+            KeyValueIterator<PartitionId, TimeSeriesPartition> iterator = caches.getRangeForRead(id, id, definition);
 
-            assertEquals(1, caches.globalCacheSize());
-            assertEquals(1, caches.readCacheSize());
+            assertFalse(iterator.next());
+            
+            assertEquals(0, caches.globalCacheSize());
+            assertEquals(0, caches.readCacheSize());
             assertEquals(0, caches.writeCacheSize());
 
-            assertEquals(1, caches.globalCacheStats().loadCount());
+            assertEquals(0, caches.globalCacheStats().loadCount());
             assertEquals(0, caches.globalCacheStats().hitCount());
-            assertEquals(1, caches.globalCacheStats().missCount());
+            assertEquals(0, caches.globalCacheStats().missCount());
 
-            assertEquals(1, caches.readCacheStats().loadCount());
+            assertEquals(0, caches.readCacheStats().loadCount());
             assertEquals(0, caches.readCacheStats().hitCount());
-            assertEquals(1, caches.readCacheStats().missCount());
+            assertEquals(0, caches.readCacheStats().missCount());
 
             assertEquals(0, caches.writeCacheStats().loadCount());
             assertEquals(0, caches.writeCacheStats().hitCount());
@@ -279,20 +372,20 @@ public class TimeSeriesPartitionManagerCachesTest {
             caches.getPartitionForWrite(id, definition);
 
             assertEquals(1, caches.globalCacheSize());
-            assertEquals(1, caches.readCacheSize());
+            assertEquals(0, caches.readCacheSize());
             assertEquals(1, caches.writeCacheSize());
 
             assertEquals(1, caches.globalCacheStats().loadCount());
-            assertEquals(1, caches.globalCacheStats().hitCount());
+            assertEquals(0, caches.globalCacheStats().hitCount());
             assertEquals(1, caches.globalCacheStats().missCount());
 
             assertEquals(1, caches.writeCacheStats().loadCount());
             assertEquals(0, caches.writeCacheStats().hitCount());
             assertEquals(1, caches.writeCacheStats().missCount());
 
-            assertEquals(1, caches.readCacheStats().loadCount());
+            assertEquals(0, caches.readCacheStats().loadCount());
             assertEquals(0, caches.readCacheStats().hitCount());
-            assertEquals(1, caches.readCacheStats().missCount());
+            assertEquals(0, caches.readCacheStats().missCount());
 
         } finally {
 
@@ -430,7 +523,11 @@ public class TimeSeriesPartitionManagerCachesTest {
             partitionManager.sync();
             System.gc();
 
-            daxPartition = caches.getPartitionForRead(daxPartitionId, daxDefinition);
+            KeyValueIterator<PartitionId, TimeSeriesPartition> iterator = caches.getRangeForRead(daxPartitionId, daxPartitionId, daxDefinition);
+            
+            assertTrue(iterator.next());
+            
+            daxPartition = iterator.getValue();
             assertEquals(null, daxPartition.getFirstSegmentContainingNonPersistedData());
             
             assertEquals(2, caches.globalCacheSize());
@@ -439,7 +536,7 @@ public class TimeSeriesPartitionManagerCachesTest {
 
             assertEquals(3, caches.globalCacheStats().loadCount());
             assertEquals(0, caches.globalCacheStats().hitCount());
-            assertEquals(3, caches.globalCacheStats().missCount());
+            assertEquals(4, caches.globalCacheStats().missCount());
             assertEquals(1, caches.globalCacheStats().evictionCount());
 
             assertEquals(2, caches.writeCacheStats().loadCount());
@@ -449,7 +546,7 @@ public class TimeSeriesPartitionManagerCachesTest {
 
             assertEquals(1, caches.readCacheStats().loadCount());
             assertEquals(0, caches.readCacheStats().hitCount());
-            assertEquals(1, caches.readCacheStats().missCount());
+            assertEquals(2, caches.readCacheStats().missCount());
 
         } finally {
 

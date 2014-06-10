@@ -17,7 +17,6 @@ package io.horizondb.db.series;
 
 import io.horizondb.db.AbstractComponent;
 import io.horizondb.db.Configuration;
-import io.horizondb.db.btree.BTree;
 import io.horizondb.db.metrics.PrefixFilter;
 import io.horizondb.db.metrics.ThreadPoolExecutorMetrics;
 import io.horizondb.db.util.concurrent.NamedThreadFactory;
@@ -160,35 +159,12 @@ final class FlushManager extends AbstractComponent {
      * Saves the partition meta data within the specified B+Tree.
      * 
      * @param partition the time series partition  
-     * @param btree the B+Tree where the partition meta data must be saved
+     * @param runnable the runnable performing the B+Tree insertion
      */
     public void savePartition(final TimeSeriesPartition partition, 
-                              final BTree<PartitionId, TimeSeriesPartitionMetaData> btree) {
+                              Runnable runnable) {
         
-        partition.getFuture().addListener(new Runnable() {
-            
-            /**
-             * {@inheritDoc}
-             */
-            @Override
-            public void run() {
-                
-                PartitionId id = partition.getId();
-                
-                try {
-                    TimeSeriesPartitionMetaData metaData = partition.getMetaData();
-
-                    FlushManager.this.logger.debug("saving partition {} with meta data: {}", id, metaData);
-
-                    btree.insert(id, metaData);
-                    
-                } catch (IOException | InterruptedException | ExecutionException e) {
-                    
-                    FlushManager.this.logger.error("meta data for partition " + id + " could not be saved to disk");
-                }
-            }
-            
-        }, this.executor);
+        partition.getFuture().addListener(runnable, this.executor);
     }
     
     /**

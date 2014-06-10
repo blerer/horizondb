@@ -16,18 +16,18 @@
 package io.horizondb.db.series;
 
 import io.horizondb.db.HorizonDBException;
+import io.horizondb.db.btree.KeyValueIterator;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.db.util.concurrent.FutureUtils;
-import io.horizondb.model.core.Predicate;
 import io.horizondb.model.core.Field;
 import io.horizondb.model.core.Filter;
+import io.horizondb.model.core.Predicate;
 import io.horizondb.model.core.Record;
 import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.TimeZone;
@@ -154,9 +154,19 @@ public final class TimeSeries {
 
         Range<Field> span = timeRanges.span();
         
-        List<Range<Field>> ranges = this.definition.splitRange(span);
+        final Range<Field> from = this.definition.getPartitionTimeRange(span.lowerEndpoint());
+        final Range<Field> to;
         
-        return new PartitionRecordIterator(timeRanges, ranges, filter);
+        if (from.contains(span.upperEndpoint())) {
+            to = from;
+        } else {
+            to = this.definition.getPartitionTimeRange(span.upperEndpoint());
+        }
+        
+        KeyValueIterator<PartitionId, TimeSeriesPartition> rangeForRead = 
+                this.partitionManager.getRangeForRead(toPartitionId(from), toPartitionId(to), this.definition);
+        
+        return new PartitionRecordIterator(timeRanges, rangeForRead, filter);
     }
 
     /**
@@ -218,7 +228,7 @@ public final class TimeSeries {
         /**
          * The iterator over the partitions.
          */
-        private final Iterator<Range<Field>> partitionIterator; 
+        private final KeyValueIterator<PartitionId, TimeSeriesPartition> partitionIterator; 
         
         /**
          * The record iterator for the current partition been read.
@@ -233,12 +243,12 @@ public final class TimeSeries {
          * @param partitionIterator the partitions.
          */
         public PartitionRecordIterator(RangeSet<Field> rangeSet,
-                                       List<Range<Field>> partitionRanges,
+                                       KeyValueIterator<PartitionId, TimeSeriesPartition> partitionIterator,
                                        Filter<Record> filter) {
             
             this.timeRanges = rangeSet;
             this.filter = filter;
-            this.partitionIterator = partitionRanges.iterator();
+            this.partitionIterator = partitionIterator;
         }
 
         /**
@@ -262,29 +272,21 @@ public final class TimeSeries {
             
             closeRecordIteratorIfNeeded();
             
-            while (this.partitionIterator.hasNext()) {
+            while (this.partitionIterator.next()) {
                 
-                Range<Field> range = getDefinition().getPartitionTimeRange(this.partitionIterator.next().lowerEndpoint());
+                Range<Field> range = this.partitionIterator.getKey().getRange();
                 
                 RangeSet<Field> subRangeSet = this.timeRanges.subRangeSet(range);
                 
                 if (!subRangeSet.isEmpty()) {
-                    
-                    try {
-                        
-                        PartitionId id = toPartitionId(range);
-                        TimeSeriesPartition partition = 
-                                TimeSeries.this.partitionManager.getPartitionForRead(id, getDefinition());     
-                        this.recordIterator = partition.read(subRangeSet, this.filter);
-                        
-                        if (this.recordIterator.hasNext()) {                        
-                            return true;
-                        }    
-                        
-                    } catch (HorizonDBException e) {
-                        throw new IllegalStateException(e);
+
+                    TimeSeriesPartition partition = this.partitionIterator.getValue();
+                    this.recordIterator = partition.read(subRangeSet, this.filter);
+
+                    if (this.recordIterator.hasNext()) {
+                        return true;
                     }
-                }    
+                }
             }    
             
             return false;

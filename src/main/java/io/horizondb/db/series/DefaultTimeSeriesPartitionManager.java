@@ -35,6 +35,13 @@ import io.horizondb.model.schema.TimeSeriesDefinition;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.NavigableMap;
+import java.util.TreeMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import javax.annotation.concurrent.GuardedBy;
 
 import com.codahale.metrics.MetricRegistry;
 
@@ -70,7 +77,18 @@ public final class DefaultTimeSeriesPartitionManager extends AbstractComponent i
      * The B+Tree node manager.
      */
     private OnDiskNodeManager<PartitionId, TimeSeriesPartitionMetaData> nodeManager;
+    
+    /**
+     * The created but unsaved partitions.
+     */
+    @GuardedBy("rwLock")
+    private TreeMap<PartitionId, TimeSeriesPartition> unsavedPartitions = new TreeMap<>();
 
+    /**
+     * The lock guarding the unsavedPartitions.
+     */
+    private ReadWriteLock rwLock = new ReentrantReadWriteLock();
+    
     /**
      * The flush manager
      */
@@ -138,18 +156,28 @@ public final class DefaultTimeSeriesPartitionManager extends AbstractComponent i
      * {@inheritDoc}
      */
     @Override
-    public void save(TimeSeriesPartition partition) throws IOException {
+    public void save(final TimeSeriesPartition partition) throws IOException {
 
-        this.flushManager.savePartition(partition, this.btree);
-    }
+        this.flushManager.savePartition(partition, new Runnable() {
+            
+            /**
+             * {@inheritDoc}
+             */
+            @Override
+            public void run() {
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public TimeSeriesPartition getPartitionForRead(PartitionId partitionId, TimeSeriesDefinition definition) throws IOException {
-
-        return getPartition(partitionId, definition);
+                try {
+                    
+                    savePartitionMetaData(partition);
+                    
+                } catch (IOException | InterruptedException | ExecutionException e) {
+                    
+                    DefaultTimeSeriesPartitionManager.this.logger.error("meta data for partition " + partition.getId() 
+                                                                        + " could not be saved to disk");
+                }
+            }
+            
+        });
     }
 
     /**
@@ -160,7 +188,27 @@ public final class DefaultTimeSeriesPartitionManager extends AbstractComponent i
                                                     TimeSeriesDefinition definition)
                                                     throws IOException {
         
-        return getPartition(partitionId, definition);
+        TimeSeriesPartitionMetaData metadata = this.btree.get(partitionId);
+
+        if (metadata != null) {
+
+            return newTimeSeriesPartition(partitionId, definition, metadata);
+        }     
+        
+        metadata = TimeSeriesPartitionMetaData.newBuilder(partitionId.getRange()).build();
+        TimeSeriesPartition partition = newTimeSeriesPartition(partitionId, definition, metadata);
+        
+        this.rwLock.writeLock().lock();
+        
+        try {
+            
+            this.unsavedPartitions.put(partitionId, partition);
+            
+        } finally {
+            this.rwLock.writeLock().unlock();
+        }
+                
+        return partition;
     }
 
     /**
@@ -172,7 +220,22 @@ public final class DefaultTimeSeriesPartitionManager extends AbstractComponent i
                                                                               TimeSeriesDefinition definition) 
                                                                               throws IOException {
         
-        return new TimeSeriesPartitionIterator(definition, this.btree.iterator(fromId, toId));
+        KeyValueIterator<PartitionId, TimeSeriesPartition> unsavedPartitionsIterator;
+        
+        this.rwLock.readLock().lock();
+        
+        try {
+            
+            NavigableMap<PartitionId, TimeSeriesPartition> subMap = this.unsavedPartitions.subMap(fromId, true, toId, true);
+            unsavedPartitionsIterator = new MapKeyValueIterator<>(subMap);
+            
+        } finally {
+            this.rwLock.readLock().unlock();
+        }
+        
+        return  new MergingKeyValueIterator<>(unsavedPartitionsIterator,          
+                                              new TimeSeriesPartitionIterator(definition, 
+                                                                              this.btree.iterator(fromId, toId)));
     }
     
     
@@ -238,20 +301,6 @@ public final class DefaultTimeSeriesPartitionManager extends AbstractComponent i
         this.flushManager.sync();
     }
     
-    private TimeSeriesPartition
-            getPartition(PartitionId partitionId, TimeSeriesDefinition definition) throws IOException {
-
-        TimeSeriesPartitionMetaData metadata = this.btree.get(partitionId);
-
-        if (metadata == null) {
-
-            metadata = TimeSeriesPartitionMetaData.newBuilder(partitionId.getRange())
-                                                  .build();
-        }
-
-        return newTimeSeriesPartition(partitionId, definition, metadata);
-    }
-
     /**
      * Creates a new <code>TimeSeriesPartition</code>.
      * 
@@ -266,6 +315,39 @@ public final class DefaultTimeSeriesPartitionManager extends AbstractComponent i
                                                        TimeSeriesPartitionMetaData metadata) throws IOException {
         
         return new TimeSeriesPartition(this, this.configuration, partitionId.getDatabaseName(), definition, metadata);
+    }
+
+    /**
+     * Saves the meta data of the specified partition within the B+Tree.
+     * 
+     * @param partition the partition for which the meta data must be saved
+     */
+    private void savePartitionMetaData(final TimeSeriesPartition partition) throws InterruptedException,
+                                                                                   ExecutionException,
+                                                                                   IOException {
+        PartitionId id = partition.getId();
+        
+        TimeSeriesPartitionMetaData metaData = partition.getMetaData();
+
+        this.logger.debug("saving partition {} with meta data: {}", id, metaData);
+
+        if (this.unsavedPartitions.containsKey(id)) {
+            
+            this.rwLock.writeLock().lock();
+            
+            try {
+                
+                this.btree.insert(id, metaData);
+                this.unsavedPartitions.remove(id);
+                
+            } finally {
+                
+                this.rwLock.writeLock().unlock();
+            }
+        } else {
+        
+            this.btree.insert(id, metaData);
+        }       
     }
 
     /**

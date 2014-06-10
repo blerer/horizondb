@@ -183,25 +183,6 @@ public final class TimeSeriesPartitionManagerCaches extends AbstractComponent im
         this.manager.forceFlush(id, timeSeriesPartition, listeners);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public TimeSeriesPartition getPartitionForRead(final PartitionId partitionId,
-                                                   final TimeSeriesDefinition seriesDefinition) 
-                                                           throws IOException, HorizonDBException {
-
-        return this.readCache.get(partitionId, new ValueLoader<PartitionId, TimeSeriesPartition>() {
-
-            @Override
-            public TimeSeriesPartition loadValue(PartitionId key) throws IOException, HorizonDBException {
-                // Calling get partition for write or read does not really change anything has the real
-                // difference between the 2 methods is only in caching.
-                return TimeSeriesPartitionManagerCaches.this.manager.getPartitionForWrite(partitionId, seriesDefinition);
-            }
-        });
-    }
-
     /**    
      * {@inheritDoc}
      */
