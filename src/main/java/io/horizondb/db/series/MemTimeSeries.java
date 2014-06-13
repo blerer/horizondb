@@ -180,6 +180,14 @@ final class MemTimeSeries implements TimeSeriesElement {
         }
     }
     
+    /**
+     * Returns the number of data blocks that contains this <code>MemTimeSeries</code>.  
+     * 
+     * @return the number of data blocks that contains this <code>MemTimeSeries</code>.  
+     */
+    public int getNumberOfBlocks() {
+        return this.blocks.getNumberOfBlocks();
+    }
     
     /**
      * Writes the 

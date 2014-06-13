@@ -59,6 +59,11 @@ import static io.horizondb.model.core.records.BlockHeaderUtils.setUncompressedBl
 final class DataBlock {
 
     /**
+     * The maximum size for a data block in bytes (soft limit).
+     */
+    private final int blockSize;
+    
+    /**
      * The block header.
      */
     private final TimeSeriesRecord header;
@@ -79,7 +84,7 @@ final class DataBlock {
      * @param definition the time series definition
      */
     public DataBlock(TimeSeriesDefinition definition) {
-        this(definition.newBlockHeader(), new CompositeBuffer());
+        this(definition.getBlockSizeInBytes(), definition.newBlockHeader(), new CompositeBuffer());
     }   
     
     /**
@@ -113,7 +118,7 @@ final class DataBlock {
             write(allocator, previousRecords, newHeader, buffer, records.get(i));
         }
 
-        return new DataBlock(newHeader, buffer);
+        return new DataBlock(this.blockSize, newHeader, buffer);
     }
     
     /**
@@ -146,6 +151,18 @@ final class DataBlock {
         return this.compositeBuffer.readableBytes() + RecordUtils.computeSerializedSize(this.header);
     }
 
+    /**
+     * Return <code>true</code> if this block is full, <code>false</code> otherwise.
+     * 
+     * @return <code>true</code> if this block is full, <code>false</code> otherwise.
+     */
+    public boolean isFull() {
+        
+        System.out.println(size() + " : " + this.blockSize);
+        
+        return size() >= this.blockSize;
+    }
+    
     /**
      * Serializes the specified block header. 
      * 
@@ -326,11 +343,13 @@ final class DataBlock {
     /**
      * Creates a new <code>DataBlock</code> with the specified content.
      * 
+     * @param blockSize the maximum size for a data block (soft limit).
      * @param header the block header
      * @param compositeBuffer the buffer containing the data
      */
-    private DataBlock(TimeSeriesRecord header, CompositeBuffer compositeBuffer) {
+    private DataBlock(int blockSize, TimeSeriesRecord header, CompositeBuffer compositeBuffer) {
         
+        this.blockSize = blockSize;
         this.header = header;
         this.compositeBuffer = compositeBuffer;
         
@@ -353,8 +372,6 @@ final class DataBlock {
         int uncompressedBlockSize = this.compositeBuffer.readableBytes();
         
         ReadableBuffer compressedData = compressor.compress(this.compositeBuffer.duplicate());
-                
-        System.out.println(compressedData);
         
         TimeSeriesRecord newHeader = this.header.newInstance();
         setCompressionType(newHeader, compressor.getType());

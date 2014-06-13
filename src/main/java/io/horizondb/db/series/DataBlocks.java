@@ -33,6 +33,8 @@ import java.util.List;
 import javax.annotation.concurrent.Immutable;
 
 /**
+ * A set of data blocks.
+ * 
  * @author Benjamin
  *
  */
@@ -44,10 +46,13 @@ final class DataBlocks {
      */
     private final TimeSeriesDefinition definition;
     
+    /**
+     * The blocks
+     */
     private final LinkedList<DataBlock> blocks;
       
     /**
-     * 
+     * Creates a new empty <code>DataBlocks</code> instance.
      */
     public DataBlocks(TimeSeriesDefinition definition) {
         
@@ -98,29 +103,41 @@ final class DataBlocks {
     }
 
     /**
-     * @param allocator
-     * @param copy
-     * @param records
-     * @return
-     * @throws HorizonDBException 
-     * @throws IOException 
+     * Returns the number of blocks.
+     * @return the number of blocks.
      */
-    public DataBlocks write(BufferAllocator allocator, TimeSeriesRecord[] copy, List<? extends Record> records) throws IOException, HorizonDBException {
+    public int getNumberOfBlocks() {
+        return this.blocks.size();
+    }
+    
+    /**
+     * Writes the specified records to those blocks.
+     * 
+     * @param allocator the buffer allocator.
+     * @param lastRecords the last records of each types
+     * @param records the records to write
+     * @return a new <code>DataBlocks</code>
+     * @throws HorizonDBException if a problem occurs
+     * @throws IOException if an I/O problem occurs
+     */
+    public DataBlocks write(BufferAllocator allocator, TimeSeriesRecord[] lastRecords, List<? extends Record> records) throws IOException, HorizonDBException {
         
         LinkedList<DataBlock> newBlocks = new LinkedList<>(this.blocks);
         
-        if (newBlocks.isEmpty()) {
+        if (newBlocks.isEmpty() || newBlocks.getLast().isFull()) {
             
             newBlocks.add(new DataBlock(this.definition));
-        }
+        } 
         
         DataBlock last = newBlocks.removeLast();
         
-        DataBlock newLast = last.write(allocator, copy, records);
+        DataBlock newLast = last.write(allocator, lastRecords, records);
         
         newBlocks.addLast(newLast);
         
-        return new DataBlocks(this.definition, newBlocks);
+        DataBlocks dataBlocks = new DataBlocks(this.definition, newBlocks);
+        
+        return dataBlocks;
     }
     
     /**
@@ -141,7 +158,10 @@ final class DataBlocks {
     }
     
     /**
+     * Creates a new <code>DataBlocks</code> instance that contains the specified blocks.
      * 
+     * @param definition the time series definition
+     * @param blocks the data blocks
      */
     private DataBlocks(TimeSeriesDefinition definition, LinkedList<DataBlock> blocks) {
         
