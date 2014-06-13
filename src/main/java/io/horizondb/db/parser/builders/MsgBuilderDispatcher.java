@@ -13,6 +13,7 @@
  */
 package io.horizondb.db.parser.builders;
 
+import io.horizondb.db.Configuration;
 import io.horizondb.db.parser.HqlBaseListener;
 import io.horizondb.db.parser.HqlParser.BetweenPredicateContext;
 import io.horizondb.db.parser.HqlParser.CreateDatabaseContext;
@@ -44,6 +45,11 @@ import org.antlr.v4.runtime.misc.NotNull;
 public final class MsgBuilderDispatcher extends HqlBaseListener implements MsgBuilder {
 
     /**
+     * The database configuration.
+     */
+    private final Configuration configuration;
+    
+    /**
      * The original request header.
      */
     private final MsgHeader requestHeader;
@@ -61,11 +67,13 @@ public final class MsgBuilderDispatcher extends HqlBaseListener implements MsgBu
     /**
      * Creates a dispatcher.
      * 
+     * @param configuration the database configuration
      * @param requestHeader the original request header.
      * @param database the name of the database on which the query must be executed.
      */
-    public MsgBuilderDispatcher(MsgHeader requestHeader, String database) {
+    public MsgBuilderDispatcher(Configuration configuration, MsgHeader requestHeader, String database) {
         
+        this.configuration = configuration;
         this.requestHeader = requestHeader;
         this.database = database;
     }
@@ -185,7 +193,9 @@ public final class MsgBuilderDispatcher extends HqlBaseListener implements MsgBu
     @Override
     public void enterCreateTimeSeries(@NotNull CreateTimeSeriesContext ctx) {
         
-        this.builder = new CreateTimeSeriesMsgBuilder(this.requestHeader, this.database);
+        this.builder = new CreateTimeSeriesMsgBuilder(this.configuration,
+                                                      this.requestHeader, 
+                                                      this.database);
         this.builder.enterCreateTimeSeries(ctx);
     }
 

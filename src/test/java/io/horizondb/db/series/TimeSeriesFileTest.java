@@ -21,6 +21,7 @@ import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.Buffer;
 import io.horizondb.io.ReadableBuffer;
 import io.horizondb.io.buffers.Buffers;
+import io.horizondb.io.compression.Compressor;
 import io.horizondb.io.files.FileUtils;
 import io.horizondb.io.files.SeekableFileDataInput;
 import io.horizondb.model.core.Field;
@@ -145,20 +146,28 @@ public class TimeSeriesFileTest {
                                                      this.metadata.getRange());
 
         int blockSize = RecordUtils.computeSerializedSize(records);
+                
+        Buffer uncompressedRecords = Buffers.allocate(blockSize);
+        RecordUtils.writeRecords(uncompressedRecords, records);    
+        
+        Compressor compressor = this.definition.getCompressionType().newCompressor();
+        ReadableBuffer compressedRecords = compressor.compress(uncompressedRecords);
         
         TimeSeriesRecord blockHeader = this.definition.newBlockHeader();
         BlockHeaderUtils.setFirstTimestampInNanos(blockHeader, TIME_IN_NANOS + 12000700);
         BlockHeaderUtils.setLastTimestampInNanos(blockHeader, TIME_IN_NANOS + 13004400);
-        BlockHeaderUtils.setBlockSize(blockHeader, blockSize);
+        BlockHeaderUtils.setCompressionType(blockHeader, this.definition.getCompressionType());
+        BlockHeaderUtils.setCompressedBlockSize(blockHeader, compressedRecords.readableBytes());
+        BlockHeaderUtils.setUncompressedBlockSize(blockHeader, blockSize);
         BlockHeaderUtils.setRecordCount(blockHeader, 0, 3);
-                
+        
         Buffer buffer = Buffers.allocate(fileMetaData.computeSerializedSize() 
                                          + RecordUtils.computeSerializedSize(blockHeader) 
-                                         + blockSize);
+                                         + compressedRecords.readableBytes());
         
         buffer.writeObject(fileMetaData);
         RecordUtils.writeRecord(buffer, blockHeader);      
-        RecordUtils.writeRecords(buffer, records);
+        buffer.transfer(compressedRecords);
         
         memTimeSeries = memTimeSeries.write(allocator, records, Futures.immediateFuture(new ReplayPosition(1, 0)));
 
@@ -200,19 +209,27 @@ public class TimeSeriesFileTest {
 
         int blockSize = RecordUtils.computeSerializedSize(records);
         
+        Buffer uncompressedRecords = Buffers.allocate(blockSize);
+        RecordUtils.writeRecords(uncompressedRecords, records);    
+        
+        Compressor compressor = this.definition.getCompressionType().newCompressor();
+        ReadableBuffer compressedRecords = compressor.compress(uncompressedRecords);
+        
         TimeSeriesRecord blockHeader = this.definition.newBlockHeader();
         BlockHeaderUtils.setFirstTimestampInNanos(blockHeader, TIME_IN_NANOS + 12000700);
         BlockHeaderUtils.setLastTimestampInNanos(blockHeader, TIME_IN_NANOS + 13004400);
-        BlockHeaderUtils.setBlockSize(blockHeader, blockSize);
+        BlockHeaderUtils.setCompressionType(blockHeader, this.definition.getCompressionType());
+        BlockHeaderUtils.setCompressedBlockSize(blockHeader, compressedRecords.readableBytes());
+        BlockHeaderUtils.setUncompressedBlockSize(blockHeader, blockSize);
         BlockHeaderUtils.setRecordCount(blockHeader, 0, 3);
-                
+        
         Buffer buffer = Buffers.allocate(fileMetaData.computeSerializedSize() 
                                          + RecordUtils.computeSerializedSize(blockHeader) 
-                                         + blockSize);
+                                         + compressedRecords.readableBytes());
         
         buffer.writeObject(fileMetaData);
         RecordUtils.writeRecord(buffer, blockHeader);      
-        RecordUtils.writeRecords(buffer, records);
+        buffer.transfer(compressedRecords);
         
         memTimeSeries = memTimeSeries.write(allocator, records, Futures.immediateFuture(new ReplayPosition(1, 0)));
 
@@ -268,32 +285,49 @@ public class TimeSeriesFileTest {
 
         int blockSize = RecordUtils.computeSerializedSize(records);
         
+        Buffer uncompressedRecords = Buffers.allocate(blockSize);
+        RecordUtils.writeRecords(uncompressedRecords, records);    
+        
+        Compressor compressor = this.definition.getCompressionType().newCompressor();
+        ReadableBuffer compressedRecords = compressor.compress(uncompressedRecords);
+        compressedRecords = Buffers.allocate(compressedRecords.readableBytes()).transfer(compressedRecords);
+        
         TimeSeriesRecord blockHeader = this.definition.newBlockHeader();
         BlockHeaderUtils.setFirstTimestampInNanos(blockHeader, TIME_IN_NANOS + 12000700);
         BlockHeaderUtils.setLastTimestampInNanos(blockHeader, TIME_IN_NANOS + 13004400);
-        BlockHeaderUtils.setBlockSize(blockHeader, blockSize);
+        BlockHeaderUtils.setCompressionType(blockHeader, this.definition.getCompressionType());
+        BlockHeaderUtils.setCompressedBlockSize(blockHeader, compressedRecords.readableBytes());
+        BlockHeaderUtils.setUncompressedBlockSize(blockHeader, blockSize);
         BlockHeaderUtils.setRecordCount(blockHeader, 0, 3);
         
         int blockSize2 = RecordUtils.computeSerializedSize(records2);
         
+        Buffer uncompressedRecords2 = Buffers.allocate(blockSize2);
+        RecordUtils.writeRecords(uncompressedRecords2, records2);    
+        
+        ReadableBuffer compressedRecords2 = compressor.compress(uncompressedRecords2);
+        
         TimeSeriesRecord blockHeader2 = this.definition.newBlockHeader();
         BlockHeaderUtils.setFirstTimestampInNanos(blockHeader2, TIME_IN_NANOS + 13014400);
         BlockHeaderUtils.setLastTimestampInNanos(blockHeader2, TIME_IN_NANOS + 14000900);
-        BlockHeaderUtils.setBlockSize(blockHeader2, blockSize2);
+        BlockHeaderUtils.setCompressionType(blockHeader2, this.definition.getCompressionType());
+        BlockHeaderUtils.setCompressedBlockSize(blockHeader2, compressedRecords2.readableBytes());
+        BlockHeaderUtils.setUncompressedBlockSize(blockHeader2, blockSize2);
         BlockHeaderUtils.setRecordCount(blockHeader2, 0, 2);
-                
+        
         Buffer buffer = Buffers.allocate(fileMetaData.computeSerializedSize() 
                                          + RecordUtils.computeSerializedSize(blockHeader) 
-                                         + blockSize
+                                         + compressedRecords.readableBytes()
                                          + RecordUtils.computeSerializedSize(blockHeader2) 
-                                         + blockSize2);
+                                         + compressedRecords2.readableBytes());
         
         buffer.writeObject(fileMetaData);
         RecordUtils.writeRecord(buffer, blockHeader);      
-        RecordUtils.writeRecords(buffer, records);
-        RecordUtils.writeRecord(buffer, blockHeader2);   
-        RecordUtils.writeRecords(buffer, records2);
-
+        buffer.transfer(compressedRecords);
+        
+        RecordUtils.writeRecord(buffer, blockHeader2);      
+        buffer.transfer(compressedRecords2);
+        
         ReplayPosition replayPosition = new ReplayPosition(1, RecordUtils.computeSerializedSize(records));
         
         memTimeSeries = memTimeSeries.write(allocator, records, Futures.immediateFuture(replayPosition));
@@ -352,31 +386,48 @@ public class TimeSeriesFileTest {
 
         int blockSize = RecordUtils.computeSerializedSize(records);
         
+        Buffer uncompressedRecords = Buffers.allocate(blockSize);
+        RecordUtils.writeRecords(uncompressedRecords, records);    
+        
+        Compressor compressor = this.definition.getCompressionType().newCompressor();
+        ReadableBuffer compressedRecords = compressor.compress(uncompressedRecords);
+        compressedRecords = Buffers.allocate(compressedRecords.readableBytes()).transfer(compressedRecords);
+        
         TimeSeriesRecord blockHeader = this.definition.newBlockHeader();
         BlockHeaderUtils.setFirstTimestampInNanos(blockHeader, TIME_IN_NANOS + 12000700);
         BlockHeaderUtils.setLastTimestampInNanos(blockHeader, TIME_IN_NANOS + 13004400);
-        BlockHeaderUtils.setBlockSize(blockHeader, blockSize);
+        BlockHeaderUtils.setCompressionType(blockHeader, this.definition.getCompressionType());
+        BlockHeaderUtils.setCompressedBlockSize(blockHeader, compressedRecords.readableBytes());
+        BlockHeaderUtils.setUncompressedBlockSize(blockHeader, blockSize);
         BlockHeaderUtils.setRecordCount(blockHeader, 0, 3);
         
         int blockSize2 = RecordUtils.computeSerializedSize(records2);
         
+        Buffer uncompressedRecords2 = Buffers.allocate(blockSize2);
+        RecordUtils.writeRecords(uncompressedRecords2, records2);    
+        
+        ReadableBuffer compressedRecords2 = compressor.compress(uncompressedRecords2);
+        
         TimeSeriesRecord blockHeader2 = this.definition.newBlockHeader();
         BlockHeaderUtils.setFirstTimestampInNanos(blockHeader2, TIME_IN_NANOS + 13014400);
         BlockHeaderUtils.setLastTimestampInNanos(blockHeader2, TIME_IN_NANOS + 14000900);
-        BlockHeaderUtils.setBlockSize(blockHeader2, blockSize2);
+        BlockHeaderUtils.setCompressionType(blockHeader2, this.definition.getCompressionType());
+        BlockHeaderUtils.setCompressedBlockSize(blockHeader2, compressedRecords2.readableBytes());
+        BlockHeaderUtils.setUncompressedBlockSize(blockHeader2, blockSize2);
         BlockHeaderUtils.setRecordCount(blockHeader2, 0, 2);
-                
+        
         Buffer buffer = Buffers.allocate(fileMetaData.computeSerializedSize() 
                                          + RecordUtils.computeSerializedSize(blockHeader) 
-                                         + blockSize
+                                         + compressedRecords.readableBytes()
                                          + RecordUtils.computeSerializedSize(blockHeader2) 
-                                         + blockSize2);
+                                         + compressedRecords2.readableBytes());
         
         buffer.writeObject(fileMetaData);
         RecordUtils.writeRecord(buffer, blockHeader);      
-        RecordUtils.writeRecords(buffer, records);
-        RecordUtils.writeRecord(buffer, blockHeader2);   
-        RecordUtils.writeRecords(buffer, records2);
+        buffer.transfer(compressedRecords);
+        
+        RecordUtils.writeRecord(buffer, blockHeader2);      
+        buffer.transfer(compressedRecords2);
 
         ReplayPosition replayPosition = new ReplayPosition(1, RecordUtils.computeSerializedSize(records));
 
@@ -422,16 +473,25 @@ public class TimeSeriesFileTest {
 
         int blockSize = RecordUtils.computeSerializedSize(records);
         
+        Buffer uncompressedRecords = Buffers.allocate(blockSize);
+        RecordUtils.writeRecords(uncompressedRecords, records);    
+        
+        Compressor compressor = this.definition.getCompressionType().newCompressor();
+        ReadableBuffer compressedRecords = compressor.compress(uncompressedRecords);
+        
         TimeSeriesRecord blockHeader = this.definition.newBlockHeader();
         BlockHeaderUtils.setFirstTimestampInNanos(blockHeader, TIME_IN_NANOS + 12000700);
         BlockHeaderUtils.setLastTimestampInNanos(blockHeader, TIME_IN_NANOS + 13004400);
-        BlockHeaderUtils.setBlockSize(blockHeader, blockSize);
+        BlockHeaderUtils.setCompressionType(blockHeader, this.definition.getCompressionType());
+        BlockHeaderUtils.setCompressedBlockSize(blockHeader, compressedRecords.readableBytes());
+        BlockHeaderUtils.setUncompressedBlockSize(blockHeader, blockSize);
         BlockHeaderUtils.setRecordCount(blockHeader, 0, 3);
         
+        Buffer buffer = Buffers.allocate(RecordUtils.computeSerializedSize(blockHeader) 
+                                         + compressedRecords.readableBytes());
         
-        Buffer buffer = Buffers.allocate(RecordUtils.computeSerializedSize(blockHeader) + blockSize);
         RecordUtils.writeRecord(buffer, blockHeader);      
-        RecordUtils.writeRecords(buffer, records);
+        buffer.transfer(compressedRecords);
 
         memTimeSeries = memTimeSeries.write(allocator, records, Futures.immediateFuture(new ReplayPosition(1, 0)));
 

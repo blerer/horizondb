@@ -36,12 +36,18 @@ import com.codahale.metrics.MetricRegistry;
 public class HqlConverter extends AbstractComponent implements DatabaseEngine {
 
     /**
+     * The database configuration.
+     */
+    private final Configuration configuration;
+    
+    /**
      * The database engine.
      */
     private final DatabaseEngine databaseEngine;
 
-    public HqlConverter(DatabaseEngine databaseEngine) {
+    public HqlConverter(Configuration configuration, DatabaseEngine databaseEngine) {
 
+        this.configuration = configuration;
         this.databaseEngine = databaseEngine;
     }
 
@@ -96,7 +102,7 @@ public class HqlConverter extends AbstractComponent implements DatabaseEngine {
             if (opCode.isHql()) {
                 
                 @SuppressWarnings("unchecked")
-                Msg<?> msg = QueryParser.parse((Msg<HqlQueryPayload>) request);
+                Msg<?> msg = QueryParser.parse(this.configuration, (Msg<HqlQueryPayload>) request);
                 return this.databaseEngine.execute(msg, null);
             } 
 

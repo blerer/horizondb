@@ -20,6 +20,7 @@ import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.db.util.concurrent.FutureUtils;
 import io.horizondb.io.files.SeekableFileDataInput;
+import io.horizondb.io.files.SeekableFileDataOutput;
 import io.horizondb.model.core.Record;
 import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;
@@ -178,7 +179,19 @@ final class MemTimeSeries implements TimeSeriesElement {
             }
         }
     }
-
+    
+    
+    /**
+     * Writes the 
+     * 
+     * @param output
+     * @throws IOException
+     */
+    void writeTo(SeekableFileDataOutput output) throws IOException {
+        
+        this.blocks.writeTo(output);
+    }
+    
     /**
      * Returns the greatest timestamp of this time series element.
      * 

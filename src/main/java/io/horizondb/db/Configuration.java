@@ -15,6 +15,7 @@ package io.horizondb.db;
 
 import io.horizondb.db.commitlog.CommitLog;
 import io.horizondb.db.commitlog.CommitLog.SyncMode;
+import io.horizondb.io.compression.CompressionType;
 import io.horizondb.io.files.FileUtils;
 import io.netty.util.internal.PlatformDependent;
 
@@ -26,6 +27,7 @@ import org.apache.commons.lang.Validate;
 
 import static io.horizondb.io.files.FileUtils.ONE_KB;
 import static io.horizondb.io.files.FileUtils.ONE_MB;
+import static org.apache.commons.lang.Validate.notNull;
 
 /**
  * The database configuration.
@@ -114,7 +116,12 @@ public final class Configuration {
     /**
      * The size in bytes of the partitions blocks.
      */
-    private final long blockSizeInBytes;
+    private final int blockSizeInBytes;
+    
+    /**
+     * The type of compression used by this time series.
+     */
+    private final CompressionType compressionType;
 
     /**
      * Creates a new <code>Builder</code> instance.
@@ -146,6 +153,7 @@ public final class Configuration {
         this.maximumMemoryUsageByMemTimeSeries = builder.maximumMemoryUsageByMemTimeSeries;
         this.memTimeSeriesIdleTimeInSecond = builder.memTimeSeriesIdleTimeInSecond;
         this.blockSizeInBytes = builder.blockSizeInBytes;
+        this.compressionType = builder.compressionType;
         this.timeSeriesCacheMaximumSize = builder.timeSeriesCacheMaximumSize;
         this.cachesConcurrencyLevel = builder.cachesConcurrencyLevel;
     }
@@ -295,13 +303,22 @@ public final class Configuration {
     public int getCachesConcurrencyLevel() {
         return this.cachesConcurrencyLevel;
     }
+    
+    /**
+     * Returns the default compression type used by the time series.
+     * 
+     * @return the default compression type used by the time series
+     */
+    public CompressionType getCompressionType() {
+        return this.compressionType;
+    }
 
     /**
      * Returns the partition block size in bytes.  
      *   
      * @return the partition block size in bytes. 
      */
-    public long getBlockSizeInBytes() {
+    public int getBlockSizeInBytes() {
         return this.blockSizeInBytes;
     }
 
@@ -311,6 +328,11 @@ public final class Configuration {
      * @author benjamin
      */
     public static final class Builder {
+
+        /**
+         * The default compression type used by the time series
+         */
+        private static final CompressionType DEFAULT_COMPRESSION_TYPE = CompressionType.LZ4;
 
         /**
          * The default size in bytes of the partition blocks.
@@ -441,7 +463,12 @@ public final class Configuration {
         /**
          * The size in bytes of the partitions blocks.
          */
-        private long blockSizeInBytes = DEFAULT_BLOCK_SIZE_IN_BYTES;
+        private int blockSizeInBytes = DEFAULT_BLOCK_SIZE_IN_BYTES;
+                
+        /**
+         * The default type of compression used by the time series.
+         */
+        private CompressionType compressionType = DEFAULT_COMPRESSION_TYPE;
 
         /**
          * Specifies the port on which the database server is listening.
@@ -673,14 +700,28 @@ public final class Configuration {
         }
 
         /**
-         * Specify the partition block size in bytes.
+         * Specify the default partition block size in bytes.
          * 
-         * @param blockSizeInBytes the partition block size in bytes.
+         * @param blockSizeInBytes the default partition block size in bytes.
          * @return this <code>Builder</code>.
          */
-        public Builder blockSizeInBytes(long blockSizeInBytes) {
+        public Builder blockSizeInBytes(int blockSizeInBytes) {
 
             this.blockSizeInBytes = blockSizeInBytes;
+            return this;
+        }
+        
+        /**
+         * Sets the default type of compression used by the time series.
+         * 
+         * @param compressionType the default type of compression used by the time series.
+         * @return this <code>Builder</code>.
+         */
+        public Builder compressionType(CompressionType compressionType) {
+
+            notNull(compressionType, "the compressionType parameter must not be null.");
+
+            this.compressionType = compressionType;
             return this;
         }
         

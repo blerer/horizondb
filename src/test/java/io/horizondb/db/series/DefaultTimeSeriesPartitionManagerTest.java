@@ -180,7 +180,7 @@ public class DefaultTimeSeriesPartitionManagerTest {
 
             assertEquals(id, partition.getId());
             assertEquals(new ReplayPosition(1, 2), partition.getFuture().get());
-            assertEquals(1083, partition.getMetaData().getFileSize());
+            assertEquals(1087, partition.getMetaData().getFileSize());
             
             assertFalse(iterator.next());
 

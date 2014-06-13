@@ -13,6 +13,7 @@
  */
 package io.horizondb.db.parser;
 
+import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.model.protocol.CreateDatabasePayload;
 import io.horizondb.model.protocol.CreateTimeSeriesPayload;
@@ -46,11 +47,11 @@ public class QueryParserTest {
     @Test
     public void testParseCreateDatabase() throws HorizonDBException {
        
-        Msg<CreateDatabasePayload> msg = QueryParser.parse(newMsg(" CREATE DATABASE TEST;"));
+        Msg<CreateDatabasePayload> msg = QueryParser.parse(newConfiguration(), newMsg(" CREATE DATABASE TEST;"));
         
         assertNotNull(msg);
         
-        msg = QueryParser.parse(newMsg("CREATE DATABASE test ;"));
+        msg = QueryParser.parse(newConfiguration(),newMsg("CREATE DATABASE test ;"));
         
         assertNotNull(msg);
         assertEquals(new DatabaseDefinition("test"), msg.getPayload().getDefinition());
@@ -59,7 +60,7 @@ public class QueryParserTest {
     @Test
     public void testParseUseDatabase() throws HorizonDBException {
        
-        Msg<UseDatabasePayload> msg = QueryParser.parse(newMsg("USE TEST;"));
+        Msg<UseDatabasePayload> msg = QueryParser.parse(newConfiguration(),newMsg("USE TEST;"));
         
         assertNotNull(msg);
         assertEquals("TEST", msg.getPayload().getDatabase());
@@ -89,7 +90,7 @@ public class QueryParserTest {
                                                             .timeZone(TimeZone.getTimeZone("Europe/Berlin"))
                                                             .build();
         
-        Msg<CreateTimeSeriesPayload> msg = QueryParser.parse(newMsg("CREATE TIMESERIES Dax (" +
+        Msg<CreateTimeSeriesPayload> msg = QueryParser.parse(newConfiguration(),newMsg("CREATE TIMESERIES Dax (" +
                                         "Quote(received NANOSECONDS_TIMESTAMP, bidPrice DECIMAL, askPrice DECIMAL, bidVolume INTEGER, askVolume INTEGER), " +
                                         "Trade(received NANOSECONDS_TIMESTAMP, price DECIMAL, volume INTEGER))TIME_UNIT = NANOSECONDS TIMEZONE = 'Europe/Berlin';"));
         assertNotNull(msg);
@@ -121,7 +122,7 @@ public class QueryParserTest {
                                                             .timeZone(TimeZone.getTimeZone("America/Los_Angeles"))
                                                             .build();
         
-        Msg<CreateTimeSeriesPayload> msg = QueryParser.parse(newMsg("CREATE TIMESERIES Dax (" +
+        Msg<CreateTimeSeriesPayload> msg = QueryParser.parse(newConfiguration(),newMsg("CREATE TIMESERIES Dax (" +
                                         "Quote(received NANOSECONDS_TIMESTAMP, bidPrice DECIMAL, askPrice DECIMAL, bidVolume INTEGER, askVolume INTEGER), " +
                                         "Trade(received NANOSECONDS_TIMESTAMP, price DECIMAL, volume INTEGER))TIMEZONE = 'America/Los_Angeles';"));
         assertNotNull(msg);
@@ -132,7 +133,7 @@ public class QueryParserTest {
     @Test
     public void testParseSelectAll() throws HorizonDBException {
         
-        Msg<SelectPayload> msg = QueryParser.parse(newMsg("SELECT * FROM Dax;"));
+        Msg<SelectPayload> msg = QueryParser.parse(newConfiguration(),newMsg("SELECT * FROM Dax;"));
         assertEquals("Dax", msg.getPayload().getSeriesName());
         assertEquals("", msg.getPayload().getPredicate().toString());
     }
@@ -200,7 +201,7 @@ public class QueryParserTest {
     @Test
     public void testParseInsert() throws HorizonDBException {
         
-        Msg<InsertPayload> msg = QueryParser.parse(newMsg("INSERT INTO Dax.Trade (timestamp, price, volume) VALUES ('23-05-2014 09:44:30', 125E-1, 10);"));
+        Msg<InsertPayload> msg = QueryParser.parse(newConfiguration(),newMsg("INSERT INTO Dax.Trade (timestamp, price, volume) VALUES ('23-05-2014 09:44:30', 125E-1, 10);"));
         assertEquals("Dax", msg.getPayload().getSeries());
         assertEquals("Trade", msg.getPayload().getRecordType());
         assertListContains(msg.getPayload().getFieldNames(), "timestamp", "price", "volume");
@@ -210,7 +211,7 @@ public class QueryParserTest {
     @Test
     public void testParseInsertWithoutFieldNames() throws HorizonDBException {
         
-        Msg<InsertPayload> msg = QueryParser.parse(newMsg("INSERT INTO Dax.Trade VALUES ('23-05-2014 09:44:30', 125E-1, 10);"));
+        Msg<InsertPayload> msg = QueryParser.parse(newConfiguration(),newMsg("INSERT INTO Dax.Trade VALUES ('23-05-2014 09:44:30', 125E-1, 10);"));
         assertEquals("Dax", msg.getPayload().getSeries());
         assertEquals("Trade", msg.getPayload().getRecordType());
         assertTrue(msg.getPayload().getFieldNames().isEmpty());
@@ -222,7 +223,7 @@ public class QueryParserTest {
        
         try {
             
-            QueryParser.parse(newMsg("CREATE DB TEST;"));
+            QueryParser.parse(newConfiguration(),newMsg("CREATE DB TEST;"));
             fail();
             
         } catch (BadHqlGrammarException e) {
@@ -250,8 +251,16 @@ public class QueryParserTest {
      */
     private static void testParseSelectWithPredicate(String predicate) throws HorizonDBException {
         
-        Msg<SelectPayload> msg = QueryParser.parse(newMsg("SELECT * FROM Dax WHERE " + predicate + ";"));
+        Msg<SelectPayload> msg = QueryParser.parse(newConfiguration(),newMsg("SELECT * FROM Dax WHERE " + predicate + ";"));
         assertEquals("Dax", msg.getPayload().getSeriesName());
         assertEquals(predicate, msg.getPayload().getPredicate().toString());
+    }
+    
+    /**
+     * Creates a new configuration instance.
+     * @return a new configuration instance.
+     */
+    private static Configuration newConfiguration() {
+        return Configuration.newBuilder().build();
     }
 }

@@ -170,10 +170,8 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
 
                 TimeSeriesElement memTimeSeries = memTimeSeriesList.get(i);
 
-                try (SeekableFileDataInput input = memTimeSeries.newInput()) {
-
-                    output.transfer(input);
-                }
+                ((MemTimeSeries) memTimeSeries).writeTo(output);
+                
                 future = memTimeSeries.getFuture();
             }
 

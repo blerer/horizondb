@@ -13,6 +13,7 @@
  */
 package io.horizondb.db.parser;
 
+import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.parser.ErrorCollector.ParsingError;
 import io.horizondb.db.parser.HqlParser.StatementsContext;
@@ -43,11 +44,13 @@ public final class QueryParser {
     /**
      * Parses the specified query string of the specified message and return the corresponding low level message.
      * 
+     * @param configuration the database configuration
      * @param msg the query message
      * @return the low level message corresponding to the specified <code>query</code>.
      * @throws HorizonDBException if a problem occurs while parsing the query.
      */
-    public static <T extends Serializable> Msg<T> parse(Msg<HqlQueryPayload> msg) throws HorizonDBException  {
+    public static <T extends Serializable> Msg<T> parse(Configuration configuration, Msg<HqlQueryPayload> msg) 
+            throws HorizonDBException  {
               
         HqlQueryPayload payload = msg.getPayload();
         
@@ -82,7 +85,7 @@ public final class QueryParser {
         StatementsContext statements = parser.statements();
         
         ParseTreeWalker walker = new ParseTreeWalker();
-        MsgBuilder msgBuilder = new MsgBuilderDispatcher(msg.getHeader(), database);
+        MsgBuilder msgBuilder = new MsgBuilderDispatcher(configuration, msg.getHeader(), database);
         walker.walk(msgBuilder, statements);
         
         if (errorCollector.hasError()) {

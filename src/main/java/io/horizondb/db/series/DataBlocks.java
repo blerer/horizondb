@@ -16,9 +16,12 @@ package io.horizondb.db.series;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.io.BufferAllocator;
 import io.horizondb.io.buffers.Buffers;
+import io.horizondb.io.compression.CompressionType;
+import io.horizondb.io.compression.Compressor;
 import io.horizondb.io.files.CompositeSeekableFileDataInput;
 import io.horizondb.io.files.SeekableFileDataInput;
 import io.horizondb.io.files.SeekableFileDataInputs;
+import io.horizondb.io.files.SeekableFileDataOutput;
 import io.horizondb.model.core.Record;
 import io.horizondb.model.core.records.TimeSeriesRecord;
 import io.horizondb.model.schema.TimeSeriesDefinition;
@@ -118,6 +121,23 @@ final class DataBlocks {
         newBlocks.addLast(newLast);
         
         return new DataBlocks(this.definition, newBlocks);
+    }
+    
+    /**
+     * Writes to the specified output the data blocks.
+     * 
+     * @param output the output to write to
+     * @throws IOException if an I/O problem occurs. 
+     */
+    public void writeTo(SeekableFileDataOutput output) throws IOException {
+        
+        CompressionType compressionType = this.definition.getCompressionType();
+        Compressor compressor = compressionType.newCompressor();
+        
+        for (int i = 0, m = this.blocks.size(); i < m; i++) {
+            DataBlock block = this.blocks.get(i);
+            block.writeTo(compressor, output);            
+        }
     }
     
     /**

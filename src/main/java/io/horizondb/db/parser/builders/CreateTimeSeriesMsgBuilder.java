@@ -13,6 +13,7 @@
  */
 package io.horizondb.db.parser.builders;
 
+import io.horizondb.db.Configuration;
 import io.horizondb.db.parser.HqlBaseListener;
 import io.horizondb.db.parser.HqlParser.CreateTimeSeriesContext;
 import io.horizondb.db.parser.HqlParser.FieldDefinitionContext;
@@ -41,6 +42,11 @@ import org.antlr.v4.runtime.misc.NotNull;
 final class CreateTimeSeriesMsgBuilder extends HqlBaseListener implements MsgBuilder {
 
     /**
+     * The database configuration.
+     */
+    private final Configuration configuration;
+    
+    /**
      * The original request header.
      */
     private final MsgHeader requestHeader;
@@ -63,11 +69,13 @@ final class CreateTimeSeriesMsgBuilder extends HqlBaseListener implements MsgBui
     /**
      * Creates a new <code>CreateTimeSeriesMsgBuilder</code> instance.
      * 
+     * @param configuration the database configuration
      * @param requestHeader the original request header
      * @param database the database in which the time series must be created
      */
-    public CreateTimeSeriesMsgBuilder(MsgHeader requestHeader, String database) {
+    public CreateTimeSeriesMsgBuilder(Configuration configuration, MsgHeader requestHeader, String database) {
         
+        this.configuration = configuration;
         this.requestHeader = requestHeader;
         this.database = database;
     }
@@ -110,7 +118,9 @@ final class CreateTimeSeriesMsgBuilder extends HqlBaseListener implements MsgBui
     public void enterCreateTimeSeries(@NotNull CreateTimeSeriesContext ctx) {
         
         String timeSeriesName = ctx.ID().getText();
-        this.timeSeriesDefBuilder = TimeSeriesDefinition.newBuilder(timeSeriesName);
+        this.timeSeriesDefBuilder = TimeSeriesDefinition.newBuilder(timeSeriesName)
+                                                        .blockSize(this.configuration.getBlockSizeInBytes())
+                                                        .compressionType(this.configuration.getCompressionType());
     }
 
     /**    

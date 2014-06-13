@@ -19,9 +19,11 @@ import io.horizondb.io.BufferAllocator;
 import io.horizondb.io.ReadableBuffer;
 import io.horizondb.io.buffers.Buffers;
 import io.horizondb.io.buffers.CompositeBuffer;
+import io.horizondb.io.compression.Compressor;
 import io.horizondb.io.encoding.VarInts;
 import io.horizondb.io.files.SeekableFileDataInput;
 import io.horizondb.io.files.SeekableFileDataInputs;
+import io.horizondb.io.files.SeekableFileDataOutput;
 import io.horizondb.model.ErrorCodes;
 import io.horizondb.model.core.Field;
 import io.horizondb.model.core.Record;
@@ -41,9 +43,11 @@ import static io.horizondb.io.encoding.VarInts.writeByte;
 import static io.horizondb.io.encoding.VarInts.writeUnsignedInt;
 import static io.horizondb.model.core.records.BlockHeaderUtils.getRecordCount;
 import static io.horizondb.model.core.records.BlockHeaderUtils.incrementRecordCount;
-import static io.horizondb.model.core.records.BlockHeaderUtils.setBlockSize;
+import static io.horizondb.model.core.records.BlockHeaderUtils.setCompressedBlockSize;
+import static io.horizondb.model.core.records.BlockHeaderUtils.setCompressionType;
 import static io.horizondb.model.core.records.BlockHeaderUtils.setFirstTimestamp;
 import static io.horizondb.model.core.records.BlockHeaderUtils.setLastTimestamp;
+import static io.horizondb.model.core.records.BlockHeaderUtils.setUncompressedBlockSize;
 
 /**
  * A block of records that is self contains.
@@ -129,7 +133,6 @@ final class DataBlock {
      * @throws IOException if an I/O problem occurs
      */
     public SeekableFileDataInput newInput() throws IOException {
-
         return SeekableFileDataInputs.toSeekableFileDataInput(Buffers.composite(toBuffer(this.header), 
                                                                                 this.compositeBuffer.duplicate()));
     }
@@ -140,7 +143,6 @@ final class DataBlock {
      * @return the current block size (including the header).
      */
     public int size() {
-        
         return this.compositeBuffer.readableBytes() + RecordUtils.computeSerializedSize(this.header);
     }
 
@@ -190,7 +192,8 @@ final class DataBlock {
             if (record.isDelta()) {
 
                 throw new HorizonDBException(ErrorCodes.INVALID_RECORD_SET,
-                                             "The first record of the record set is a delta and should be a full state.");
+                                             "The first record of the record set " +
+                                             "is a delta and should be a full state.");
             }
 
             previousRecords[type] = record.toTimeSeriesRecord();
@@ -254,7 +257,7 @@ final class DataBlock {
         
         composite.add(buffer);
                 
-        setBlockSize(header, composite.readableBytes());
+        setCompressedBlockSize(header, composite.readableBytes());
     }
 
     /**
@@ -338,4 +341,27 @@ final class DataBlock {
         this.range = Range.closed(from, to);
     }
 
+    /**
+     * Writes to the specified output this data block compressed with the specified compressor. 
+     * 
+     * @param compressor the compressor
+     * @param output the output to write to
+     * @throws IOException if an I/O problem occurs 
+     */
+    public void writeTo(Compressor compressor, SeekableFileDataOutput output) throws IOException {
+        
+        int uncompressedBlockSize = this.compositeBuffer.readableBytes();
+        
+        ReadableBuffer compressedData = compressor.compress(this.compositeBuffer.duplicate());
+                
+        System.out.println(compressedData);
+        
+        TimeSeriesRecord newHeader = this.header.newInstance();
+        setCompressionType(newHeader, compressor.getType());
+        setCompressedBlockSize(newHeader, compressedData.readableBytes());
+        setUncompressedBlockSize(newHeader, uncompressedBlockSize);
+        
+        RecordUtils.writeRecord(output, newHeader);
+        output.transfer(compressedData);
+    }
 }
