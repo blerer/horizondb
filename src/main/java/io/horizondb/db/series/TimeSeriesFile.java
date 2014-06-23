@@ -22,6 +22,8 @@ import io.horizondb.io.files.SeekableFileDataInput;
 import io.horizondb.io.files.SeekableFileDataInputs;
 import io.horizondb.io.files.SeekableFileDataOutput;
 import io.horizondb.model.core.Field;
+import io.horizondb.model.core.fields.TimestampField;
+import io.horizondb.model.schema.BlockPosition;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.Closeable;
@@ -32,7 +34,10 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ImmutableRangeMap;
 import com.google.common.collect.Range;
+import com.google.common.collect.RangeMap;
+import com.google.common.collect.RangeSet;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -53,6 +58,11 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
      * The file meta data.
      */
     private final FileMetaData metadata;
+    
+    /**
+     * The block positions
+     */
+    private final RangeMap<Field, BlockPosition> blockPositions;
 
     /**
      * The underlying file.
@@ -104,6 +114,7 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
         }
 
         return new TimeSeriesFile(fileMetaData,
+                                  partitionMetadata.getBlockPositions(),
                                   file,
                                   partitionMetadata.getFileSize(),
                                   Futures.immediateFuture(partitionMetadata.getReplayPosition()));
@@ -125,13 +136,38 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
     @Override
     public SeekableFileDataInput newInput() throws IOException {
 
+        return newInput(TimestampField.ALL);
+    }
+
+    /**    
+     * {@inheritDoc}
+     */
+    @Override
+    public SeekableFileDataInput newInput(RangeSet<Field> rangeSet) throws IOException {
+        
         if (this.fileSize == 0) {
 
             return SeekableFileDataInputs.empty();
         }
-
-        return SeekableFileDataInputs.truncate(this.file.newInput(), FileMetaData.METADATA_LENGTH, this.fileSize
-                - FileMetaData.METADATA_LENGTH);
+        
+        Range<Field> queryRange = rangeSet.span();
+        Range<Field> blocksRange = this.blockPositions.span();
+        
+        if (!blocksRange.isConnected(queryRange)) {
+            
+            return SeekableFileDataInputs.empty();
+        }
+                
+        RangeMap<Field, BlockPosition> subRangeMap = this.blockPositions.subRangeMap(queryRange);
+        Range<Field> blockRange = subRangeMap.span();
+                
+        BlockPosition firstBlock = this.blockPositions.get(blockRange.lowerEndpoint());
+        BlockPosition lastBlock = this.blockPositions.get(blockRange.upperEndpoint());
+        
+        long offset = firstBlock.getOffset();
+        long length =  (lastBlock.getOffset() + lastBlock.getLength()) - offset;
+        
+        return SeekableFileDataInputs.truncate(this.file.newInput(), firstBlock.getOffset(), length);
     }
 
     /**
@@ -157,20 +193,20 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
 
         ListenableFuture<ReplayPosition> future = null;
 
+        ImmutableRangeMap.Builder<Field, BlockPosition> builder = ImmutableRangeMap.<Field, BlockPosition>builder()
+                                                                                   .putAll(this.blockPositions);
+        
         try (SeekableFileDataOutput output = this.file.getOutput()) {
 
             output.seek(this.fileSize);
 
-            if (this.fileSize == 0) {
-
-                output.writeObject(this.metadata);
-            }
+            writeMetaDataIfNeeded(output);
 
             for (int i = 0, m = memTimeSeriesList.size(); i < m; i++) {
 
                 TimeSeriesElement memTimeSeries = memTimeSeriesList.get(i);
 
-                ((MemTimeSeries) memTimeSeries).writeTo(output);
+                ((MemTimeSeries) memTimeSeries).writeTo(builder, output);
                 
                 future = memTimeSeries.getFuture();
             }
@@ -178,7 +214,20 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
             output.flush();
         }
 
-        return new TimeSeriesFile(this.metadata, this.file, this.file.size(), future);
+        return new TimeSeriesFile(this.metadata, builder.build(), this.file, this.file.size(), future);
+    }
+
+    /**
+     * Writes the file meta data if the file is considered as empty.
+     * 
+     * @param output the file output
+     * @throws IOException if an I/O problem occurs.
+     */
+    private void writeMetaDataIfNeeded(SeekableFileDataOutput output) throws IOException {
+        if (this.fileSize == 0) {
+
+            output.writeObject(this.metadata);
+        }
     }
 
     /**
@@ -199,21 +248,33 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
     }
 
     /**
+     * Returns the block positions.
+     * 
+     * @return the block positions.
+     */
+    public RangeMap<Field, BlockPosition> getBlockPositions() {
+        return this.blockPositions;
+    }
+    
+    /**
      * Creates the time series file.
      * 
      * @param metadata the file meta data.
+     * @param blockPositions the position of the blocks
      * @param file the underlying file.
      * @param size the expected size of the file.
      * @param future the future returning the replay position of the last record written to the disk.
      * @throws IOException if an I/O problem occurs.
      */
     private TimeSeriesFile(FileMetaData metadata, 
+                           RangeMap<Field, BlockPosition> blockPositions,
                            RandomAccessDataFile file, 
                            long size, 
                            ListenableFuture<ReplayPosition> future) 
                                    throws IOException {
 
         this.metadata = metadata;
+        this.blockPositions = blockPositions;
         this.file = file;
         this.fileSize = size;
         this.future = future;

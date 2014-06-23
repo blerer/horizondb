@@ -15,22 +15,27 @@ package io.horizondb.db.series;
 
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.io.BufferAllocator;
-import io.horizondb.io.buffers.Buffers;
 import io.horizondb.io.compression.CompressionType;
 import io.horizondb.io.compression.Compressor;
 import io.horizondb.io.files.CompositeSeekableFileDataInput;
 import io.horizondb.io.files.SeekableFileDataInput;
 import io.horizondb.io.files.SeekableFileDataInputs;
 import io.horizondb.io.files.SeekableFileDataOutput;
+import io.horizondb.model.core.Field;
 import io.horizondb.model.core.Record;
 import io.horizondb.model.core.records.TimeSeriesRecord;
+import io.horizondb.model.schema.BlockPosition;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
 import javax.annotation.concurrent.Immutable;
+
+import com.google.common.collect.ImmutableRangeMap;
+import com.google.common.collect.RangeSet;
 
 /**
  * A set of data blocks.
@@ -65,22 +70,33 @@ final class DataBlocks {
      * @return a new <code>SeekableFileDataInput</code> instance to read the content of the data blocks
      * @throws IOException if an I/O problem occurs
      */
-    public SeekableFileDataInput newInput() throws IOException {
+    public SeekableFileDataInput newInput(RangeSet<Field> rangeSet) throws IOException {
         
         if (this.blocks.isEmpty()) {
             
-            return SeekableFileDataInputs.toSeekableFileDataInput(Buffers.EMPTY_BUFFER);
+            return SeekableFileDataInputs.empty();
         }
         
         if (this.blocks.size() == 1) {
+                        
+            DataBlock first = this.blocks.getFirst();
             
-            return this.blocks.getFirst().newInput();
+            if (rangeSet.subRangeSet(first.getRange()).isEmpty()) {
+                return SeekableFileDataInputs.empty();
+            }
+            
+            return first.newInput();
         }
         
         CompositeSeekableFileDataInput composite = new CompositeSeekableFileDataInput();
 
         for (int i = 0, m = this.blocks.size(); i < m; i++) {
-            composite.add(this.blocks.get(i).newInput());
+            
+            DataBlock block = this.blocks.get(i);
+            
+            if (!rangeSet.subRangeSet(block.getRange()).isEmpty()) {
+                composite.add(block.newInput());
+            }
         }
 
         return composite;
@@ -127,6 +143,7 @@ final class DataBlocks {
         if (newBlocks.isEmpty() || newBlocks.getLast().isFull()) {
             
             newBlocks.add(new DataBlock(this.definition));
+            Arrays.fill(lastRecords, null);
         } 
         
         DataBlock last = newBlocks.removeLast();
@@ -143,17 +160,25 @@ final class DataBlocks {
     /**
      * Writes to the specified output the data blocks.
      * 
+     * @param builder the builder used to build the block-position mapping
      * @param output the output to write to
      * @throws IOException if an I/O problem occurs. 
      */
-    public void writeTo(SeekableFileDataOutput output) throws IOException {
+    public void writeTo(ImmutableRangeMap.Builder<Field, BlockPosition> builder, SeekableFileDataOutput output) throws IOException {
         
         CompressionType compressionType = this.definition.getCompressionType();
         Compressor compressor = compressionType.newCompressor();
         
+        long position = output.getPosition();
+        
         for (int i = 0, m = this.blocks.size(); i < m; i++) {
             DataBlock block = this.blocks.get(i);
-            block.writeTo(compressor, output);            
+            block.writeTo(compressor, output); 
+            long newPosition = output.getPosition();
+            int length = (int) (newPosition - position);
+            BlockPosition blockPosition = new BlockPosition(position, length);
+            builder.put(block.getRange(), blockPosition);
+            position = output.getPosition();
         }
     }
     

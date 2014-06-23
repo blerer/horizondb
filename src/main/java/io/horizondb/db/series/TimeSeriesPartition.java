@@ -22,6 +22,7 @@ import io.horizondb.model.core.Field;
 import io.horizondb.model.core.Filter;
 import io.horizondb.model.core.Record;
 import io.horizondb.model.core.RecordIterator;
+import io.horizondb.model.core.fields.TimestampField;
 import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;
 import io.horizondb.model.core.iterators.FilteringRecordIterator;
 import io.horizondb.model.schema.TimeSeriesDefinition;
@@ -224,7 +225,7 @@ public final class TimeSeriesPartition implements Comparable<TimeSeriesPartition
     public RecordIterator read(RangeSet<Field> rangeSet, Filter<Record> filter) throws IOException {
 
         return new FilteringRecordIterator(this.definition, 
-                                           new BinaryTimeSeriesRecordIterator(this.definition, newInput()), 
+                                           new BinaryTimeSeriesRecordIterator(this.definition, newInput(rangeSet)), 
                                            filter);
     }
 
@@ -238,9 +239,10 @@ public final class TimeSeriesPartition implements Comparable<TimeSeriesPartition
     public TimeSeriesPartitionMetaData getMetaData() throws InterruptedException, ExecutionException {
 
         TimeSeriesFile file = this.elements.get().getFile();
-
+        
         return TimeSeriesPartitionMetaData.newBuilder(this.timeRange)
                                           .fileSize(file.size())
+                                          .blockPositions(file.getBlockPositions())
                                           .replayPosition(file.getFuture().get())
                                           .build();
     }
@@ -365,7 +367,16 @@ public final class TimeSeriesPartition implements Comparable<TimeSeriesPartition
     @Override
     public SeekableFileDataInput newInput() throws IOException {
 
-        return this.elements.get().newInput();
+        return newInput(TimestampField.ALL);
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public SeekableFileDataInput newInput(RangeSet<Field> rangeSet) throws IOException {
+
+        return this.elements.get().newInput(rangeSet);
     }
     
     /**

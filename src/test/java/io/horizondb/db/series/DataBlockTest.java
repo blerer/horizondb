@@ -125,7 +125,7 @@ public class DataBlockTest {
             assertFalse(readIterator.hasNext());
         }
     }
-    
+        
     @Test
     public void testNewInputWithTwoConsecutiveCalls() throws Exception {
 
@@ -258,6 +258,69 @@ public class DataBlockTest {
         }
     }
 
+    @Test
+    public void testWriteWithAnEmptyBlockAndASetOfRecordsStartingWithDelta() throws Exception {
+
+        Configuration configuration = Configuration.newBuilder().build();
+
+        RecordTypeDefinition recordTypeDefinition = RecordTypeDefinition.newBuilder("exchangeState")
+                                                                        .addField("timestampInMillis",
+                                                                                  FieldType.MILLISECONDS_TIMESTAMP)
+                                                                        .addField("status", FieldType.BYTE)
+                                                                        .build();
+
+        TimeSeriesDefinition def = TimeSeriesDefinition.newBuilder("test")
+                                                       .timeUnit(TimeUnit.NANOSECONDS)
+                                                       .addRecordType(recordTypeDefinition)
+                                                       .build();
+
+        BufferAllocator allocator = new SlabAllocator(configuration.getMemTimeSeriesSize());
+
+        DataBlock dataBlock = new DataBlock(def);
+
+        List<TimeSeriesRecord> records = new RecordListBuilder(def).newRecord("exchangeState")
+                                                                   .setTimestampInNanos(0, TIME_IN_NANOS + 12000700)
+                                                                   .setTimestampInMillis(1, TIME_IN_MILLIS + 12)
+                                                                   .setByte(2, 3)
+                                                                   .newRecord("exchangeState")
+                                                                   .setTimestampInNanos(0, TIME_IN_NANOS + 13000900)
+                                                                   .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
+                                                                   .setByte(2, 3)
+                                                                   .newRecord("exchangeState")
+                                                                   .setTimestampInNanos(0, TIME_IN_NANOS + 13004400)
+                                                                   .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
+                                                                   .setByte(2, 1)
+                                                                   .build();
+                
+        TimeSeriesRecord[] previousRecords = new TimeSeriesRecord[]{records.remove(0)};
+                
+        dataBlock = dataBlock.write(allocator, previousRecords, records);
+        
+        assertEquals(range(TIME_IN_NANOS + 13000900L, TIME_IN_NANOS + 13004400L), dataBlock.getRange());
+        assertEquals(2, dataBlock.getNumberOfRecords(0));
+
+        try (RecordIterator readIterator = new BinaryTimeSeriesRecordIterator(def, dataBlock.newInput())) {
+
+            assertTrue(readIterator.hasNext());
+            Record actual = readIterator.next();
+
+            assertFalse(actual.isDelta());
+            assertEquals(TIME_IN_NANOS + 13000900, actual.getTimestampInNanos(0));
+            assertEquals(TIME_IN_MILLIS + 13, actual.getTimestampInMillis(1));
+            assertEquals(3, actual.getByte(2));
+
+            assertTrue(readIterator.hasNext());
+            actual = readIterator.next();
+
+            assertTrue(actual.isDelta());
+            assertEquals(3500, actual.getTimestampInNanos(0));
+            assertEquals(0, actual.getTimestampInMillis(1));
+            assertEquals(-2, actual.getByte(2));
+
+            assertFalse(readIterator.hasNext());
+        }
+    }
+        
     @Test
     public void testWriteWithMultipleRecordsWithoutDelta() throws Exception {
 

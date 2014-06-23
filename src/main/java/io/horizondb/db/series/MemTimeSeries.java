@@ -21,11 +21,14 @@ import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.db.util.concurrent.FutureUtils;
 import io.horizondb.io.files.SeekableFileDataInput;
 import io.horizondb.io.files.SeekableFileDataOutput;
+import io.horizondb.model.core.Field;
 import io.horizondb.model.core.Record;
 import io.horizondb.model.core.RecordIterator;
+import io.horizondb.model.core.fields.TimestampField;
 import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;
 import io.horizondb.model.core.iterators.LoggingRecordIterator;
 import io.horizondb.model.core.records.TimeSeriesRecord;
+import io.horizondb.model.schema.BlockPosition;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
@@ -34,7 +37,9 @@ import java.util.List;
 
 import javax.annotation.concurrent.Immutable;
 
+import com.google.common.collect.ImmutableRangeMap;
 import com.google.common.collect.Range;
+import com.google.common.collect.RangeSet;
 import com.google.common.util.concurrent.ListenableFuture;
 
 /**
@@ -132,13 +137,21 @@ final class MemTimeSeries implements TimeSeriesElement {
 
         return this.getRecordsSize() >= this.configuration.getMemTimeSeriesSize();
     }
-
+    
     /**
      * {@inheritDoc}
      */
     @Override
     public SeekableFileDataInput newInput() throws IOException {
-        return this.blocks.newInput();
+        return newInput(TimestampField.ALL);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public SeekableFileDataInput newInput(RangeSet<Field> rangeSet) throws IOException {
+        return this.blocks.newInput(rangeSet);
     }
 
     /**
@@ -190,14 +203,15 @@ final class MemTimeSeries implements TimeSeriesElement {
     }
     
     /**
-     * Writes the 
+     * Writes the content of this <code>MemTimeSeries</code> to the specified output.
      * 
-     * @param output
-     * @throws IOException
+     * @param builder the builder used to build the block-position mapping
+     * @param output the output to write to
+     * @throws IOException if an I/O problem occurs
      */
-    void writeTo(SeekableFileDataOutput output) throws IOException {
+     void writeTo(ImmutableRangeMap.Builder<Field, BlockPosition> builder, SeekableFileDataOutput output) throws IOException {
         
-        this.blocks.writeTo(output);
+        this.blocks.writeTo(builder, output);
     }
     
     /**

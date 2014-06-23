@@ -20,6 +20,7 @@ import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.files.CompositeSeekableFileDataInput;
 import io.horizondb.io.files.SeekableFileDataInput;
+import io.horizondb.model.core.Field;
 import io.horizondb.model.core.Record;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
@@ -32,6 +33,7 @@ import java.util.List;
 import javax.annotation.concurrent.Immutable;
 
 import com.google.common.collect.Range;
+import com.google.common.collect.RangeSet;
 import com.google.common.util.concurrent.ListenableFuture;
 
 /**
@@ -140,15 +142,16 @@ final class TimeSeriesElements {
     /**
      * Returns an input to read the content of the elements.
      * 
+     * @param rangeSet the time range for which the data must be returned
      * @return an input to read the content of the elements.
      * @throws IOException if an I/O problem occurs.
      */
-    public SeekableFileDataInput newInput() throws IOException {
+    public SeekableFileDataInput newInput(RangeSet<Field> rangeSet) throws IOException {
 
         CompositeSeekableFileDataInput composite = new CompositeSeekableFileDataInput();
 
         for (int i = 0, m = this.elements.size(); i < m; i++) {
-            composite.add(this.elements.get(i).newInput());
+            composite.add(this.elements.get(i).newInput(rangeSet));
         }
 
         return composite;

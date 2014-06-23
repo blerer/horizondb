@@ -23,15 +23,19 @@ import io.horizondb.io.serialization.Parser;
 import io.horizondb.io.serialization.Serializable;
 import io.horizondb.model.core.Field;
 import io.horizondb.model.core.util.SerializationUtils;
+import io.horizondb.model.schema.BlockPosition;
 
 import java.io.IOException;
+import java.util.Map;
 
 import javax.annotation.concurrent.Immutable;
 
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
 
+import com.google.common.collect.ImmutableRangeMap;
 import com.google.common.collect.Range;
+import com.google.common.collect.RangeMap;
 
 import static io.horizondb.model.core.util.SerializationUtils.writeRange;
 
@@ -65,8 +69,20 @@ public final class TimeSeriesPartitionMetaData implements Serializable {
             }
 
             long fileSize = VarInts.readUnsignedLong(reader);
+            
+            int numberOfBlocks = VarInts.readUnsignedInt(reader);
+            
+            com.google.common.collect.ImmutableRangeMap.Builder<Field, BlockPosition> builder = ImmutableRangeMap.builder();
+            
+            for (int i = 0; i < numberOfBlocks; i++) {
+                
+                Range<Field> timeRange = SerializationUtils.parseRangeFrom(reader);
+                BlockPosition position = BlockPosition.parseFrom(reader);
+                
+                builder.put(timeRange, position);
+            }
 
-            return new TimeSeriesPartitionMetaData(range, replayPosition, fileSize);
+            return new TimeSeriesPartitionMetaData(range, builder.build(), replayPosition, fileSize);
         }
     };
 
@@ -84,6 +100,11 @@ public final class TimeSeriesPartitionMetaData implements Serializable {
      * The expected file size
      */
     private final long fileSize;
+    
+    /**
+     * The positions of the block within the file.
+     */
+    private final RangeMap<Field, BlockPosition> blockPositions;
 
     /**
      * Returns the partition time range.
@@ -110,6 +131,15 @@ public final class TimeSeriesPartitionMetaData implements Serializable {
      */
     public long getFileSize() {
         return this.fileSize;
+    }
+    
+    /**
+     * Returns the block positions.
+     * 
+     * @return the block positions.
+     */
+    public RangeMap<Field, BlockPosition> getBlockPositions() {
+        return this.blockPositions;
     }
 
     /**
@@ -147,6 +177,18 @@ public final class TimeSeriesPartitionMetaData implements Serializable {
             size += this.replayPosition.computeSerializedSize();
         }
 
+        Map<Range<Field>, BlockPosition> map = this.blockPositions.asMapOfRanges();
+        
+        int numberOfBlocks = map.size();
+        
+        size += VarInts.computeUnsignedIntSize(numberOfBlocks);
+        
+        for (Map.Entry<Range<Field>, BlockPosition> entry : map.entrySet()) {
+            
+            size += SerializationUtils.computeRangeSerializedSize(entry.getKey());
+            size += entry.getValue().computeSerializedSize();
+        }
+                
         return size;
     }
 
@@ -168,6 +210,18 @@ public final class TimeSeriesPartitionMetaData implements Serializable {
         }
 
         VarInts.writeUnsignedLong(writer, this.fileSize);
+        
+        Map<Range<Field>, BlockPosition> map = this.blockPositions.asMapOfRanges();
+        
+        int numberOfBlocks = map.size();
+        
+        VarInts.writeUnsignedInt(writer, numberOfBlocks);
+        
+        for (Map.Entry<Range<Field>, BlockPosition> entry : map.entrySet()) {
+            
+            SerializationUtils.writeRange(writer, entry.getKey());
+            entry.getValue().writeTo(writer);
+        }    
     }
 
     /**
@@ -187,19 +241,24 @@ public final class TimeSeriesPartitionMetaData implements Serializable {
      */
     private TimeSeriesPartitionMetaData(Builder builder) {
 
-        this(builder.range, builder.replayPosition, builder.fileSize);
+        this(builder.range, builder.blockPositions, builder.replayPosition, builder.fileSize);
     }
 
     /**
      * Creates a new <code>TimeSeriesPartitionMetaData</code> instance using the specified <code>Builder</code>.
      * 
      * @param range the partition time range
+     * @param blockPositions the positions of the block 
      * @param replayPosition the replay position of the latest data written on the disk
      * @param fileSize the expected file size.
      */
-    private TimeSeriesPartitionMetaData(Range<Field> range, ReplayPosition replayPosition, long fileSize) {
+    private TimeSeriesPartitionMetaData(Range<Field> range, 
+                                        RangeMap<Field, BlockPosition> blockPositions, 
+                                        ReplayPosition replayPosition, 
+                                        long fileSize) {
 
         this.range = range;
+        this.blockPositions = blockPositions;
         this.replayPosition = replayPosition;
         this.fileSize = fileSize;
     }
@@ -210,6 +269,7 @@ public final class TimeSeriesPartitionMetaData implements Serializable {
     @Override
     public String toString() {
         return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE).append("range", this.range)
+                                                                          .append("blockPositions", this.blockPositions)
                                                                           .append("replayPosition", this.replayPosition)
                                                                           .append("fileSize", this.fileSize)
                                                                           .toString();
@@ -230,7 +290,12 @@ public final class TimeSeriesPartitionMetaData implements Serializable {
          * The replay position of the latest data written on the disk.
          */
         private ReplayPosition replayPosition;
-
+        
+        /**
+         * The positions of the blocks.
+         */
+        private RangeMap<Field, BlockPosition> blockPositions = ImmutableRangeMap.of();
+        
         /**
          * The expected file size.
          */
@@ -246,6 +311,18 @@ public final class TimeSeriesPartitionMetaData implements Serializable {
             return new TimeSeriesPartitionMetaData(this);
         }
 
+        /**
+         * Specifies the block positions.
+         * 
+         * @param blockPositions the block positions
+         * @return this <code>Builder</code>
+         */
+        public Builder blockPositions(RangeMap<Field, BlockPosition> blockPositions) {
+            
+            this.blockPositions = blockPositions;
+            return this;
+        }
+        
         /**
          * Sets the expected file size
          * 

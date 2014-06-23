@@ -157,9 +157,6 @@ final class DataBlock {
      * @return <code>true</code> if this block is full, <code>false</code> otherwise.
      */
     public boolean isFull() {
-        
-        System.out.println(size() + " : " + this.blockSize);
-        
         return size() >= this.blockSize;
     }
     
