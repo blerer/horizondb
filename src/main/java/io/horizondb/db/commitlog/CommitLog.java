@@ -122,7 +122,7 @@ public final class CommitLog extends AbstractComponent {
                                                      ListenableFuture<ReplayPosition> future) 
                                                              throws HorizonDBException {
         
-        if (configuration.getCommitLogSyncMode() != CommitLog.SyncMode.BATCH) {
+        if (configuration.getCommitLogSyncMode() == CommitLog.SyncMode.BATCH) {
             
             waitForCommitLogWrite(future);
         }
@@ -197,6 +197,7 @@ public final class CommitLog extends AbstractComponent {
      */
     private void activateNextSegment() throws InterruptedException {
 
+        this.logger.debug("Activating new segment");
         this.activeSegment = this.allocator.fetchSegment();
         this.logger.debug("Active segment is now {}", this.activeSegment);
     }
@@ -271,10 +272,8 @@ public final class CommitLog extends AbstractComponent {
 
             try {
                 flush();
-                
             } catch (IOException e) {
                 CommitLog.this.logger.error("", e);
-                e.printStackTrace();
             }
         }
     }

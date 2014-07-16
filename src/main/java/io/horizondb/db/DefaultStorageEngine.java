@@ -136,12 +136,12 @@ public class DefaultStorageEngine extends AbstractComponent implements StorageEn
      * {@inheritDoc}
      */
     @Override
-    public void forceFlush(long id) throws InterruptedException {
+    public ListenableFuture<Boolean> forceFlush(long id) throws InterruptedException {
 
         TimeSeriesManager timeSeriesManager = this.databaseManager.getTimeSeriesManager();
         TimeSeriesPartitionManager partitionManager = timeSeriesManager.getPartitionManager();
 
-        partitionManager.forceFlush(id);
+        return partitionManager.forceFlush(id);
     }
 
     /**

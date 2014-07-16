@@ -100,7 +100,9 @@ final class FlushManager extends AbstractComponent {
              * {@inheritDoc}
              */
             @Override
-            public void doFlush(TimeSeriesPartition partition) throws InterruptedException, IOException {
+            public void doFlush(TimeSeriesPartition partition) throws InterruptedException,
+                                                              IOException,
+                                                              ExecutionException {
 
                 partition.flush();
             }
@@ -122,7 +124,7 @@ final class FlushManager extends AbstractComponent {
              * {@inheritDoc}
              */
             @Override
-            public void doFlush(TimeSeriesPartition partition) throws InterruptedException, IOException {
+            public void doFlush(TimeSeriesPartition partition) throws InterruptedException, IOException, ExecutionException {
 
                 partition.forceFlush();
             }
@@ -146,25 +148,13 @@ final class FlushManager extends AbstractComponent {
              * {@inheritDoc}
              */
             @Override
-            public void doFlush(TimeSeriesPartition partition) throws InterruptedException, IOException {
+            public void doFlush(TimeSeriesPartition partition) throws InterruptedException, IOException, ExecutionException {
 
                 if (Long.valueOf(segment).compareTo(partition.getFirstSegmentContainingNonPersistedData()) >= 0) {
                     partition.forceFlush();
                 }    
             }
         });
-    }
-    
-    /**
-     * Saves the partition meta data within the specified B+Tree.
-     * 
-     * @param partition the time series partition  
-     * @param runnable the runnable performing the B+Tree insertion
-     */
-    public void savePartition(final TimeSeriesPartition partition, 
-                              Runnable runnable) {
-        
-        partition.getFuture().addListener(runnable, this.executor);
     }
     
     /**
@@ -248,7 +238,7 @@ final class FlushManager extends AbstractComponent {
                 doFlush(this.partition);
                 notifyListeners();
                 
-            } catch (IOException e) {
+            } catch (IOException | ExecutionException e) {
 
                 this.logger.error("The flush of the partition " + this.partition.getId()
                         + " failed due to the following exception: ", e);
@@ -266,8 +256,9 @@ final class FlushManager extends AbstractComponent {
          * 
          * @throws InterruptedException if the thread is interrupted
          * @throws IOException if an I/O problem occurs.
+         * @throws ExecutionException if a the commit log cannot persist some data
          */
-        public abstract void doFlush(TimeSeriesPartition partition) throws InterruptedException, IOException;
+        public abstract void doFlush(TimeSeriesPartition partition) throws InterruptedException, IOException, ExecutionException;
         
         /**
          * Notifies the flush listeners. 

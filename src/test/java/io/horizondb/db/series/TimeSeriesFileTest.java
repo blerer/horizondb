@@ -44,6 +44,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
@@ -53,10 +54,8 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableRangeMap;
 import com.google.common.collect.ImmutableRangeSet;
 import com.google.common.collect.Range;
-import com.google.common.collect.RangeMap;
 import com.google.common.collect.RangeSet;
 import com.google.common.util.concurrent.Futures;
 
@@ -158,7 +157,7 @@ public class TimeSeriesFileTest {
                                                                     .build();
 
         byte[] expectedFileContent = expectedFileContent(records);
-        RangeMap<Field, BlockPosition> expectedBlockPositions = expectedBlockPositions(records);
+        LinkedHashMap<Range<Field>, BlockPosition> expectedBlockPositions = expectedBlockPositions(records);
         
         memTimeSeries = memTimeSeries.write(allocator, records, Futures.immediateFuture(new ReplayPosition(1, 0)));
 
@@ -247,7 +246,7 @@ public class TimeSeriesFileTest {
                                                                                 .build();
 
         byte[] expectedFileContent = expectedFileContent(records, records2);
-        RangeMap<Field, BlockPosition> expectedBlockPositions = expectedBlockPositions(records, records2);
+        LinkedHashMap<Range<Field>, BlockPosition> expectedBlockPositions = expectedBlockPositions(records, records2);
         
         ReplayPosition replayPosition = new ReplayPosition(1, RecordUtils.computeSerializedSize(records));
         
@@ -303,7 +302,7 @@ public class TimeSeriesFileTest {
                                                                                .build();
 
         byte[] expectedFileContent = expectedFileContent(records, records2);
-        RangeMap<Field, BlockPosition> expectedBlockPositions = expectedBlockPositions(records, records2);
+        LinkedHashMap<Range<Field>, BlockPosition> expectedBlockPositions = expectedBlockPositions(records, records2);
 
         ReplayPosition replayPosition = new ReplayPosition(1, RecordUtils.computeSerializedSize(records));
 
@@ -367,7 +366,7 @@ public class TimeSeriesFileTest {
                                                                                .build();
 
         byte[] expectedFileContent = expectedFileContent(records, records2);
-        RangeMap<Field, BlockPosition> expectedBlockPositions = expectedBlockPositions(records, records2);
+        LinkedHashMap<Range<Field>, BlockPosition> expectedBlockPositions = expectedBlockPositions(records, records2);
 
         ReplayPosition replayPosition = new ReplayPosition(1, RecordUtils.computeSerializedSize(records));
 
@@ -429,6 +428,107 @@ public class TimeSeriesFileTest {
     }
     
     @Test
+    public void testAppendWithTwoBlocksWithOverlappingRange() throws IOException, HorizonDBException, InterruptedException {
+
+        RecordTypeDefinition recordTypeDefinition = RecordTypeDefinition.newBuilder("exchangeState")
+                                                                        .addField("timestampInMillis",
+                                                                                  FieldType.MILLISECONDS_TIMESTAMP)
+                                                                        .addField("status", FieldType.BYTE)
+                                                                        .build();
+
+        this.definition = this.databaseDefinition.newTimeSeriesDefinitionBuilder("test")
+                                                 .timeUnit(TimeUnit.NANOSECONDS)
+                                                 .blockSize(40)
+                                                 .addRecordType(recordTypeDefinition)
+                                                 .build();
+        
+        SlabAllocator allocator = new SlabAllocator(this.configuration.getMemTimeSeriesSize());
+
+        MemTimeSeries memTimeSeries = new MemTimeSeries(this.configuration, this.definition);
+
+        List<TimeSeriesRecord> records = new RecordListBuilder(this.definition).newRecord("exchangeState")
+                                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 12000700)
+                                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 12)
+                                                                               .setByte(2, 3)
+                                                                               .newRecord("exchangeState")
+                                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13000900)
+                                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
+                                                                               .setByte(2, 3)
+                                                                               .newRecord("exchangeState")
+                                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13004400)
+                                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
+                                                                               .setByte(2, 1)
+                                                                               .build();
+
+        List<TimeSeriesRecord> records2 = new RecordListBuilder(this.definition).newRecord("exchangeState")
+                                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13004400)
+                                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
+                                                                               .setByte(2, 1)
+                                                                               .build();
+
+        byte[] expectedFileContent = expectedFileContent(records, records2);
+        LinkedHashMap<Range<Field>, BlockPosition> expectedBlockPositions = expectedBlockPositions(records, records2);
+
+        ReplayPosition replayPosition = new ReplayPosition(1, RecordUtils.computeSerializedSize(records));
+
+        memTimeSeries = memTimeSeries.write(allocator, records, Futures.immediateFuture(replayPosition));
+
+        replayPosition = new ReplayPosition(1, RecordUtils.computeSerializedSize(records)
+                                            + RecordUtils.computeSerializedSize(records2));
+        
+        memTimeSeries = memTimeSeries.write(allocator, records2, Futures.immediateFuture(replayPosition));
+
+        try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, 
+                                                       this.databaseDefinition.getName(), 
+                                                       this.definition, 
+                                                       this.metadata)) {
+
+            TimeSeriesFile newFile = file.append(Arrays.<TimeSeriesElement> asList(memTimeSeries));
+            
+            assertEquals(expectedBlockPositions, newFile.getBlockPositions());
+            AssertFiles.assertFileContains(expectedFileContent, file.getPath());
+            
+            try (RecordIterator readIterator = new BinaryTimeSeriesRecordIterator(this.definition, 
+                                                                                  newFile.newInput())) {
+                
+                assertTrue(readIterator.hasNext());
+                Record actual = readIterator.next();
+
+                assertFalse(actual.isDelta());
+                assertEquals(TIME_IN_NANOS + 12000700L, actual.getTimestampInNanos(0));
+                assertEquals(TIME_IN_MILLIS + 12, actual.getTimestampInMillis(1));
+                assertEquals(3, actual.getByte(2));
+
+                assertTrue(readIterator.hasNext());
+                actual = readIterator.next();
+
+                assertTrue(actual.isDelta());
+                assertEquals(1000200, actual.getTimestampInNanos(0));
+                assertEquals(1, actual.getTimestampInMillis(1));
+                assertEquals(0, actual.getByte(2));
+
+                assertTrue(readIterator.hasNext());
+                actual = readIterator.next();
+
+                assertTrue(actual.isDelta());
+                assertEquals(3500, actual.getTimestampInNanos(0));
+                assertEquals(0, actual.getTimestampInMillis(1));
+                assertEquals(-2, actual.getByte(2));
+
+                assertTrue(readIterator.hasNext());
+                actual = readIterator.next();
+
+                assertFalse(actual.isDelta());
+                assertEquals(TIME_IN_NANOS + 13004400, actual.getTimestampInNanos(0));
+                assertEquals(TIME_IN_MILLIS + 13, actual.getTimestampInMillis(1));
+                assertEquals(1, actual.getByte(2));
+
+                assertFalse(readIterator.hasNext());
+            }
+        }
+    }
+    
+    @Test
     public void testNewInputWithTwoBlocksAndOnlyFirstOneHit() throws IOException, HorizonDBException, InterruptedException {
 
         RecordTypeDefinition recordTypeDefinition = RecordTypeDefinition.newBuilder("exchangeState")
@@ -468,7 +568,7 @@ public class TimeSeriesFileTest {
                                                                                .build();
 
         byte[] expectedFileContent = expectedFileContent(records, records2);
-        RangeMap<Field, BlockPosition> expectedBlockPositions = expectedBlockPositions(records, records2);
+        LinkedHashMap<Range<Field>, BlockPosition> expectedBlockPositions = expectedBlockPositions(records, records2);
 
         ReplayPosition replayPosition = new ReplayPosition(1, RecordUtils.computeSerializedSize(records));
 
@@ -563,7 +663,7 @@ public class TimeSeriesFileTest {
                                                                                .build();
 
         byte[] expectedFileContent = expectedFileContent(records, records2);
-        RangeMap<Field, BlockPosition> expectedBlockPositions = expectedBlockPositions(records, records2);
+        LinkedHashMap<Range<Field>, BlockPosition> expectedBlockPositions = expectedBlockPositions(records, records2);
 
         ReplayPosition replayPosition = new ReplayPosition(1, RecordUtils.computeSerializedSize(records));
 
@@ -679,10 +779,10 @@ public class TimeSeriesFileTest {
      * @throws IOException if an I/O problem occurs
      */
     @SafeVarargs
-    private final RangeMap<Field, BlockPosition> expectedBlockPositions(List<TimeSeriesRecord>... recordBlocks) throws IOException {
+    private final LinkedHashMap<Range<Field>, BlockPosition> expectedBlockPositions(List<TimeSeriesRecord>... recordBlocks) throws IOException {
         
         int position = FileMetaData.METADATA_LENGTH;
-        ImmutableRangeMap.Builder<Field, BlockPosition> builder = ImmutableRangeMap.builder();         
+        LinkedHashMap<Range<Field>, BlockPosition> map = new LinkedHashMap<>();         
         
         for (List<TimeSeriesRecord> records : recordBlocks) {
             
@@ -693,11 +793,11 @@ public class TimeSeriesFileTest {
             
             int length = RecordUtils.computeSerializedSize(header) + getCompressedBlockSize(header);
             
-            builder.put(range, new BlockPosition(position, length));
+            map.put(range, new BlockPosition(position, length));
             position += length; 
         }
         
-        return builder.build();
+        return map;
     }
     
     /**

@@ -156,7 +156,7 @@ public class DefaultTimeSeriesPartitionManagerTest {
                                                                  .setTimestampInMillis(1, timestamp + 350)
                                                                  .setByte(2, 10)
                                                                  .build();
-
+            
             partition.write(records, Futures.immediateFuture(new ReplayPosition(1, 2)));
             partition.forceFlush();
 

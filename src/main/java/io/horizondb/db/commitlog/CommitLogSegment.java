@@ -241,6 +241,7 @@ final class CommitLogSegment implements Closeable, Comparable<CommitLogSegment>,
         }
 
         this.needsFlush = true;
+
         return position;
     }
 

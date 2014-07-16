@@ -47,9 +47,10 @@ public interface StorageEngine extends Component {
      * segment with the specified ID.
      * 
      * @param id the segment id
+     * @return a <code>ListenableFuture</code> that will return when all the data have been flushed to disk.
      * @throws InterruptedException if the thread is interrupted
      */
-    void forceFlush(long id) throws InterruptedException;
+    ListenableFuture<Boolean> forceFlush(long id) throws InterruptedException;
 
     /**
      * Replays the specified message. 

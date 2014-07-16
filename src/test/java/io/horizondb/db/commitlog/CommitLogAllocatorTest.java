@@ -27,6 +27,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.common.util.concurrent.Futures;
+
 import static io.horizondb.io.files.FileUtils.ONE_KB;
 import static io.horizondb.test.AssertCollections.assertIterableContains;
 import static io.horizondb.test.AssertFiles.assertFileDoesNotExists;
@@ -61,6 +63,7 @@ public class CommitLogAllocatorTest {
     public void setUp() throws Exception {
 
         this.testDirectory = Files.createTempDirectory("test");
+        System.out.println(this.testDirectory);
         this.configuration = Configuration.newBuilder()
                                           .commitLogDirectory(this.testDirectory)
                                           .commitLogSegmentSize(8 * ONE_KB)
@@ -87,8 +90,10 @@ public class CommitLogAllocatorTest {
 
         long id = IdFactory.nextId();
         
-        this.databaseEngine.forceFlush(id + 1);
-        this.databaseEngine.forceFlush(id + 2);
+        EasyMock.expect(this.databaseEngine.forceFlush(id + 1))
+                .andReturn(Futures.immediateFuture(Boolean.TRUE));
+        EasyMock.expect(this.databaseEngine.forceFlush(id + 2))
+                .andReturn(Futures.immediateFuture(Boolean.TRUE));
 
         EasyMock.replay(this.databaseEngine);
 
@@ -113,6 +118,8 @@ public class CommitLogAllocatorTest {
 
         assertIterableContains(this.allocator.getActiveSegments(), secondSegment, thirdSegment);
 
+        this.allocator.sync();
+        
         CommitLogSegment fourthSegment = this.allocator.fetchSegment();
 
         assertFileExists(fourthSegment.getPath());

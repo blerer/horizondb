@@ -40,10 +40,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.concurrent.ThreadSafe;
 
 import com.codahale.metrics.MetricRegistry;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
@@ -119,8 +121,20 @@ final class CommitLogAllocator extends AbstractComponent {
 
         checkRunning();
 
-        CommitLogSegment next = this.availableSegments.take();
-
+        this.logger.debug("Retrieving next available segment.");
+        
+        CommitLogSegment next = this.availableSegments.poll();
+        
+        if (next == null) {
+            
+            if (this.activeSegments.size() == this.configuration.getMaximumNumberOfCommitLogSegments() - 1) {
+                // The recycling is taking too much time or is blocked.
+                this.executor.execute(new AllocationTask(true));
+            }
+            
+            next = this.availableSegments.poll(10, TimeUnit.SECONDS);
+        }
+        
         this.activeSegments.add(next);
 
         this.logger.debug("CommitLogSegment {} has been added to the active segments.", Long.valueOf(next.getId()));
@@ -209,8 +223,7 @@ final class CommitLogAllocator extends AbstractComponent {
      * @return <code>true</code> if the maximum number of segments has been reached, <code>false</code> otherwise.
      */
     private boolean hasReachMaximumNumberOfSegments() {
-
-        return this.activeSegments.size() == this.configuration.getMaximumNumberOfCommitLogSegments();
+        return this.activeSegments.size() >= this.configuration.getMaximumNumberOfCommitLogSegments();
     }
 
     /**
@@ -239,14 +252,34 @@ final class CommitLogAllocator extends AbstractComponent {
      */
     private void recycleSegment() throws InterruptedException {
 
-        CommitLogSegment old = this.activeSegments.poll();
+        final CommitLogSegment old = this.activeSegments.poll();
 
         try {
 
             old.flush();
-            this.databaseEngine.forceFlush(old.getId());
-            this.availableSegments.add(CommitLogSegment.recycleSegment(old));
+            ListenableFuture<?> future = this.databaseEngine.forceFlush(old.getId());
+            future.addListener(new Runnable() {
 
+                /**
+                 * {@inheritDoc}
+                 */
+                @Override
+                public void run() {
+                    try {
+                        
+                        CommitLogAllocator.this.availableSegments.add(CommitLogSegment.recycleSegment(old));
+                    
+                    } catch (IOException | InterruptedException e) {
+
+                        CommitLogAllocator.this.logger.error("An error has occured while recycling the segment " + old.getPath() + " .", e);
+                        
+                        if (e instanceof InterruptedException) {
+                            Thread.currentThread().interrupt();
+                        }
+                    }
+                }
+            }, this.executor);
+            
         } catch (IOException e) {
 
             this.logger.error("An error has occured while recycling the segment " + old.getPath() + " .", e);
@@ -363,6 +396,26 @@ final class CommitLogAllocator extends AbstractComponent {
     private class AllocationTask implements Runnable {
 
         /**
+         * Force the creation of a new segment.
+         */
+        private final boolean forceCreation;
+        
+        /**
+         * Creates a new <code>AllocationTask</code> 
+         */
+        public AllocationTask() {
+            this(false);
+        }
+        
+        /**
+         * Creates a new <code>AllocationTask</code> 
+         * @param forceCreation force the creation of a new segment even if the limit has been reached.
+         */
+        public AllocationTask(boolean forceCreation) {
+            this.forceCreation = forceCreation;
+        }
+
+        /**
          * {@inheritDoc}
          */
         @Override
@@ -370,7 +423,14 @@ final class CommitLogAllocator extends AbstractComponent {
 
             try {
 
-                allocateNextSegment();
+                if (this.forceCreation) {
+                    
+                    createNewSegment();
+                    
+                } else {
+                    
+                    allocateNextSegment();
+                }
 
             } catch (InterruptedException e) {
 

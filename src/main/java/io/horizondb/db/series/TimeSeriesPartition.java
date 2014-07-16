@@ -25,6 +25,7 @@ import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.core.fields.TimestampField;
 import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;
 import io.horizondb.model.core.iterators.FilteringRecordIterator;
+import io.horizondb.model.core.iterators.LoggingRecordIterator;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
@@ -173,7 +174,7 @@ public final class TimeSeriesPartition implements Comparable<TimeSeriesPartition
                                            throws IOException, 
                                                   HorizonDBException {
 
-        this.logger.debug("writing records to partition {}", getId());
+        this.logger.debug("writing {} records to partition {}", Integer.valueOf(records.size()), getId());
 
         TimeSeriesElements oldElements = this.elements.get();
         TimeSeriesElements newElements = oldElements.write(this.allocator, records, future);
@@ -224,27 +225,9 @@ public final class TimeSeriesPartition implements Comparable<TimeSeriesPartition
      */
     public RecordIterator read(RangeSet<Field> rangeSet, Filter<Record> filter) throws IOException {
 
-        return new FilteringRecordIterator(this.definition, 
-                                           new BinaryTimeSeriesRecordIterator(this.definition, newInput(rangeSet)), 
+        return new FilteringRecordIterator(this.definition,
+                                           new LoggingRecordIterator(definition, new BinaryTimeSeriesRecordIterator(this.definition, newInput(rangeSet))),
                                            filter);
-    }
-
-    /**
-     * Returns the meta data of this partition.
-     * 
-     * @return the meta data of this partition.
-     * @throws ExecutionException if a problem occurred when writing the data to the commit log
-     * @throws InterruptedException if the thread was interrupted
-     */
-    public TimeSeriesPartitionMetaData getMetaData() throws InterruptedException, ExecutionException {
-
-        TimeSeriesFile file = this.elements.get().getFile();
-        
-        return TimeSeriesPartitionMetaData.newBuilder(this.timeRange)
-                                          .fileSize(file.size())
-                                          .blockPositions(file.getBlockPositions())
-                                          .replayPosition(file.getFuture().get())
-                                          .build();
     }
 
     /**
@@ -294,8 +277,9 @@ public final class TimeSeriesPartition implements Comparable<TimeSeriesPartition
      * 
      * @throws IOException if an I/O problem occurs while flushing the data to the disk.
      * @throws InterruptedException if the thread has been interrupted.
+     * @throws ExecutionException if the last replay position cannot be retrieved
      */
-    public void flush() throws IOException, InterruptedException {
+    public void flush() throws IOException, InterruptedException, ExecutionException {
 
         synchronized (this) {
 
@@ -311,14 +295,14 @@ public final class TimeSeriesPartition implements Comparable<TimeSeriesPartition
                 return;
             }
 
+            this.manager.save(getId(), getMetaData(newElements.getFile()));  
+            
             this.elements.set(newElements);
-
+            
             notifyListenersMemoryUsageChanged(oldElements.getMemoryUsage(), newElements.getMemoryUsage());
             notifyListenersfirstSegmentContainingNonPersistedDataChanged(oldElements.getFirstSegmentContainingNonPersistedData(), 
                                                                          newElements.getFirstSegmentContainingNonPersistedData());
         }
-
-        this.manager.save(this);
     }
 
     /**
@@ -326,8 +310,9 @@ public final class TimeSeriesPartition implements Comparable<TimeSeriesPartition
      * 
      * @throws IOException if an I/O problem occurs while flushing the data to the disk.
      * @throws InterruptedException if the thread has been interrupted.
+     * @throws ExecutionException if the last replay position cannot be retrieved
      */
-    public void forceFlush() throws IOException, InterruptedException {
+    public void forceFlush() throws IOException, InterruptedException, ExecutionException {
 
         synchronized (this) {
 
@@ -339,6 +324,8 @@ public final class TimeSeriesPartition implements Comparable<TimeSeriesPartition
                 return;
             }
 
+            this.manager.save(getId(), getMetaData(newElements.getFile()));
+            
             this.elements.set(newElements);
             this.allocator.release();
 
@@ -346,8 +333,6 @@ public final class TimeSeriesPartition implements Comparable<TimeSeriesPartition
             notifyListenersfirstSegmentContainingNonPersistedDataChanged(oldElements.getFirstSegmentContainingNonPersistedData(), 
                                                                          newElements.getFirstSegmentContainingNonPersistedData());
         }
-
-        this.manager.save(this);
     }
 
     /**
@@ -398,6 +383,24 @@ public final class TimeSeriesPartition implements Comparable<TimeSeriesPartition
     }
     
     /**
+     * Returns the meta data from this partition.
+     * 
+     * @return the meta data of this partition.
+     * @throws ExecutionException if a problem occurred when writing the data to the commit log
+     * @throws InterruptedException if the thread was interrupted
+     */
+    public TimeSeriesPartitionMetaData getMetaData() throws InterruptedException, ExecutionException {
+
+        TimeSeriesFile file = this.elements.get().getFile();
+        
+        return TimeSeriesPartitionMetaData.newBuilder(this.timeRange)
+                                          .fileSize(file.size())
+                                          .blockPositions(file.getBlockPositions())
+                                          .replayPosition(file.getFuture().get())
+                                          .build();
+    }
+    
+    /**
      * Notifies the listeners that the memory usage has changed.
      * 
      * @param previousMemoryUsage the previous memory usage
@@ -437,4 +440,21 @@ public final class TimeSeriesPartition implements Comparable<TimeSeriesPartition
             this.listeners.get(i).firstSegmentContainingNonPersistedDataChanged(this, previousSegment, newSegment);
         }
     } 
+    
+    /**
+     * Returns the meta data from the specified file.
+     * 
+     * @param file the time series file
+     * @return the meta data of this partition.
+     * @throws ExecutionException if a problem occurred when writing the data to the commit log
+     * @throws InterruptedException if the thread was interrupted
+     */
+    private TimeSeriesPartitionMetaData getMetaData(TimeSeriesFile file) throws InterruptedException, ExecutionException {
+
+        return TimeSeriesPartitionMetaData.newBuilder(this.timeRange)
+                                          .fileSize(file.size())
+                                          .blockPositions(file.getBlockPositions())
+                                          .replayPosition(file.getFuture().get())
+                                          .build();
+    }
 }

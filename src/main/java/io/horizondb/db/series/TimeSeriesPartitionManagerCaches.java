@@ -20,16 +20,19 @@ import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.btree.KeyValueIterator;
 import io.horizondb.db.cache.ValueLoader;
+import io.horizondb.db.util.concurrent.CountDownFuture;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 
 import javax.annotation.concurrent.ThreadSafe;
 
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.cache.CacheStats;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 
 /**
  * Decorator that add caching functionalities to a <code>TimeSeriesPartitionManager</code>
@@ -115,8 +118,8 @@ public final class TimeSeriesPartitionManagerCaches extends AbstractComponent im
      * {@inheritDoc}
      */
     @Override
-    public void save(TimeSeriesPartition partition) throws IOException {
-        this.manager.save(partition);
+    public void save(PartitionId id, TimeSeriesPartitionMetaData metaData) throws IOException, InterruptedException, ExecutionException {
+        this.manager.save(id, metaData);
     }
 
     /**
@@ -141,7 +144,7 @@ public final class TimeSeriesPartitionManagerCaches extends AbstractComponent im
      * {@inheritDoc}
      */
     @Override
-    public void forceFlush(long id) throws InterruptedException {
+    public ListenableFuture<Boolean> forceFlush(long id) throws InterruptedException {
         
         this.logger.info("trying to flush all the partitions that have non persisted data within commit log segment: {}",
                 Long.valueOf(id));
@@ -151,16 +154,16 @@ public final class TimeSeriesPartitionManagerCaches extends AbstractComponent im
         if (partitions.isEmpty()) {
             
             this.logger.info("no partitions have non persisted data within commit log segment: {}", Long.valueOf(id));
-            return;
+            return Futures.immediateFuture(Boolean.TRUE);
         }
         
-        final CountDownLatch latch = new CountDownLatch(partitions.size());
+        final CountDownFuture<Boolean> countDownFuture = new CountDownFuture<>(Boolean.TRUE, partitions.size());
         
         FlushListener listener = new FlushListener() {
             
             @Override
             public void afterFlush() {
-                latch.countDown();                    
+                countDownFuture.countDown();                    
             }
         };
         
@@ -169,10 +172,7 @@ public final class TimeSeriesPartitionManagerCaches extends AbstractComponent im
             forceFlush(id, partition, listener);
         }
         
-        latch.await();
-                
-        this.logger.info("the partitions: {}  had non persisted data within commit log segment {}" 
-                         + " and have been flushed to disk", partitions, Long.valueOf(id));
+        return countDownFuture;
     }
 
     /**    

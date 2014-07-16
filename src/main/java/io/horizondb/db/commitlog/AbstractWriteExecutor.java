@@ -21,6 +21,7 @@ import io.horizondb.db.commitlog.CommitLog.WriteTask;
 import io.horizondb.db.metrics.PrefixFilter;
 import io.horizondb.db.metrics.ThreadPoolExecutorMetrics;
 import io.horizondb.db.util.concurrent.ExecutorsUtils;
+import io.horizondb.db.util.concurrent.ForwardingRunnableScheduledFuture;
 import io.horizondb.db.util.concurrent.NamedThreadFactory;
 
 import java.util.LinkedList;
@@ -28,9 +29,11 @@ import java.util.Queue;
 import java.util.concurrent.RunnableScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListenableFutureTask;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
@@ -90,11 +93,9 @@ abstract class AbstractWriteExecutor implements WriteExecutor {
     @Override
     public final ListenableFuture<ReplayPosition> executeWrite(WriteTask writeTask) {
         
-        ListenableFutureTask<ReplayPosition> futureTask = ListenableFutureTask.create(writeTask);
-        
-        this.executor.execute(futureTask);
-        
-        return futureTask;
+        CommitLogWriteFutureTask<ReplayPosition> futureTask =  new CommitLogWriteFutureTask<>(writeTask);
+        this.executor.submit(futureTask);
+        return futureTask; 
     }
 
     /**
@@ -128,14 +129,19 @@ abstract class AbstractWriteExecutor implements WriteExecutor {
     protected static class WriteThreadPoolExecutor extends ScheduledThreadPoolExecutor {
         
         /**
+         * The class logger.
+         */
+        private final Logger logger = LoggerFactory.getLogger(getClass());
+        
+        /**
          * The flush task.
          */
         private final FlushTask flushTask;
         
         /**
-         * The <code>CommitLogWriteFuture</code>s waiting for the flush signal.
+         * The <code>CommitLogWriteFutureTask</code>s waiting for the flush signal.
          */
-        private final Queue<CommitLogWriteFuture<?>> waitingFutures = new LinkedList<>();
+        private final Queue<CommitLogWriteFutureTask<?>> waitingFutures = new LinkedList<>();
 
 
         public WriteThreadPoolExecutor(String name, FlushTask flushTask) {
@@ -151,37 +157,39 @@ abstract class AbstractWriteExecutor implements WriteExecutor {
             
             execute(this.flushTask);
         }
+
         
-        /**
-         * {@inheritDoc}
-         */
+        
         @Override
-        protected final <V> RunnableScheduledFuture<V> decorateTask(Runnable runnable, RunnableScheduledFuture<V> task) {
+        protected <V> RunnableScheduledFuture<V> decorateTask(Runnable runnable, RunnableScheduledFuture<V> task) {
             
-            RunnableScheduledFuture<V> decoratedTask =  super.decorateTask(runnable, task);
-            
-            if (runnable instanceof ListenableFutureTask) {
+            if (runnable instanceof CommitLogWriteFutureTask) {
                 
-                return new CommitLogWriteFuture<V>(decoratedTask);
+                return new RunnableAwareTask<>(task, runnable);
             }
             
-            return decoratedTask;
+            return task;
         }
-        
+
         /**
          * {@inheritDoc}
          */
         @SuppressWarnings("unchecked")
         @Override
         protected final void beforeExecute(Thread thread, Runnable runnable) {
-            
-            super.beforeExecute(thread, runnable);
-            
-            if (runnable instanceof CommitLogWriteFuture) {
+
+            if (runnable instanceof RunnableAwareTask) {
+                
+                Runnable futureTask = ((RunnableAwareTask<?>) runnable).getRunnable();
                 
                 beforeWrite();
+
+                addToWaitingFutures((CommitLogWriteFutureTask<ReplayPosition>) futureTask);
                 
-                addToWaitingFutures((CommitLogWriteFuture<ReplayPosition>) runnable);
+                this.logger.debug("Executing write with {}", futureTask);
+            
+            } else {
+                this.logger.debug("Flushing writes to the disk.");
             }
         }
 
@@ -190,11 +198,11 @@ abstract class AbstractWriteExecutor implements WriteExecutor {
          */
         @Override
         protected final void afterExecute(Runnable runnable, Throwable throwable) {
-
-            super.afterExecute(runnable, throwable);
             
-            if (runnable instanceof CommitLogWriteFuture || throwable != null) {
+            if (runnable instanceof RunnableAwareTask<?> || throwable != null) {
                 
+                this.logger.debug("Write {} is now waiting for flush to disk.", 
+                                  ((RunnableAwareTask<?>) runnable).getRunnable());
                 return;
             }
 
@@ -230,22 +238,27 @@ abstract class AbstractWriteExecutor implements WriteExecutor {
          */
         private void notifyWaitingFutures() {
             
+            int count = 0;
+            
             synchronized (this.waitingFutures) {
                 
-                CommitLogWriteFuture<?> future;
-                
+                CommitLogWriteFutureTask<?> future;
+                               
                 while ((future  = this.waitingFutures.poll()) != null) {
                     
                     future.flushed();
+                    count++;
                 }
             }
+            
+            this.logger.debug("Flushed {} writes to the disk.", Integer.valueOf(count));
         }
 
         /**
          * Adds the specified <code>Future</code> to the list of <code>Future</code> that will be waiting for the flush.
          * @param future the <code>Future</code> to add
          */
-        private void addToWaitingFutures(CommitLogWriteFuture<ReplayPosition> future) {
+        private void addToWaitingFutures(CommitLogWriteFutureTask<ReplayPosition> future) {
             
             synchronized (this.waitingFutures) {
                 
@@ -253,4 +266,51 @@ abstract class AbstractWriteExecutor implements WriteExecutor {
             }
         }
     }
+    
+    /**
+     * <code>RunnableScheduledFuture</code> that provide access to the decorated <code>Runnable</code>.
+     *
+     * @param <V>
+     */
+    private static final class RunnableAwareTask<V> extends ForwardingRunnableScheduledFuture<V> {
+
+        /**
+         * The task.
+         */
+        private final RunnableScheduledFuture<V> task;
+    
+        /**
+         * The original runnable.
+         */
+        private final Runnable runnable;        
+        
+        /**
+         * Creates a task that is aware of the decorated <code>Runnable</code>.
+         * 
+         * @param task the task decorating the runnable
+         * @param runnable the runnable
+         */
+        public RunnableAwareTask(RunnableScheduledFuture<V> task, Runnable runnable) {
+            this.task = task;
+            this.runnable = runnable;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        protected RunnableScheduledFuture<V> delegate() {
+            return this.task;
+        }
+        
+        /**
+         * Returns the runnable.
+         * 
+         * @return the runnable
+         * @return
+         */
+        public Runnable getRunnable() {
+            return this.runnable;
+        }
+    }    
 }

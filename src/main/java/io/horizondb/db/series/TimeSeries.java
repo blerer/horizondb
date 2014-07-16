@@ -205,6 +205,9 @@ public final class TimeSeries {
                 
                 return;
             }
+            
+            System.out.println("currentReplayPosition: " + currentReplayPosition);
+            System.out.println("partitionReplayPosition: " + partitionReplayPosition);
         }
         
         partition.write(records, future);

@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * A <code>WriteExecutor</code> that flush the data to disk periodically.
- * The period is specified by the <code>commitLogFlushPeriodInMillis</code> fron the database configuration.
+ * The period is specified by the <code>commitLogFlushPeriodInMillis</code> from the database configuration.
  * 
  * @author Benjamin
  *

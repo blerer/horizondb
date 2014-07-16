@@ -26,6 +26,7 @@ import io.horizondb.model.core.util.SerializationUtils;
 import io.horizondb.model.schema.BlockPosition;
 
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import javax.annotation.concurrent.Immutable;
@@ -33,13 +34,10 @@ import javax.annotation.concurrent.Immutable;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
 
-import com.google.common.collect.ImmutableRangeMap;
 import com.google.common.collect.Range;
-import com.google.common.collect.RangeMap;
-
-import static io.horizondb.model.core.util.SerializationUtils.writeRange;
 
 import static io.horizondb.model.core.util.SerializationUtils.computeRangeSerializedSize;
+import static io.horizondb.model.core.util.SerializationUtils.writeRange;
 
 /**
  * @author Benjamin
@@ -72,17 +70,17 @@ public final class TimeSeriesPartitionMetaData implements Serializable {
             
             int numberOfBlocks = VarInts.readUnsignedInt(reader);
             
-            com.google.common.collect.ImmutableRangeMap.Builder<Field, BlockPosition> builder = ImmutableRangeMap.builder();
+            LinkedHashMap<Range<Field>, BlockPosition> map = new LinkedHashMap<>();
             
             for (int i = 0; i < numberOfBlocks; i++) {
                 
                 Range<Field> timeRange = SerializationUtils.parseRangeFrom(reader);
                 BlockPosition position = BlockPosition.parseFrom(reader);
                 
-                builder.put(timeRange, position);
+                map.put(timeRange, position);
             }
 
-            return new TimeSeriesPartitionMetaData(range, builder.build(), replayPosition, fileSize);
+            return new TimeSeriesPartitionMetaData(range, map, replayPosition, fileSize);
         }
     };
 
@@ -104,7 +102,7 @@ public final class TimeSeriesPartitionMetaData implements Serializable {
     /**
      * The positions of the block within the file.
      */
-    private final RangeMap<Field, BlockPosition> blockPositions;
+    private final LinkedHashMap<Range<Field>, BlockPosition> blockPositions;
 
     /**
      * Returns the partition time range.
@@ -138,7 +136,7 @@ public final class TimeSeriesPartitionMetaData implements Serializable {
      * 
      * @return the block positions.
      */
-    public RangeMap<Field, BlockPosition> getBlockPositions() {
+    public LinkedHashMap<Range<Field>, BlockPosition> getBlockPositions() {
         return this.blockPositions;
     }
 
@@ -176,14 +174,12 @@ public final class TimeSeriesPartitionMetaData implements Serializable {
 
             size += this.replayPosition.computeSerializedSize();
         }
-
-        Map<Range<Field>, BlockPosition> map = this.blockPositions.asMapOfRanges();
         
-        int numberOfBlocks = map.size();
+        int numberOfBlocks = this.blockPositions.size();
         
         size += VarInts.computeUnsignedIntSize(numberOfBlocks);
         
-        for (Map.Entry<Range<Field>, BlockPosition> entry : map.entrySet()) {
+        for (Map.Entry<Range<Field>, BlockPosition> entry : this.blockPositions.entrySet()) {
             
             size += SerializationUtils.computeRangeSerializedSize(entry.getKey());
             size += entry.getValue().computeSerializedSize();
@@ -211,13 +207,11 @@ public final class TimeSeriesPartitionMetaData implements Serializable {
 
         VarInts.writeUnsignedLong(writer, this.fileSize);
         
-        Map<Range<Field>, BlockPosition> map = this.blockPositions.asMapOfRanges();
-        
-        int numberOfBlocks = map.size();
+        int numberOfBlocks = this.blockPositions.size();
         
         VarInts.writeUnsignedInt(writer, numberOfBlocks);
         
-        for (Map.Entry<Range<Field>, BlockPosition> entry : map.entrySet()) {
+        for (Map.Entry<Range<Field>, BlockPosition> entry : this.blockPositions.entrySet()) {
             
             SerializationUtils.writeRange(writer, entry.getKey());
             entry.getValue().writeTo(writer);
@@ -253,7 +247,7 @@ public final class TimeSeriesPartitionMetaData implements Serializable {
      * @param fileSize the expected file size.
      */
     private TimeSeriesPartitionMetaData(Range<Field> range, 
-                                        RangeMap<Field, BlockPosition> blockPositions, 
+                                        LinkedHashMap<Range<Field>, BlockPosition> blockPositions, 
                                         ReplayPosition replayPosition, 
                                         long fileSize) {
 
@@ -294,7 +288,7 @@ public final class TimeSeriesPartitionMetaData implements Serializable {
         /**
          * The positions of the blocks.
          */
-        private RangeMap<Field, BlockPosition> blockPositions = ImmutableRangeMap.of();
+        private LinkedHashMap<Range<Field>, BlockPosition> blockPositions = new LinkedHashMap<>();
         
         /**
          * The expected file size.
@@ -317,9 +311,9 @@ public final class TimeSeriesPartitionMetaData implements Serializable {
          * @param blockPositions the block positions
          * @return this <code>Builder</code>
          */
-        public Builder blockPositions(RangeMap<Field, BlockPosition> blockPositions) {
+        public Builder blockPositions(Map<Range<Field>, BlockPosition> blockPositions) {
             
-            this.blockPositions = blockPositions;
+            this.blockPositions = new LinkedHashMap<>(blockPositions);
             return this;
         }
         

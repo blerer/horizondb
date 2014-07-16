@@ -21,6 +21,9 @@ import io.horizondb.db.btree.KeyValueIterator;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
+
+import com.google.common.util.concurrent.ListenableFuture;
 
 /**
  * @author Benjamin
@@ -29,12 +32,15 @@ import java.io.IOException;
 public interface TimeSeriesPartitionManager extends Component {
 
     /**
-     * Saves on disk state of the specified partition.
+     * Saves the specified partition meta data.
      * 
-     * @param partition the partition for which the state must be saved.
+     * @param id the partition ID
+     * @param metaData the partition new meta data
      * @throws IOException if an I/O problem occurs
+     * @throws ExecutionException if the commit log replay position cannot be retrieved
+     * @throws InterruptedException if the thread is interrupted while retrieving the last replay position of the partition
      */
-    void save(TimeSeriesPartition partition) throws IOException;
+    void save(PartitionId id, TimeSeriesPartitionMetaData metaData) throws IOException, InterruptedException, ExecutionException;
 
     /**
      * Returns the partition with the specified ID from the specified time series for write access.
@@ -94,7 +100,8 @@ public interface TimeSeriesPartitionManager extends Component {
      * specified segment.  
      * 
      * @param id the segment id
+     * @return a listenable future
      * @throws InterruptedException if the thread is interrupted
      */
-    void forceFlush(long id) throws InterruptedException;
+    ListenableFuture<Boolean> forceFlush(long id) throws InterruptedException;
 }

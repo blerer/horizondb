@@ -29,6 +29,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.common.util.concurrent.Futures;
+
 import static io.horizondb.db.commitlog.CommitLogSegment.LOG_OVERHEAD_SIZE;
 import static io.horizondb.io.files.FileUtils.ONE_KB;
 import static io.horizondb.test.AssertFiles.assertFileContainsAt;
@@ -167,12 +169,14 @@ public class CommitLogTest {
         position += (fourthBuffer.readableBytes() + LOG_OVERHEAD_SIZE);
         ReplayPosition fourthPosition = new ReplayPosition(thirdSegment, position);
 
-        this.databaseEngine.forceFlush(firstSegment);
+        EasyMock.expect(this.databaseEngine.forceFlush(firstSegment))
+                .andReturn(Futures.immediateFuture(Boolean.TRUE));
 
         this.databaseEngine.replay(EasyMock.eq(thirdPosition), eq(thirdBuffer.duplicate()));
         this.databaseEngine.replay(EasyMock.eq(fourthPosition), eq(fourthBuffer.duplicate()));
 
-        this.databaseEngine.forceFlush(secondSegment);
+        EasyMock.expect(this.databaseEngine.forceFlush(secondSegment))
+                .andReturn(Futures.immediateFuture(Boolean.TRUE));
 
         EasyMock.replay(this.databaseEngine);
 

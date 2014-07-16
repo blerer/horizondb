@@ -34,10 +34,10 @@ import io.horizondb.model.schema.TimeSeriesDefinition;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.concurrent.Immutable;
 
-import com.google.common.collect.ImmutableRangeMap;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -205,13 +205,13 @@ final class MemTimeSeries implements TimeSeriesElement {
     /**
      * Writes the content of this <code>MemTimeSeries</code> to the specified output.
      * 
-     * @param builder the builder used to build the block-position mapping
+     * @param blockPositions the collecting parameter for the block positions
      * @param output the output to write to
      * @throws IOException if an I/O problem occurs
      */
-     void writeTo(ImmutableRangeMap.Builder<Field, BlockPosition> builder, SeekableFileDataOutput output) throws IOException {
+     void writeTo(Map<Range<Field>, BlockPosition> blockPositions, SeekableFileDataOutput output) throws IOException {
         
-        this.blocks.writeTo(builder, output);
+        this.blocks.writeTo(blockPositions, output);
     }
     
     /**

@@ -49,6 +49,10 @@ import com.google.common.collect.Range;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
+import static org.easymock.EasyMock.eq;
+
+import static org.easymock.EasyMock.isA;
+
 import static io.horizondb.model.core.filters.Filters.range;
 import static io.horizondb.model.schema.FieldType.MILLISECONDS_TIMESTAMP;
 import static org.junit.Assert.assertEquals;
@@ -374,7 +378,7 @@ public class TimeSeriesPartitionTest {
     }
 
     @Test
-    public void testFlush() throws IOException, HorizonDBException, InterruptedException {
+    public void testFlush() throws Exception {
 
         final int memTimeSeriesSize = 50;
         
@@ -395,7 +399,7 @@ public class TimeSeriesPartitionTest {
         this.listener.memoryUsageChanged(this.partition, 3 * memTimeSeriesSize, memTimeSeriesSize);
         this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, Long.valueOf(0), Long.valueOf(1));
 
-        this.manager.save(this.partition);
+        this.manager.save(eq(this.partition.getId()), isA(TimeSeriesPartitionMetaData.class));
 
         EasyMock.replay(this.manager, this.listener);
 
@@ -541,7 +545,7 @@ public class TimeSeriesPartitionTest {
     }
 
     @Test
-    public void testFlushWithOneMemTimeSeriesFull() throws IOException, HorizonDBException, InterruptedException {
+    public void testFlushWithOneMemTimeSeriesFull() throws Exception {
 
         newTimeSeriesPartition(Configuration.newBuilder()
                                             .dataDirectory(this.testDirectory)
@@ -556,7 +560,7 @@ public class TimeSeriesPartitionTest {
         this.listener.memoryUsageChanged(this.partition, MEMTIMESERIES_SIZE, 0);
         this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, Long.valueOf(0), null);
 
-        this.manager.save(this.partition);
+        this.manager.save(eq(this.partition.getId()), isA(TimeSeriesPartitionMetaData.class));
 
         EasyMock.replay(this.manager, this.listener);
 
@@ -628,7 +632,7 @@ public class TimeSeriesPartitionTest {
     }
 
     @Test
-    public void testWriteOnThreeMemSeries() throws IOException, HorizonDBException {
+    public void testWriteOnThreeMemSeries() throws Exception {
 
         final int memTimeSeriesSize = 50;
         
@@ -782,7 +786,7 @@ public class TimeSeriesPartitionTest {
     }
 
     @Test
-    public void testForceFlush() throws IOException, HorizonDBException, InterruptedException {
+    public void testForceFlush() throws Exception {
 
         newTimeSeriesPartition(Configuration.newBuilder()
                                             .dataDirectory(this.testDirectory)
@@ -792,7 +796,7 @@ public class TimeSeriesPartitionTest {
         this.listener.memoryUsageChanged(this.partition, 0, MEMTIMESERIES_SIZE);
         this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, null, Long.valueOf(0));
 
-        this.manager.save(this.partition);
+        this.manager.save(eq(this.partition.getId()), isA(TimeSeriesPartitionMetaData.class));
 
         this.listener.memoryUsageChanged(this.partition, MEMTIMESERIES_SIZE, 0);
         this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, Long.valueOf(0), null);
@@ -860,7 +864,7 @@ public class TimeSeriesPartitionTest {
     }
 
     @Test
-    public void testWriteAfterForceFlush() throws IOException, HorizonDBException, InterruptedException {
+    public void testWriteAfterForceFlush() throws Exception {
 
         newTimeSeriesPartition(Configuration.newBuilder()
                                             .dataDirectory(this.testDirectory)
@@ -871,7 +875,7 @@ public class TimeSeriesPartitionTest {
         this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, null, Long.valueOf(0));
         this.listener.memoryUsageChanged(this.partition, MEMTIMESERIES_SIZE, 0);
         this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, Long.valueOf(0), null);
-        this.manager.save(this.partition);
+        this.manager.save(eq(this.partition.getId()), isA(TimeSeriesPartitionMetaData.class));
         this.listener.memoryUsageChanged(this.partition, 0, MEMTIMESERIES_SIZE);
         this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, null, Long.valueOf(0));
 
@@ -965,7 +969,7 @@ public class TimeSeriesPartitionTest {
     }
     
     @Test
-    public void testReadOnDiskPartitionsOnly() throws IOException, HorizonDBException, InterruptedException {
+    public void testReadOnDiskPartitionsOnly() throws Exception {
         
         newTimeSeriesPartition(Configuration.newBuilder()
                                             .dataDirectory(this.testDirectory)
@@ -976,7 +980,7 @@ public class TimeSeriesPartitionTest {
         this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, null, Long.valueOf(0));
         this.listener.memoryUsageChanged(this.partition, MEMTIMESERIES_SIZE, 0);
         this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, Long.valueOf(0), null);
-        this.manager.save(this.partition);
+        this.manager.save(eq(this.partition.getId()), isA(TimeSeriesPartitionMetaData.class));
         this.listener.memoryUsageChanged(this.partition, 0, MEMTIMESERIES_SIZE);
         this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, null, Long.valueOf(0));
 
@@ -1055,7 +1059,7 @@ public class TimeSeriesPartitionTest {
     }
     
     @Test
-    public void testReadOnMemoryPartitionsOnly() throws IOException, HorizonDBException, InterruptedException {
+    public void testReadOnMemoryPartitionsOnly() throws Exception{
         
         newTimeSeriesPartition(Configuration.newBuilder()
                                             .dataDirectory(this.testDirectory)
@@ -1066,7 +1070,7 @@ public class TimeSeriesPartitionTest {
         this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, null, Long.valueOf(0));
         this.listener.memoryUsageChanged(this.partition, MEMTIMESERIES_SIZE, 0);
         this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, Long.valueOf(0), null);
-        this.manager.save(this.partition);
+        this.manager.save(eq(this.partition.getId()), isA(TimeSeriesPartitionMetaData.class));
         this.listener.memoryUsageChanged(this.partition, 0, MEMTIMESERIES_SIZE);
         this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, null, Long.valueOf(0));
 

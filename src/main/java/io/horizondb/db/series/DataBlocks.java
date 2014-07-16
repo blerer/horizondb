@@ -31,10 +31,11 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.concurrent.Immutable;
 
-import com.google.common.collect.ImmutableRangeMap;
+import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 
 /**
@@ -160,11 +161,11 @@ final class DataBlocks {
     /**
      * Writes to the specified output the data blocks.
      * 
-     * @param builder the builder used to build the block-position mapping
+     * @param blockPositions the collecting parameter for the block positions
      * @param output the output to write to
      * @throws IOException if an I/O problem occurs. 
      */
-    public void writeTo(ImmutableRangeMap.Builder<Field, BlockPosition> builder, SeekableFileDataOutput output) throws IOException {
+    public void writeTo(Map<Range<Field>, BlockPosition> blockPositions, SeekableFileDataOutput output) throws IOException {
         
         CompressionType compressionType = this.definition.getCompressionType();
         Compressor compressor = compressionType.newCompressor();
@@ -177,7 +178,7 @@ final class DataBlocks {
             long newPosition = output.getPosition();
             int length = (int) (newPosition - position);
             BlockPosition blockPosition = new BlockPosition(position, length);
-            builder.put(block.getRange(), blockPosition);
+            blockPositions.put(block.getRange(), blockPosition);
             position = output.getPosition();
         }
     }

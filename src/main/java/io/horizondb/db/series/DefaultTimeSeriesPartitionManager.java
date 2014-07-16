@@ -44,6 +44,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.annotation.concurrent.GuardedBy;
 
 import com.codahale.metrics.MetricRegistry;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import static org.apache.commons.lang.Validate.notNull;
 
@@ -156,28 +158,27 @@ public final class DefaultTimeSeriesPartitionManager extends AbstractComponent i
      * {@inheritDoc}
      */
     @Override
-    public void save(final TimeSeriesPartition partition) throws IOException {
+    public void save(PartitionId id, TimeSeriesPartitionMetaData metaData) throws IOException, InterruptedException, ExecutionException {
 
-        this.flushManager.savePartition(partition, new Runnable() {
+        this.logger.debug("saving partition {} with meta data: {}", id, metaData);
+
+        if (this.unsavedPartitions.containsKey(id)) {
             
-            /**
-             * {@inheritDoc}
-             */
-            @Override
-            public void run() {
-
-                try {
-                    
-                    savePartitionMetaData(partition);
-                    
-                } catch (IOException | InterruptedException | ExecutionException e) {
-                    
-                    DefaultTimeSeriesPartitionManager.this.logger.error("meta data for partition " + partition.getId() 
-                                                                        + " could not be saved to disk");
-                }
+            this.rwLock.writeLock().lock();
+            
+            try {
+                
+                this.btree.insert(id, metaData);
+                this.unsavedPartitions.remove(id);
+                
+            } finally {
+                
+                this.rwLock.writeLock().unlock();
             }
-            
-        });
+        } else {
+        
+            this.btree.insert(id, metaData);
+        }   
     }
 
     /**
@@ -273,8 +274,8 @@ public final class DefaultTimeSeriesPartitionManager extends AbstractComponent i
      * {@inheritDoc}
      */
     @Override
-    public void forceFlush(long id) {
-        // Do nothing
+    public ListenableFuture<Boolean> forceFlush(long id) {
+        return Futures.immediateFuture(Boolean.TRUE);
     }
 
     /**
@@ -315,39 +316,6 @@ public final class DefaultTimeSeriesPartitionManager extends AbstractComponent i
                                                        TimeSeriesPartitionMetaData metadata) throws IOException {
         
         return new TimeSeriesPartition(this, this.configuration, partitionId.getDatabaseName(), definition, metadata);
-    }
-
-    /**
-     * Saves the meta data of the specified partition within the B+Tree.
-     * 
-     * @param partition the partition for which the meta data must be saved
-     */
-    private void savePartitionMetaData(final TimeSeriesPartition partition) throws InterruptedException,
-                                                                                   ExecutionException,
-                                                                                   IOException {
-        PartitionId id = partition.getId();
-        
-        TimeSeriesPartitionMetaData metaData = partition.getMetaData();
-
-        this.logger.debug("saving partition {} with meta data: {}", id, metaData);
-
-        if (this.unsavedPartitions.containsKey(id)) {
-            
-            this.rwLock.writeLock().lock();
-            
-            try {
-                
-                this.btree.insert(id, metaData);
-                this.unsavedPartitions.remove(id);
-                
-            } finally {
-                
-                this.rwLock.writeLock().unlock();
-            }
-        } else {
-        
-            this.btree.insert(id, metaData);
-        }       
     }
 
     /**

@@ -29,14 +29,16 @@ import io.horizondb.model.schema.TimeSeriesDefinition;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.ImmutableRangeMap;
 import com.google.common.collect.Range;
-import com.google.common.collect.RangeMap;
 import com.google.common.collect.RangeSet;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -62,7 +64,7 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
     /**
      * The block positions
      */
-    private final RangeMap<Field, BlockPosition> blockPositions;
+    private final LinkedHashMap<Range<Field>, BlockPosition> blockPositions;
 
     /**
      * The underlying file.
@@ -150,24 +152,18 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
             return SeekableFileDataInputs.empty();
         }
         
-        Range<Field> queryRange = rangeSet.span();
-        Range<Field> blocksRange = this.blockPositions.span();
+        List<BlockPosition> blocks = findBlocks(rangeSet.span());
         
-        if (!blocksRange.isConnected(queryRange)) {
+        if (blocks.isEmpty()) {
             
             return SeekableFileDataInputs.empty();
         }
                 
-        RangeMap<Field, BlockPosition> subRangeMap = this.blockPositions.subRangeMap(queryRange);
-        Range<Field> blockRange = subRangeMap.span();
-                
-        BlockPosition firstBlock = this.blockPositions.get(blockRange.lowerEndpoint());
-        BlockPosition lastBlock = this.blockPositions.get(blockRange.upperEndpoint());
+        BlockPosition block = merge(blocks);
         
-        long offset = firstBlock.getOffset();
-        long length =  (lastBlock.getOffset() + lastBlock.getLength()) - offset;
-        
-        return SeekableFileDataInputs.truncate(this.file.newInput(), firstBlock.getOffset(), length);
+        return SeekableFileDataInputs.truncate(this.file.newInput(), 
+                                               block.getOffset(), 
+                                               block.getLength());
     }
 
     /**
@@ -191,10 +187,9 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
         this.logger.debug("appending " + memTimeSeriesList.size() + " memTimeSeries to file: " + getPath()
                 + " at position " + this.fileSize);
 
-        ListenableFuture<ReplayPosition> future = null;
+        ListenableFuture<ReplayPosition> newFuture = null;
 
-        ImmutableRangeMap.Builder<Field, BlockPosition> builder = ImmutableRangeMap.<Field, BlockPosition>builder()
-                                                                                   .putAll(this.blockPositions);
+        LinkedHashMap<Range<Field>, BlockPosition> newBlockPositions = new LinkedHashMap<>(this.blockPositions);
         
         try (SeekableFileDataOutput output = this.file.getOutput()) {
 
@@ -206,15 +201,15 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
 
                 TimeSeriesElement memTimeSeries = memTimeSeriesList.get(i);
 
-                ((MemTimeSeries) memTimeSeries).writeTo(builder, output);
+                ((MemTimeSeries) memTimeSeries).writeTo(newBlockPositions, output);
                 
-                future = memTimeSeries.getFuture();
+                newFuture = memTimeSeries.getFuture();
             }
 
             output.flush();
         }
 
-        return new TimeSeriesFile(this.metadata, builder.build(), this.file, this.file.size(), future);
+        return new TimeSeriesFile(this.metadata, newBlockPositions, this.file, this.file.size(), newFuture);
     }
 
     /**
@@ -252,7 +247,7 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
      * 
      * @return the block positions.
      */
-    public RangeMap<Field, BlockPosition> getBlockPositions() {
+    public Map<Range<Field>, BlockPosition> getBlockPositions() {
         return this.blockPositions;
     }
     
@@ -267,7 +262,7 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
      * @throws IOException if an I/O problem occurs.
      */
     private TimeSeriesFile(FileMetaData metadata, 
-                           RangeMap<Field, BlockPosition> blockPositions,
+                           LinkedHashMap<Range<Field>, BlockPosition> blockPositions,
                            RandomAccessDataFile file, 
                            long size, 
                            ListenableFuture<ReplayPosition> future) 
@@ -316,5 +311,51 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
                                   .append(range.lowerEndpoint().getTimestampInMillis())
                                   .append(".ts")
                                   .toString();
+    }
+    
+    /**
+     * Finds the blocks of data that need to be read for retrieving the data for the specified time range.
+     * 
+     * @param timeRange the range of time for which data must be returned
+     * @return the blocks of data that need to be read for retrieving the data for the specified time range.
+     */
+    private List<BlockPosition> findBlocks(Range<Field> timeRange) {
+        
+        List<BlockPosition> blocks = new ArrayList<>();
+        
+        for (Entry<Range<Field>, BlockPosition> entry : this.blockPositions.entrySet()) {
+            
+            Range<Field> blockRange = entry.getKey();
+            
+            if (!timeRange.isConnected(blockRange)) {
+                
+                if (timeRange.upperEndpoint().compareTo(blockRange.lowerEndpoint()) < 0) {
+                    break;
+                }
+                
+                continue;
+            }
+            
+            blocks.add(entry.getValue());
+        }
+        
+        return blocks;
+    }
+        
+    /**
+     * Merges the specified blocks into one.
+     * 
+     * @param blocks the blocks to merge
+     * @return a block position which is a merged of the specified blocks.
+     */
+    private static BlockPosition merge(List<BlockPosition> blocks) {
+        
+        BlockPosition firstBlock = blocks.get(0);
+        BlockPosition lastBlock = blocks.get(blocks.size() - 1);
+        
+        long offset = firstBlock.getOffset();
+        long length = (lastBlock.getOffset() + lastBlock.getLength()) - offset;
+        
+        return new BlockPosition(offset, length);
     }
 }
