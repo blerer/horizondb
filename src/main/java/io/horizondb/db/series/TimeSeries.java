@@ -22,6 +22,7 @@ import io.horizondb.db.util.concurrent.FutureUtils;
 import io.horizondb.model.core.Field;
 import io.horizondb.model.core.Filter;
 import io.horizondb.model.core.Predicate;
+import io.horizondb.model.core.Projection;
 import io.horizondb.model.core.Record;
 import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.schema.TimeSeriesDefinition;
@@ -127,19 +128,21 @@ public final class TimeSeries {
     /**
      * Returns the records of this time series that match the specified expression.
      *  
+     * @param projection the data that must be returned to the user
      * @param predicate the predicate used to filter the data
      * @throws IOException if an I/O problem occurs
      * @throws HorizonDBException if another problem occurs
      */
-    public RecordIterator read(Predicate predicate) throws IOException, HorizonDBException {
+    public RecordIterator read(Projection projection, Predicate predicate) throws IOException, HorizonDBException {
 
         Field prototype = this.definition.newField(Record.TIMESTAMP_FIELD_NAME);
         TimeZone timezone = this.definition.getTimeZone();
         
+        Filter<String> recordTypeFilter = projection.getRecordTypeFilter();
         RangeSet<Field> timeRanges = predicate.getTimestampRanges(prototype, timezone);
         Filter<Record> filter = predicate.toFilter(this.definition);
-
-        return read(timeRanges, filter);
+        
+        return read(timeRanges, recordTypeFilter, filter);
     }
     
     /**
@@ -150,7 +153,9 @@ public final class TimeSeries {
      * @throws IOException if an I/O problem occurs
      * @throws HorizonDBException if another problem occurs
      */
-    public RecordIterator read(RangeSet<Field> timeRanges, Filter<Record> filter) throws IOException, HorizonDBException {
+    public RecordIterator read(RangeSet<Field> timeRanges,
+                               Filter<String> recordTypeFilter,
+                               Filter<Record> filter) throws IOException, HorizonDBException {
 
         Range<Field> span = timeRanges.span();
         
@@ -166,7 +171,7 @@ public final class TimeSeries {
         KeyValueIterator<PartitionId, TimeSeriesPartition> rangeForRead = 
                 this.partitionManager.getRangeForRead(toPartitionId(from), toPartitionId(to), this.definition);
         
-        return new PartitionRecordIterator(timeRanges, rangeForRead, filter);
+        return new PartitionRecordIterator(timeRanges, rangeForRead, recordTypeFilter, filter);
     }
 
     /**
@@ -205,9 +210,6 @@ public final class TimeSeries {
                 
                 return;
             }
-            
-            System.out.println("currentReplayPosition: " + currentReplayPosition);
-            System.out.println("partitionReplayPosition: " + partitionReplayPosition);
         }
         
         partition.write(records, future);
@@ -222,6 +224,11 @@ public final class TimeSeries {
          * The time ranges for which data has been requested. 
          */
         private final RangeSet<Field> timeRanges;
+        
+        /**
+         * The filter used to filter the records by type.
+         */
+        private final Filter<String> recordTypeFilter;
         
         /**
          * The filter used to filter data.
@@ -242,14 +249,17 @@ public final class TimeSeries {
          * Creates a new <code>PartitionRecordIterator</code> to read records from the specified partitions.
          * 
          * @param timeRanges the time ranges for which data has been requested
+         * @param recordTypeFilter the filter used to filter the records by type.
          * @param filter the filter used to filter the returned data
          * @param partitionIterator the partitions.
          */
         public PartitionRecordIterator(RangeSet<Field> rangeSet,
                                        KeyValueIterator<PartitionId, TimeSeriesPartition> partitionIterator,
+                                       Filter<String> recordTypeFilter,
                                        Filter<Record> filter) {
             
             this.timeRanges = rangeSet;
+            this.recordTypeFilter = recordTypeFilter;
             this.filter = filter;
             this.partitionIterator = partitionIterator;
         }
@@ -284,7 +294,7 @@ public final class TimeSeries {
                 if (!subRangeSet.isEmpty()) {
 
                     TimeSeriesPartition partition = this.partitionIterator.getValue();
-                    this.recordIterator = partition.read(subRangeSet, this.filter);
+                    this.recordIterator = partition.read(subRangeSet, this.recordTypeFilter, this.filter);
 
                     if (this.recordIterator.hasNext()) {
                         return true;

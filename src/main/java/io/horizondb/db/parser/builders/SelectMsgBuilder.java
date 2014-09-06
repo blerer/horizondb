@@ -18,9 +18,11 @@ import io.horizondb.db.parser.HqlParser.BetweenPredicateContext;
 import io.horizondb.db.parser.HqlParser.InPredicateContext;
 import io.horizondb.db.parser.HqlParser.PredicateContext;
 import io.horizondb.db.parser.HqlParser.SelectContext;
+import io.horizondb.db.parser.HqlParser.SelectListContext;
 import io.horizondb.db.parser.HqlParser.SimplePredicateContext;
 import io.horizondb.db.parser.MsgBuilder;
 import io.horizondb.model.core.Predicate;
+import io.horizondb.model.core.Projection;
 import io.horizondb.model.core.predicates.Operator;
 import io.horizondb.model.core.predicates.Predicates;
 import io.horizondb.model.protocol.Msg;
@@ -29,10 +31,12 @@ import io.horizondb.model.protocol.OpCode;
 import io.horizondb.model.protocol.SelectPayload;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.misc.NotNull;
 
 /**
@@ -57,6 +61,11 @@ final class SelectMsgBuilder extends HqlBaseListener implements MsgBuilder {
      * The time series name.
      */
     private String timeSeriesName;
+    
+    /**
+     * The record and field projection.
+     */
+    private Projection projection;
     
     /**
      * The predicates.
@@ -90,8 +99,20 @@ final class SelectMsgBuilder extends HqlBaseListener implements MsgBuilder {
     @Override
     public Msg<?> build() {
 
-        SelectPayload payload = new SelectPayload(this.database, this.timeSeriesName, this.predicates.poll());
+        SelectPayload payload = new SelectPayload(this.database, 
+                                                  this.timeSeriesName, 
+                                                  this.projection, 
+                                                  this.predicates.poll());
+        
         return Msg.newRequestMsg(this.requestHeader, OpCode.SELECT, payload);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void enterSelectList(@NotNull SelectListContext ctx) {
+        this.projection = new Projection(toList(ctx));
     }
 
     /**
@@ -201,5 +222,26 @@ final class SelectMsgBuilder extends HqlBaseListener implements MsgBuilder {
       String value = ctx.value().getText();
     
       this.predicates.addFirst(Predicates.simplePredicate(fieldName, operator, value));
+    }
+    
+    /**
+     * Extracts a list of values from the specified context. 
+     * 
+     * @param ctx the context from which the list must be extracted
+     * @return a list of values
+     */
+    private static List<String> toList(ParserRuleContext ctx) {
+        
+        if (ctx == null) {
+            return Collections.emptyList();
+        }
+        
+        List<String> list = new ArrayList<>();
+        
+        for (int i  = 0, m = ctx.getChildCount(); i  < m; i += 2) {
+            list.add(ctx.getChild(i).getText().trim());
+        }
+        
+        return list;
     }
 }

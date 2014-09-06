@@ -24,6 +24,7 @@ import io.horizondb.model.protocol.OpCode;
 import io.horizondb.model.protocol.SelectPayload;
 import io.horizondb.model.protocol.UseDatabasePayload;
 import io.horizondb.model.schema.DatabaseDefinition;
+import io.horizondb.model.schema.RecordSetDefinition;
 import io.horizondb.model.schema.RecordTypeDefinition;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
@@ -230,7 +231,35 @@ public class QueryParserTest {
             assertTrue(true); 
         }
     }
-    
+
+    @Test
+    public void testParseSelectWithOneRecordProjection() throws HorizonDBException {
+
+        RecordTypeDefinition trade = RecordTypeDefinition.newBuilder("Trade")
+                                                         .addDecimalField("price")
+                                                         .addIntegerField("volume")
+                                                         .build();
+
+        RecordTypeDefinition quote = RecordTypeDefinition.newBuilder("Quote")
+                                                         .addDecimalField("bidPrice")
+                                                         .addDecimalField("askPrice")
+                                                         .addIntegerField("bidVolume")
+                                                         .addIntegerField("askValume")
+                                                         .build();
+
+        TimeSeriesDefinition timeSeriesDefinition = TimeSeriesDefinition.newBuilder("Dax")
+                                                                        .addRecordType(quote)
+                                                                        .addRecordType(trade)
+                                                                        .build();
+        
+        Msg<SelectPayload> msg = QueryParser.parse(newConfiguration(), newMsg("SELECT Trade.* FROM Dax;"));
+        assertEquals("Dax", msg.getPayload().getSeriesName());
+        
+        RecordSetDefinition definition = msg.getPayload().getProjection().getDefinition(timeSeriesDefinition);
+        assertEquals(1, definition.getNumberOfRecordTypes());
+        assertEquals(trade, definition.getRecordType(0));
+    }
+
     /**
      * Creates a new HQL query message for use within the tests.
      * 

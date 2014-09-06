@@ -25,7 +25,6 @@ import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.core.fields.TimestampField;
 import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;
 import io.horizondb.model.core.iterators.FilteringRecordIterator;
-import io.horizondb.model.core.iterators.LoggingRecordIterator;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
@@ -219,14 +218,20 @@ public final class TimeSeriesPartition implements Comparable<TimeSeriesPartition
      * Returns a <code>RecordIterator</code> containing the data from the specified time range.
      * 
      * @param rangeSet the time range for which the data must be returned
-     * @param filter the filter used to filter the data
+     * @param recordTypeFilter the filter used to filter the records by type
+     * @param filter the filter used to filter the records being returned
      * @return a <code>RecordIterator</code> containing the data from the specified time range
      * @throws IOException if an I/O problem occurs while writing the data
      */
-    public RecordIterator read(RangeSet<Field> rangeSet, Filter<Record> filter) throws IOException {
+    public RecordIterator read(RangeSet<Field> rangeSet, 
+                               Filter<String> recordTypeFilter, 
+                               Filter<Record> filter) throws IOException {
 
         return new FilteringRecordIterator(this.definition,
-                                           new LoggingRecordIterator(definition, new BinaryTimeSeriesRecordIterator(this.definition, newInput(rangeSet))),
+                                           new BinaryTimeSeriesRecordIterator(this.definition, 
+                                                                              newInput(rangeSet), 
+                                                                              rangeSet,
+                                                                              recordTypeFilter),
                                            filter);
     }
 

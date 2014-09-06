@@ -18,6 +18,7 @@ import io.horizondb.model.protocol.Msg;
 import io.horizondb.model.protocol.MsgHeader;
 import io.horizondb.model.protocol.OpCode;
 import io.horizondb.model.protocol.Payload;
+import io.horizondb.model.schema.RecordSetDefinition;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.stream.ChunkedInput;
@@ -34,9 +35,9 @@ public class ChunkedRecordSet implements ChunkedInput<Msg<?>> {
     private final MsgHeader requestHeader;
     
     /**
-     * The time series definition
+     * The record set definition
      */
-    private final TimeSeriesDefinition definition;
+    private final RecordSetDefinition definition;
     
     /**
      * The data chunks
@@ -55,7 +56,7 @@ public class ChunkedRecordSet implements ChunkedInput<Msg<?>> {
      * @param definition the time series definition for which data is returned
      * @param recordStream the record stream
      */
-    public ChunkedRecordSet(MsgHeader requestHeader, TimeSeriesDefinition definition, ChunkedRecordStream recordStream) {
+    public ChunkedRecordSet(MsgHeader requestHeader, RecordSetDefinition definition, ChunkedRecordStream recordStream) {
 
         this.requestHeader = requestHeader;
         this.definition = definition;

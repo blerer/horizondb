@@ -329,13 +329,22 @@ valueList
     ;    
     
 select
-    : SELECT '*' FROM ID (whereClause)?
+    : SELECT selectList FROM ID (whereClause)?
+    ;
+selectList
+    : '*'
+    | selectListElement (',' selectListElement )*
     ;
 
+selectListElement
+    : ID'.*'
+    | ID'.'ID
+    ;
+        
 whereClause
     : WHERE predicate
     ;
-     
+
 predicate
     : '('predicate')'
     | predicate AND predicate

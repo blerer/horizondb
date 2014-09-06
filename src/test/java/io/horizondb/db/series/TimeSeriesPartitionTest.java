@@ -28,7 +28,6 @@ import io.horizondb.model.core.filters.Filters;
 import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;
 import io.horizondb.model.core.records.TimeSeriesRecord;
 import io.horizondb.model.core.util.TimeUtils;
-import io.horizondb.model.schema.FieldType;
 import io.horizondb.model.schema.RecordTypeDefinition;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
@@ -49,12 +48,10 @@ import com.google.common.collect.Range;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
-import static org.easymock.EasyMock.eq;
-
-import static org.easymock.EasyMock.isA;
-
 import static io.horizondb.model.core.filters.Filters.range;
 import static io.horizondb.model.schema.FieldType.MILLISECONDS_TIMESTAMP;
+import static org.easymock.EasyMock.eq;
+import static org.easymock.EasyMock.isA;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -88,17 +85,23 @@ public class TimeSeriesPartitionTest {
 
         this.testDirectory = Files.createTempDirectory(this.getClass().getSimpleName());
 
-        RecordTypeDefinition recordTypeDefinition = RecordTypeDefinition.newBuilder("exchangeState")
-                                                                        .addField("timestampInMillis",
-                                                                                  FieldType.MILLISECONDS_TIMESTAMP)
-                                                                        .addField("status", FieldType.BYTE)
-                                                                        .build();
+        RecordTypeDefinition exchangeStateType = RecordTypeDefinition.newBuilder("exchangeState")
+                                                                     .addMillisecondTimestampField("timestampInMillis")
+                                                                     .addByteField("status")
+                                                                     .build();
+        
+
+        RecordTypeDefinition tradeType = RecordTypeDefinition.newBuilder("trade")
+                                                             .addMillisecondTimestampField("timestampInMillis")
+                                                             .addDecimalField("price")
+                                                             .build();
 
         Files.createDirectory(this.testDirectory.resolve("test"));
 
         this.def = TimeSeriesDefinition.newBuilder("test")
                                        .timeUnit(TimeUnit.NANOSECONDS)
-                                       .addRecordType(recordTypeDefinition)
+                                       .addRecordType(exchangeStateType)
+                                       .addRecordType(tradeType)
                                        .build();
 
         this.manager = EasyMock.createMock(TimeSeriesPartitionManager.class);
@@ -124,7 +127,9 @@ public class TimeSeriesPartitionTest {
         EasyMock.replay(this.manager, this.listener);
 
         Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26 12:00:00.000'", "'2013-11-26 14:00:00.000'");
-        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), toFilter(range));
+        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), 
+                                                      Filters.<String>noop(), 
+                                                      toFilter(range));
 
         Assert.assertFalse(iterator.hasNext());
 
@@ -165,7 +170,9 @@ public class TimeSeriesPartitionTest {
         this.partition.write(records, newFuture(0, 1));
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
 
-        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), toFilter(range));
+        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), 
+                                                      Filters.<String>noop(), 
+                                                      toFilter(range));
 
         assertTrue(iterator.hasNext());
         Record actual = iterator.next();
@@ -235,7 +242,9 @@ public class TimeSeriesPartitionTest {
 
         Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26 12:32:12'", "'2013-11-26 12:32:14'");
         
-        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), toFilter(range));
+        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), 
+                                                      Filters.<String>noop(), 
+                                                      toFilter(range));
 
         assertTrue(iterator.hasNext());
         Record actual = iterator.next();
@@ -322,7 +331,9 @@ public class TimeSeriesPartitionTest {
         assertEquals(2 * MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
         assertEquals(Long.valueOf(0), this.partition.getFirstSegmentContainingNonPersistedData());
 
-        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), toFilter(range));
+        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), 
+                                                      Filters.<String>noop(), 
+                                                      toFilter(range));
 
         assertTrue(iterator.hasNext());
         Record actual = iterator.next();
@@ -465,7 +476,9 @@ public class TimeSeriesPartitionTest {
         this.partition.flush();
         assertEquals(Long.valueOf(1), this.partition.getFirstSegmentContainingNonPersistedData());
 
-        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), toFilter(range));
+        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), 
+                                                      Filters.<String>noop(), 
+                                                      toFilter(range));
 
         assertTrue(iterator.hasNext());
         Record actual = iterator.next();
@@ -592,7 +605,9 @@ public class TimeSeriesPartitionTest {
 
         this.partition.flush();
 
-        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), toFilter(range));
+        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), 
+                                                      Filters.<String>noop(), 
+                                                      toFilter(range));
 
         assertTrue(iterator.hasNext());
         Record actual = iterator.next();
@@ -706,7 +721,9 @@ public class TimeSeriesPartitionTest {
         this.partition.write(records, newFuture(0, 3));
         assertEquals(3 * memTimeSeriesSize, this.partition.getMemoryUsage());
 
-        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), toFilter(range));
+        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), 
+                                                      Filters.<String>noop(), 
+                                                      toFilter(range));
 
         assertTrue(iterator.hasNext());
         Record actual = iterator.next();
@@ -832,7 +849,9 @@ public class TimeSeriesPartitionTest {
         assertEquals(0, this.partition.getMemoryUsage());
         assertEquals(null, this.partition.getFirstSegmentContainingNonPersistedData());
 
-        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), toFilter(range));
+        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), 
+                                                      Filters.<String>noop(), 
+                                                      toFilter(range));
 
         assertTrue(iterator.hasNext());
         Record actual = iterator.next();
@@ -921,7 +940,9 @@ public class TimeSeriesPartitionTest {
 
         Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26 12:00:00'", "'2013-11-26 14:00:00'");
         
-        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), toFilter(range));
+        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), 
+                                                      Filters.<String>noop(), 
+                                                      toFilter(range));
 
         assertTrue(iterator.hasNext());
         Record actual = iterator.next();
@@ -1134,6 +1155,87 @@ public class TimeSeriesPartitionTest {
         assertEquals(800, actual.getTimestampInMillis(0));
         assertEquals(800, actual.getTimestampInMillis(1));
         assertEquals(0, actual.getByte(2));
+
+        assertFalse(iterator.hasNext());
+
+        EasyMock.verify(this.manager, this.listener);
+    }
+    
+    @Test
+    public void testReadOnlyOneRecordType() throws Exception{
+        
+        newTimeSeriesPartition(Configuration.newBuilder()
+                                            .dataDirectory(this.testDirectory)
+                                            .memTimeSeriesSize(MEMTIMESERIES_SIZE)
+                                            .build());
+        
+        this.listener.memoryUsageChanged(this.partition, 0, MEMTIMESERIES_SIZE);
+        this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, null, Long.valueOf(0));
+        this.listener.memoryUsageChanged(this.partition, MEMTIMESERIES_SIZE, 0);
+        this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, Long.valueOf(0), null);
+        this.manager.save(eq(this.partition.getId()), isA(TimeSeriesPartitionMetaData.class));
+        this.listener.memoryUsageChanged(this.partition, 0, MEMTIMESERIES_SIZE);
+        this.listener.firstSegmentContainingNonPersistedDataChanged(this.partition, null, Long.valueOf(0));
+        
+        this.manager.flush(this.partition);
+
+        EasyMock.replay(this.manager, this.listener);
+
+        long timestamp = TimeUtils.parseDateTime("2013-11-26 12:32:12.000");
+
+        List<TimeSeriesRecord> records = new RecordListBuilder(this.def).newRecord("exchangeState")
+                                                                        .setTimestampInMillis(0, timestamp)
+                                                                        .setTimestampInMillis(1, timestamp)
+                                                                        .setByte(2, 10)
+                                                                        .newRecord("exchangeState")
+                                                                        .setTimestampInMillis(0, timestamp + 100)
+                                                                        .setTimestampInMillis(1, timestamp + 100)
+                                                                        .setByte(2, 5)
+                                                                        .newRecord("exchangeState")
+                                                                        .setTimestampInMillis(0, timestamp + 350)
+                                                                        .setTimestampInMillis(1, timestamp + 350)
+                                                                        .setByte(2, 10)
+                                                                        .newRecord("trade")
+                                                                        .setTimestampInMillis(0, timestamp + 380)
+                                                                        .setTimestampInMillis(1, timestamp + 380)
+                                                                        .setDouble(2, 12)
+                                                                        .build();
+
+        this.partition.write(records, newFuture(0, 1));
+        assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
+        assertEquals(Long.valueOf(0), this.partition.getFirstSegmentContainingNonPersistedData());
+
+        this.partition.forceFlush();
+        assertEquals(0, this.partition.getMemoryUsage());
+        assertEquals(null, this.partition.getFirstSegmentContainingNonPersistedData());
+
+        records = new RecordListBuilder(this.def).newRecord("exchangeState")
+                                                 .setTimestampInMillis(0, timestamp + 400)
+                                                 .setTimestampInMillis(1, timestamp + 400)
+                                                 .setByte(2, 0)
+                                                 .newRecord("exchangeState")
+                                                 .setTimestampInMillis(0, timestamp + 1200)
+                                                 .setTimestampInMillis(1, timestamp + 1200)
+                                                 .setByte(2, 0)
+                                                 .build();
+
+        this.partition.write(records, newFuture(0, 2));
+        assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
+        assertEquals(Long.valueOf(0), this.partition.getFirstSegmentContainingNonPersistedData());
+
+        Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26 12:32:12.000'", "'2013-11-26 12:32:20.000'");
+
+        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), 
+                                                      Filters.eq("trade", false), 
+                                                      Filters.<Record>noop());
+
+        assertTrue(iterator.hasNext());
+        Record actual = iterator.next();
+
+        assertFalse(actual.isDelta());
+        assertEquals(timestamp + 380, actual.getTimestampInMillis(0));
+        assertEquals(timestamp + 380, actual.getTimestampInMillis(1));
+        assertEquals(12, actual.getDouble(2), 0);
 
         assertFalse(iterator.hasNext());
 

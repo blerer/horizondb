@@ -26,6 +26,7 @@ import io.horizondb.db.parser.HqlParser.PredicateContext;
 import io.horizondb.db.parser.HqlParser.RecordDefinitionContext;
 import io.horizondb.db.parser.HqlParser.RecordsDefinitionContext;
 import io.horizondb.db.parser.HqlParser.SelectContext;
+import io.horizondb.db.parser.HqlParser.SelectListContext;
 import io.horizondb.db.parser.HqlParser.SimplePredicateContext;
 import io.horizondb.db.parser.HqlParser.TimeSeriesOptionContext;
 import io.horizondb.db.parser.HqlParser.UseDatabaseContext;
@@ -278,6 +279,14 @@ public final class MsgBuilderDispatcher extends HqlBaseListener implements MsgBu
     @Override
     public void enterBetweenPredicate(@NotNull BetweenPredicateContext ctx) {
         this.builder.enterBetweenPredicate(ctx);
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void enterSelectList(@NotNull SelectListContext ctx) {
+        this.builder.enterSelectList(ctx);
     }
 
     /**    

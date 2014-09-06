@@ -45,7 +45,7 @@ final class SelectOperation implements Operation {
 
         TimeSeries series = database.getTimeSeries(payload.getSeriesName());
         
-        RecordIterator iterator = series.read(payload.getPredicate());
+        RecordIterator iterator = series.read(payload.getProjection(), payload.getPredicate());
         
         return new ChunkedRecordSet(request.getHeader(),
                                     series.getDefinition(),

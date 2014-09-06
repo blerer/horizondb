@@ -36,7 +36,7 @@ import org.antlr.v4.runtime.misc.NotNull;
  * @author Benjamin
  *
  */
-final class InsertMsgBuilder extends HqlBaseListener implements MsgBuilder{
+final class InsertMsgBuilder extends HqlBaseListener implements MsgBuilder {
 
     /**
      * The original request header.
