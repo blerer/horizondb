@@ -13,6 +13,8 @@
  */
 package io.horizondb.db.parser.builders;
 
+import java.io.IOException;
+
 import io.horizondb.db.Configuration;
 import io.horizondb.db.parser.HqlBaseListener;
 import io.horizondb.db.parser.HqlParser.BetweenPredicateContext;
@@ -302,7 +304,7 @@ public final class MsgBuilderDispatcher extends HqlBaseListener implements MsgBu
      * {@inheritDoc}
      */
     @Override
-    public Msg<?> build() {
+    public Msg<?> build() throws IOException {
         return this.builder.build();
     }
 }

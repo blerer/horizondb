@@ -132,8 +132,9 @@ final class MemTimeSeries implements TimeSeriesElement {
      * Returns <code>true</code> if this <code>MemTimeSeries</code> is full.
      * 
      * @return <code>true</code> if this <code>MemTimeSeries</code> is full.
+     * @throws IOException if an I/O problem occurs while computing the block size
      */
-    public boolean isFull() {
+    public boolean isFull() throws IOException {
 
         return this.getRecordsSize() >= this.configuration.getMemTimeSeriesSize();
     }
@@ -271,8 +272,9 @@ final class MemTimeSeries implements TimeSeriesElement {
      * Returns the size in bytes of the records.
      * 
      * @return the size in bytes of the records.
+     * @throws IOException if an I/O problem occurs while computing the block size
      */
-    private int getRecordsSize() {
+    private int getRecordsSize() throws IOException {
         return this.blocks.size();
     }
 

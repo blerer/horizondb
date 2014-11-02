@@ -29,6 +29,7 @@ import io.horizondb.model.schema.FieldType;
 import io.horizondb.model.schema.RecordTypeDefinition;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
+import java.io.IOException;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
@@ -149,7 +150,7 @@ final class CreateTimeSeriesMsgBuilder extends HqlBaseListener implements MsgBui
      * {@inheritDoc}
      */
     @Override
-    public Msg<?> build() {
+    public Msg<?> build() throws IOException {
         
         Payload payload = new CreateTimeSeriesPayload(this.database, this.timeSeriesDefBuilder.build());
         return Msg.newRequestMsg(this.requestHeader, OpCode.CREATE_TIMESERIES, payload);

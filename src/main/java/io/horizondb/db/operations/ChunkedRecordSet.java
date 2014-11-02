@@ -19,7 +19,6 @@ import io.horizondb.model.protocol.MsgHeader;
 import io.horizondb.model.protocol.OpCode;
 import io.horizondb.model.protocol.Payload;
 import io.horizondb.model.schema.RecordSetDefinition;
-import io.horizondb.model.schema.TimeSeriesDefinition;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.stream.ChunkedInput;
 

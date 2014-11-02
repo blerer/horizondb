@@ -154,7 +154,7 @@ implements Monitorable, Closeable {
          * {@inheritDoc}
          */
         @Override
-        protected int computeKeySize(K key) {
+        protected int computeKeySize(K key) throws IOException {
             return key.computeSerializedSize();
         }
 
@@ -162,7 +162,7 @@ implements Monitorable, Closeable {
          * {@inheritDoc}
          */
         @Override
-        protected int computeValueSize(V value) {
+        protected int computeValueSize(V value) throws IOException {
             return value.computeSerializedSize();
         }
 

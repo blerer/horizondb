@@ -23,6 +23,7 @@ import io.horizondb.model.protocol.MsgHeader;
 import io.horizondb.model.protocol.OpCode;
 import io.horizondb.model.protocol.Payload;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -120,7 +121,7 @@ final class InsertMsgBuilder extends HqlBaseListener implements MsgBuilder {
      * {@inheritDoc}
      */
     @Override
-    public Msg<?> build() {
+    public Msg<?> build() throws IOException {
         Payload payload = new InsertPayload(this.database,
                                             this.series,
                                             this.recordType,

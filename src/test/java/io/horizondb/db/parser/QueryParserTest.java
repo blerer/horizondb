@@ -28,6 +28,7 @@ import io.horizondb.model.schema.RecordSetDefinition;
 import io.horizondb.model.schema.RecordTypeDefinition;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
+import java.io.IOException;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
@@ -46,7 +47,7 @@ import static org.junit.Assert.fail;
 public class QueryParserTest {
 
     @Test
-    public void testParseCreateDatabase() throws HorizonDBException {
+    public void testParseCreateDatabase() throws HorizonDBException, IOException {
        
         Msg<CreateDatabasePayload> msg = QueryParser.parse(newConfiguration(), newMsg(" CREATE DATABASE TEST;"));
         
@@ -59,7 +60,7 @@ public class QueryParserTest {
     }
     
     @Test
-    public void testParseUseDatabase() throws HorizonDBException {
+    public void testParseUseDatabase() throws HorizonDBException, IOException  {
        
         Msg<UseDatabasePayload> msg = QueryParser.parse(newConfiguration(),newMsg("USE TEST;"));
         
@@ -68,7 +69,7 @@ public class QueryParserTest {
     }
     
     @Test
-    public void testParseCreateTimeSeries() throws HorizonDBException {
+    public void testParseCreateTimeSeries() throws HorizonDBException, IOException  {
 
         RecordTypeDefinition quote = RecordTypeDefinition.newBuilder("Quote")
                                                          .addNanosecondTimestampField("received")
@@ -100,7 +101,7 @@ public class QueryParserTest {
     }
     
     @Test
-    public void testParseCreateTimeSeriesWithDefaultTimeUnit() throws HorizonDBException {
+    public void testParseCreateTimeSeriesWithDefaultTimeUnit() throws HorizonDBException, IOException  {
 
         RecordTypeDefinition quote = RecordTypeDefinition.newBuilder("Quote")
                                                          .addNanosecondTimestampField("received")
@@ -132,7 +133,7 @@ public class QueryParserTest {
     }
     
     @Test
-    public void testParseSelectAll() throws HorizonDBException {
+    public void testParseSelectAll() throws HorizonDBException, IOException  {
         
         Msg<SelectPayload> msg = QueryParser.parse(newConfiguration(),newMsg("SELECT * FROM Dax;"));
         assertEquals("Dax", msg.getPayload().getSeriesName());
@@ -140,67 +141,67 @@ public class QueryParserTest {
     }
     
     @Test
-    public void testParseSelectWithTimestampGreaterThan() throws HorizonDBException {
+    public void testParseSelectWithTimestampGreaterThan() throws HorizonDBException, IOException  {
 
         testParseSelectWithPredicate("timestamp > 2");
     }
     
     @Test
-    public void testParseSelectWithAndAndOr() throws HorizonDBException {
+    public void testParseSelectWithAndAndOr() throws HorizonDBException, IOException  {
 
         testParseSelectWithPredicate("timestamp > 2 AND timestamp < 4 OR timestamp > 6 AND timestamp < 8");
     }
     
     @Test
-    public void testParseSelectWithTimestampUnit() throws HorizonDBException {
+    public void testParseSelectWithTimestampUnit() throws HorizonDBException, IOException  {
 
         testParseSelectWithPredicate("timestamp >= 1384425960200ms AND timestamp < 1384425960400ms");
     }
     
     @Test
-    public void testParseSelectWithAndOrAndParentheses() throws HorizonDBException {
+    public void testParseSelectWithAndOrAndParentheses() throws HorizonDBException, IOException  {
 
         testParseSelectWithPredicate("timestamp > 2 AND (timestamp < 4 OR timestamp > 6)");
     }
     
     @Test
-    public void testParseSelectWithInExpression() throws HorizonDBException {
+    public void testParseSelectWithInExpression() throws HorizonDBException, IOException  {
 
         testParseSelectWithPredicate("timestamp IN (2, 4)");
     }
     
     @Test
-    public void testParseSelectWithBetweenExpression() throws HorizonDBException {
+    public void testParseSelectWithBetweenExpression() throws HorizonDBException, IOException  {
 
         testParseSelectWithPredicate("timestamp BETWEEN 2 AND 4");
     }
     
     @Test
-    public void testParseSelectWithNotBetweenExpression() throws HorizonDBException {
+    public void testParseSelectWithNotBetweenExpression() throws HorizonDBException, IOException  {
 
         testParseSelectWithPredicate("timestamp NOT BETWEEN 2 AND 6");
     }
     
     @Test
-    public void testParseSelectWithBetweenAndInExpression() throws HorizonDBException {
+    public void testParseSelectWithBetweenAndInExpression() throws HorizonDBException, IOException  {
 
         testParseSelectWithPredicate("timestamp BETWEEN 2 AND 6 AND timestamp IN (5, 6)");
     }
     
     @Test
-    public void testParseSelectWithNotInExpression() throws HorizonDBException {
+    public void testParseSelectWithNotInExpression() throws HorizonDBException, IOException  {
 
         testParseSelectWithPredicate("timestamp NOT IN (2, 4)");
     }
     
     @Test
-    public void testParseSelectWithInExpressionAndOnlyOneValue() throws HorizonDBException {
+    public void testParseSelectWithInExpressionAndOnlyOneValue() throws HorizonDBException, IOException  {
 
         testParseSelectWithPredicate("timestamp IN (2)");
     }
     
     @Test
-    public void testParseInsert() throws HorizonDBException {
+    public void testParseInsert() throws HorizonDBException, IOException  {
         
         Msg<InsertPayload> msg = QueryParser.parse(newConfiguration(),newMsg("INSERT INTO Dax.Trade (timestamp, price, volume) VALUES ('23-05-2014 09:44:30', 125E-1, 10);"));
         assertEquals("Dax", msg.getPayload().getSeries());
@@ -210,7 +211,7 @@ public class QueryParserTest {
     }
     
     @Test
-    public void testParseInsertWithoutFieldNames() throws HorizonDBException {
+    public void testParseInsertWithoutFieldNames() throws HorizonDBException, IOException  {
         
         Msg<InsertPayload> msg = QueryParser.parse(newConfiguration(),newMsg("INSERT INTO Dax.Trade VALUES ('23-05-2014 09:44:30', 125E-1, 10);"));
         assertEquals("Dax", msg.getPayload().getSeries());
@@ -220,7 +221,7 @@ public class QueryParserTest {
     }
     
     @Test
-    public void testParseWithInvalidQuery() throws HorizonDBException {
+    public void testParseWithInvalidQuery() throws HorizonDBException, IOException  {
        
         try {
             
@@ -233,7 +234,7 @@ public class QueryParserTest {
     }
 
     @Test
-    public void testParseSelectWithOneRecordProjection() throws HorizonDBException {
+    public void testParseSelectWithOneRecordProjection() throws HorizonDBException, IOException {
 
         RecordTypeDefinition trade = RecordTypeDefinition.newBuilder("Trade")
                                                          .addDecimalField("price")
@@ -266,7 +267,7 @@ public class QueryParserTest {
      * @param query the HQL query
      * @return a new HQL query message for use within the tests.
      */
-    private static Msg<HqlQueryPayload> newMsg(String query) {
+    private static Msg<HqlQueryPayload> newMsg(String query) throws IOException  {
         
         HqlQueryPayload payload = new HqlQueryPayload("TEST", query);
         return Msg.newRequestMsg(OpCode.HQL_QUERY, payload);
@@ -278,7 +279,7 @@ public class QueryParserTest {
      * @param predicate the predicate to test
      * @throws HorizonDBException if a problem occurs
      */
-    private static void testParseSelectWithPredicate(String predicate) throws HorizonDBException {
+    private static void testParseSelectWithPredicate(String predicate) throws HorizonDBException, IOException  {
         
         Msg<SelectPayload> msg = QueryParser.parse(newConfiguration(),newMsg("SELECT * FROM Dax WHERE " + predicate + ";"));
         assertEquals("Dax", msg.getPayload().getSeriesName());

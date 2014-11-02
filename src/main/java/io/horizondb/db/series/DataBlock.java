@@ -146,8 +146,9 @@ final class DataBlock {
      * Returns the current block size (including the header).
      * 
      * @return the current block size (including the header).
+     * @throws IOException if an I/O problem occurs while computing the block size
      */
-    public int size() {
+    public int size() throws IOException {
         return this.compositeBuffer.readableBytes() + RecordUtils.computeSerializedSize(this.header);
     }
 
@@ -155,8 +156,9 @@ final class DataBlock {
      * Return <code>true</code> if this block is full, <code>false</code> otherwise.
      * 
      * @return <code>true</code> if this block is full, <code>false</code> otherwise.
+     * @throws IOException if an I/O problem occurs while computing the block size
      */
-    public boolean isFull() {
+    public boolean isFull() throws IOException {
         return size() >= this.blockSize;
     }
     

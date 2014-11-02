@@ -270,8 +270,9 @@ final class TimeSeriesElements {
      * Returns all the full <code>MemTimeSeries</code>.
      * 
      * @return all the full <code>MemTimeSeries</code>.
+     * @throws IOException if an I/O problem occurs
      */
-    private List<TimeSeriesElement> getFullMemTimeSeriesList() {
+    private List<TimeSeriesElement> getFullMemTimeSeriesList() throws IOException {
 
         if (getLastMemTimeSeries().isFull()) {
 

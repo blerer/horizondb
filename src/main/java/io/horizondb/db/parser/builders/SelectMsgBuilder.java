@@ -30,6 +30,7 @@ import io.horizondb.model.protocol.MsgHeader;
 import io.horizondb.model.protocol.OpCode;
 import io.horizondb.model.protocol.SelectPayload;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
@@ -97,7 +98,7 @@ final class SelectMsgBuilder extends HqlBaseListener implements MsgBuilder {
      * {@inheritDoc}
      */
     @Override
-    public Msg<?> build() {
+    public Msg<?> build() throws IOException {
 
         SelectPayload payload = new SelectPayload(this.database, 
                                                   this.timeSeriesName, 

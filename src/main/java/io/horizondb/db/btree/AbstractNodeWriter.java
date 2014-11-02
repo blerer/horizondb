@@ -203,10 +203,18 @@ public abstract class AbstractNodeWriter<K extends Comparable<K>, V> implements 
      * 
      * @param key the key.
      * @return the size in bytes needed to store the specified key.
+     * @throws IOException if an I/O problem occurs while computing the key size
      */
-    protected abstract int computeKeySize(K key);
+    protected abstract int computeKeySize(K key) throws IOException;
 
-    protected abstract int computeValueSize(V value);
+    /**
+     * Computes the size in bytes needed to store the specified value.
+     * 
+     * @param value the value
+     * @return the size in bytes needed to store the specified value.
+     * @throws IOException if an I/O problem occurs while computing the value size
+     */
+    protected abstract int computeValueSize(V value) throws IOException;
 
     /**
      * Writes the specified key to the disk.
@@ -291,7 +299,7 @@ public abstract class AbstractNodeWriter<K extends Comparable<K>, V> implements 
          * {@inheritDoc}
          */
         @Override
-        public NodeVisitResult preVisitNode(K key, Node<K, V> node) {
+        public NodeVisitResult preVisitNode(K key, Node<K, V> node) throws IOException {
 
             NodeProxy<K, V> proxy = (NodeProxy<K, V>) node;
 
@@ -308,7 +316,7 @@ public abstract class AbstractNodeWriter<K extends Comparable<K>, V> implements 
          */
         @Override
         @SuppressWarnings("unchecked")
-        public NodeVisitResult visitRecord(K key, ValueWrapper<V> wrapper) {
+        public NodeVisitResult visitRecord(K key, ValueWrapper<V> wrapper) throws IOException {
 
             DataPointer<K, V> pointer = (DataPointer<K, V>) wrapper;
 

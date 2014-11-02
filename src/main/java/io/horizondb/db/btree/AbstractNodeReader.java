@@ -27,7 +27,6 @@ import java.util.TreeMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static io.horizondb.io.encoding.VarInts.readByte;
 import static io.horizondb.io.encoding.VarInts.readUnsignedInt;
 import static io.horizondb.io.encoding.VarInts.readUnsignedLong;
 
@@ -86,8 +85,8 @@ public abstract class AbstractNodeReader<K extends Comparable<K>, V> implements 
         this.checksumReader.resetChecksum();
         ByteReader nodeReader = this.checksumReader.slice(length);
 
-        this.version = readByte(nodeReader);
-        this.compression = readByte(nodeReader);
+        this.version = nodeReader.readByte();
+        this.compression = nodeReader.readByte();
 
         return readNode(btree, nodeReader);
     }
@@ -177,7 +176,7 @@ public abstract class AbstractNodeReader<K extends Comparable<K>, V> implements 
      */
     private Node<K, V> readNode(BTree<K, V> btree, ByteReader reader) throws IOException {
 
-        int type = readByte(reader);
+        int type = reader.readByte();
 
         int subTreeSize = readUnsignedInt(reader);
 

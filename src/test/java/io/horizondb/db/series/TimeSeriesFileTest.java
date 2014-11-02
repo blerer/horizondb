@@ -933,10 +933,11 @@ public class TimeSeriesFileTest {
      * @param headers the block headers
      * @param compressedBlocks the blocks data
      * @return the size of the file
+     * @throws IOException if an I/O problem occurs
      */
     private static int computeFileSize(FileMetaData fileMetaData,
                                        TimeSeriesRecord[] headers,
-                                       ReadableBuffer[] compressedBlocks) {
+                                       ReadableBuffer[] compressedBlocks) throws IOException {
         int bufferSize = fileMetaData.computeSerializedSize();
         
         for (int i = 0; i < headers.length; i++) {

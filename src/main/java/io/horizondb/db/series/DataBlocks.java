@@ -107,8 +107,9 @@ final class DataBlocks {
      * Returns the total size of the blocks (including headers).
      * 
      * @return the total size of the blocks (including headers)
+     * @throws IOException if an I/O problem occurs while computing the block size
      */
-    public int size() {
+    public int size() throws IOException {
         
         int size = 0;
         

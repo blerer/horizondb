@@ -13,6 +13,8 @@
  */
 package io.horizondb.db.parser.builders;
 
+import java.io.IOException;
+
 import io.horizondb.db.parser.HqlBaseListener;
 import io.horizondb.db.parser.HqlParser.UseDatabaseContext;
 import io.horizondb.db.parser.MsgBuilder;
@@ -64,7 +66,7 @@ final class UseDatabaseMsgBuilder extends HqlBaseListener implements MsgBuilder 
      * {@inheritDoc}
      */
     @Override
-    public Msg<?> build() {
+    public Msg<?> build() throws IOException {
 
         Payload payload = new UseDatabasePayload(this.databaseName);
         return Msg.newRequestMsg(this.requestHeader, OpCode.USE_DATABASE, payload);

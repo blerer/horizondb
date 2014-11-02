@@ -238,6 +238,18 @@ final class BlockOrganizedReadableBuffer extends AbstractBlockOrganizedByteReade
      * {@inheritDoc}
      */
     @Override
+    public ReadableBuffer slice(int index, int length) throws IOException {
+        int readerIndex = readerIndex();
+        readerIndex(index);
+        ReadableBuffer slice = slice(length);
+        readerIndex(readerIndex);
+        return slice;
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public int readerIndex() {
 
         int readerIndex = this.buffer.readerIndex();

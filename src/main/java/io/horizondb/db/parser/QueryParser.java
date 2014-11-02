@@ -13,6 +13,8 @@
  */
 package io.horizondb.db.parser;
 
+import java.io.IOException;
+
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.parser.ErrorCollector.ParsingError;
@@ -48,9 +50,10 @@ public final class QueryParser {
      * @param msg the query message
      * @return the low level message corresponding to the specified <code>query</code>.
      * @throws HorizonDBException if a problem occurs while parsing the query.
+     * @throws IOException if an I/O problem occurs while parsing the query
      */
     public static <T extends Serializable> Msg<T> parse(Configuration configuration, Msg<HqlQueryPayload> msg) 
-            throws HorizonDBException  {
+            throws HorizonDBException, IOException  {
               
         HqlQueryPayload payload = msg.getPayload();
         
