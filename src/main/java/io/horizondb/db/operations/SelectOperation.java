@@ -1,6 +1,4 @@
 /**
- * Copyright 2013 Benjamin Lerer
- * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,6 +18,8 @@ import io.horizondb.db.Operation;
 import io.horizondb.db.OperationContext;
 import io.horizondb.db.databases.Database;
 import io.horizondb.db.series.TimeSeries;
+import io.horizondb.model.core.Predicate;
+import io.horizondb.model.core.Projection;
 import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.protocol.Msg;
 import io.horizondb.model.protocol.Msgs;
@@ -28,8 +28,7 @@ import io.horizondb.model.protocol.SelectPayload;
 import java.io.IOException;
 
 /**
- * @author Benjamin
- * 
+ * <code>Operation</code> used to select data.
  */
 final class SelectOperation implements Operation {
 
@@ -45,10 +44,12 @@ final class SelectOperation implements Operation {
 
         TimeSeries series = database.getTimeSeries(payload.getSeriesName());
         
-        RecordIterator iterator = series.read(payload.getProjection(), payload.getPredicate());
+        Projection projection = payload.getProjection();
+        Predicate predicate = payload.getPredicate();
+        RecordIterator iterator = series.read(projection, predicate);
         
         return new ChunkedRecordSet(request.getHeader(),
-                                    series.getDefinition(),
+                                    projection.getDefinition(series.getDefinition()),
                                     new ChunkedRecordStream(request.getHeader(), iterator));
     }
 }

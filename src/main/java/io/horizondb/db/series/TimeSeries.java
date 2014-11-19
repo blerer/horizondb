@@ -142,7 +142,7 @@ public final class TimeSeries {
         RangeSet<Field> timeRanges = predicate.getTimestampRanges(prototype, timezone);
         Filter<Record> filter = predicate.toFilter(this.definition);
         
-        return read(timeRanges, recordTypeFilter, filter);
+        return projection.filterFields(this.definition, read(timeRanges, recordTypeFilter, filter));
     }
     
     /**
