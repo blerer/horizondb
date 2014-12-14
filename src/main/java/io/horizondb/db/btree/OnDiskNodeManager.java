@@ -15,11 +15,9 @@
  */
 package io.horizondb.db.btree;
 
-import io.horizondb.db.metrics.Monitorable;
 import io.horizondb.io.files.RandomAccessDataFile;
 import io.horizondb.io.files.SeekableFileDataOutput;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
 
@@ -29,10 +27,9 @@ import org.apache.commons.lang.builder.ToStringStyle;
 import com.codahale.metrics.MetricRegistry;
 
 /**
- * @author Benjamin
- * 
+ * <code>NodeManager</code> implementation that store its data on disk.
  */
-public final class OnDiskNodeManager<K extends Comparable<K>, V> implements Closeable, NodeManager<K, V>, Monitorable {
+public final class OnDiskNodeManager<K extends Comparable<K>, V> implements NodeManager<K, V> {
 
     /**
      * The name of this component.

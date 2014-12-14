@@ -18,25 +18,67 @@ package io.horizondb.db.btree;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.codahale.metrics.MetricRegistry;
+
+import static org.apache.commons.lang.Validate.notNull;
+
 /**
  * <code>NodeManager</code> that keeps all the <code>Node</code>s in memory.
  * 
  * <p>
- * This <code>NodeManager</code> should only be used for testing purpose.
+ * This <code>NodeManager</code> provides no durability and should only be used for 
+ * testing purpose.
  * </p>
  * 
  * @param <K> the key type.
  * @param <V> the value type.
- * 
- * @author Benjamin
  */
-public class InMemoryNodeManager<K extends Comparable<K>, V> implements NodeManager<K, V> {
+public final class InMemoryNodeManager<K extends Comparable<K>, V> implements NodeManager<K, V> {
 
+    /**
+     * This manager name.
+     */
+    private final String name;
+    
     /**
      * The root node.
      */
-    private AtomicReference<Node<K, V>> root = new AtomicReference<>();
+    private final AtomicReference<Node<K, V>> root = new AtomicReference<>();
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void register(MetricRegistry registry) {
+
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void unregister(MetricRegistry registry) {
+
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String getName() {
+        return this.name;
+    }
+
+    /**
+     * Creates a new <code>InMemoryNodeManager</code> with the spcified name.
+     * @param name the node manager name
+     */
+    public InMemoryNodeManager(String name)
+    {
+        notNull(name, "the name parameter must not be null.");
+        this.name = name;
+    }
+    
     /**
      * {@inheritDoc}
      */
@@ -98,5 +140,13 @@ public class InMemoryNodeManager<K extends Comparable<K>, V> implements NodeMana
     public ValueWrapper<V> wrapValue(V value) {
 
         return new DefaultValueWrapper<V>(value);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void close() {
+
     }
 }

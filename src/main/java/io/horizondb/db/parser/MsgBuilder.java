@@ -19,8 +19,6 @@ import io.horizondb.model.protocol.Msg;
 
 /**
  * Builder used to build <code>Msg</code> instances.
- * 
- * @author Benjamin
  */
 public interface MsgBuilder extends HqlListener {
 

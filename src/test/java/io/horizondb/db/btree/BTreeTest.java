@@ -43,7 +43,7 @@ public class BTreeTest {
     @Before
     public void setUp() {
 
-        this.manager = new InMemoryNodeManager<Integer, String>();
+        this.manager = new InMemoryNodeManager<Integer, String>("testManager");
     }
 
     @After

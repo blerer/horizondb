@@ -16,6 +16,7 @@
 package io.horizondb.db;
 
 import io.horizondb.db.commitlog.ReplayPosition;
+import io.horizondb.db.databases.DatabaseManager;
 import io.horizondb.io.ReadableBuffer;
 import io.horizondb.model.protocol.Msg;
 
@@ -26,10 +27,14 @@ import com.google.common.util.concurrent.ListenableFuture;
 /**
  * The storage engine used to persist an retrieve data.
  * 
- * @author Benjamin
- * 
  */
 public interface StorageEngine extends Component {
+
+    /**
+     * Returns the database manager
+     * @return the database manager
+     */
+    DatabaseManager getDatabaseManager();
 
     /**
      * Executes the operation requested by the specified message 

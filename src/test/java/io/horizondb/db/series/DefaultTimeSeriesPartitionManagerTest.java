@@ -74,7 +74,7 @@ public class DefaultTimeSeriesPartitionManagerTest {
     @Test
     public void testGetRangeForReadWithNoValues() throws InterruptedException, IOException {
 
-        DefaultTimeSeriesPartitionManager partitionManager = new DefaultTimeSeriesPartitionManager(this.configuration);
+        AbstractTimeSeriesPartitionManager partitionManager = new OnDiskTimeSeriesPartitionManager(this.configuration);
 
         partitionManager.start();
 
@@ -132,7 +132,7 @@ public class DefaultTimeSeriesPartitionManagerTest {
 
         PartitionId id = new PartitionId("test", "DAX", range);
 
-        DefaultTimeSeriesPartitionManager partitionManager = new DefaultTimeSeriesPartitionManager(this.configuration);
+        OnDiskTimeSeriesPartitionManager partitionManager = new OnDiskTimeSeriesPartitionManager(this.configuration);
 
         try {
 
@@ -165,7 +165,7 @@ public class DefaultTimeSeriesPartitionManagerTest {
             partitionManager.shutdown();
         }
 
-        partitionManager = new DefaultTimeSeriesPartitionManager(this.configuration);
+        partitionManager = new OnDiskTimeSeriesPartitionManager(this.configuration);
 
         try {
 

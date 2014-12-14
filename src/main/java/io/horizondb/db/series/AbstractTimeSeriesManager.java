@@ -19,33 +19,24 @@ import io.horizondb.db.AbstractComponent;
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.Names;
-import io.horizondb.db.btree.BTreeFile;
+import io.horizondb.db.btree.BTreeStore;
 import io.horizondb.model.ErrorCodes;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 import com.codahale.metrics.MetricRegistry;
 
 import static org.apache.commons.lang.Validate.notNull;
 
 /**
- * @author Benjamin
- * 
  */
-public final class DefaultTimeSeriesManager extends AbstractComponent implements TimeSeriesManager {
+abstract class AbstractTimeSeriesManager extends AbstractComponent implements TimeSeriesManager {
 
     /**
      * The B+Tree branching factor.
      */
     private static final int BRANCHING_FACTOR = 100;
-
-    /**
-     * The name of the time series file.
-     */
-    private static final String TIMESERIES_FILENAME = "timeseries.b3";
 
     /**
      * The Database server configuration.
@@ -60,15 +51,15 @@ public final class DefaultTimeSeriesManager extends AbstractComponent implements
     /**
      * The B+Tree in which are stored the time series meta data.
      */
-    private BTreeFile<TimeSeriesId, TimeSeriesDefinition> btree;
+    private BTreeStore<TimeSeriesId, TimeSeriesDefinition> btree;
 
     /**
-     * Creates a new <code>DefaultTimeSeriesManager</code> that will used the specified configuration.
+     * Creates a new <code>AbstractTimeSeriesManager</code> that will used the specified configuration.
      * 
      * @param partitionManager the partition manager
      * @param configuration the database configuration
      */
-    public DefaultTimeSeriesManager(TimeSeriesPartitionManager partitionManager, Configuration configuration) {
+    public AbstractTimeSeriesManager(TimeSeriesPartitionManager partitionManager, Configuration configuration) {
 
         notNull(partitionManager, "the partitionManager parameter must not be null.");
         notNull(configuration, "the configuration parameter must not be null.");
@@ -81,31 +72,28 @@ public final class DefaultTimeSeriesManager extends AbstractComponent implements
      * {@inheritDoc}
      */
     @Override
-    protected void doStart() throws IOException, InterruptedException {
+    protected final void doStart() throws IOException, InterruptedException {
 
-        Path dataDirectory = this.configuration.getDataDirectory();
-        Path systemDirectory = dataDirectory.resolve("system");
-
-        if (!Files.exists(systemDirectory)) {
-            Files.createDirectories(systemDirectory);
-        }
-
-        Path timeSeriesFile = systemDirectory.resolve(TIMESERIES_FILENAME);
-
-        this.btree = new BTreeFile<>(MetricRegistry.name(getClass(), "BTree"),
-                                     timeSeriesFile, 
-                                     BRANCHING_FACTOR, 
-                                     TimeSeriesId.getParser(), 
-                                     TimeSeriesDefinition.getParser());
-
+        this.btree = createBTreeStore(this.configuration, BRANCHING_FACTOR);
         this.partitionManager.start();
     }
+
+    /**
+     * Creates the B+Tree used to store the time series definitions.
+     * 
+     * @param configuration the database configuration
+     * @param branchingFactor the B+Tree branching factor
+     * @throws IOException if an I/O problem occurs while creating the B+Tree
+     */
+    protected abstract BTreeStore<TimeSeriesId, TimeSeriesDefinition> createBTreeStore(Configuration configuration,
+                                                                                       int branchingFactor) 
+                                                                                       throws IOException;
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void register(MetricRegistry registry) {
+    public final void register(MetricRegistry registry) {
         register(registry, this.btree, this.partitionManager);
     }
 
@@ -113,7 +101,7 @@ public final class DefaultTimeSeriesManager extends AbstractComponent implements
      * {@inheritDoc}
      */
     @Override
-    public void unregister(MetricRegistry registry) {
+    public final void unregister(MetricRegistry registry) {
         unregister(registry, this.partitionManager, this.btree);
     }
 
@@ -121,7 +109,7 @@ public final class DefaultTimeSeriesManager extends AbstractComponent implements
      * {@inheritDoc}
      */
     @Override
-    protected void doShutdown() throws InterruptedException {
+    protected final void doShutdown() throws InterruptedException {
 
         this.partitionManager.shutdown();
         this.btree.close();
@@ -131,11 +119,10 @@ public final class DefaultTimeSeriesManager extends AbstractComponent implements
      * {@inheritDoc}
      */
     @Override
-    public void createTimeSeries(String databaseName,
-                                 TimeSeriesDefinition definition, 
-                                 boolean throwExceptionIfExists) 
-                                         throws IOException, 
-                                                HorizonDBException {
+    public final void createTimeSeries(String databaseName,
+                                       TimeSeriesDefinition definition, 
+                                       boolean throwExceptionIfExists) 
+                                       throws IOException, HorizonDBException {
 
         TimeSeriesId id = new TimeSeriesId(databaseName, definition.getName());
 
@@ -152,7 +139,9 @@ public final class DefaultTimeSeriesManager extends AbstractComponent implements
      * {@inheritDoc}
      */
     @Override
-    public TimeSeries getTimeSeries(String databaseName, String seriesName) throws IOException, HorizonDBException {
+    public final TimeSeries getTimeSeries(String databaseName, 
+                                          String seriesName) 
+                                          throws IOException, HorizonDBException {
 
         return getTimeSeries(new TimeSeriesId(databaseName, seriesName));
     }
@@ -161,7 +150,7 @@ public final class DefaultTimeSeriesManager extends AbstractComponent implements
      * {@inheritDoc}
      */
     @Override
-    public TimeSeries getTimeSeries(TimeSeriesId id) throws IOException, HorizonDBException {
+    public final TimeSeries getTimeSeries(TimeSeriesId id) throws IOException, HorizonDBException {
 
         TimeSeriesDefinition definition = this.btree.get(id);
 
@@ -177,7 +166,7 @@ public final class DefaultTimeSeriesManager extends AbstractComponent implements
      * {@inheritDoc}
      */
     @Override
-    public TimeSeriesPartitionManager getPartitionManager() {
+    public final TimeSeriesPartitionManager getPartitionManager() {
         return this.partitionManager;
     }
 }

@@ -35,11 +35,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * @author Benjamin
- * 
- */
-public class DefaultDatabaseManagerTest {
+public class OnDiskDatabaseManagerTest {
 
     private Path testDirectory;
 
@@ -64,7 +60,7 @@ public class DefaultDatabaseManagerTest {
 
         TimeSeriesManager timeSeriesManager = EasyMock.createNiceMock(TimeSeriesManager.class);
 
-        DatabaseManager manager = new DefaultDatabaseManager(this.configuration, timeSeriesManager);
+        DatabaseManager manager = new OnDiskDatabaseManager(this.configuration, timeSeriesManager);
 
         manager.start();
 
@@ -84,7 +80,7 @@ public class DefaultDatabaseManagerTest {
 
         TimeSeriesManager timeSeriesManager = EasyMock.createNiceMock(TimeSeriesManager.class);
 
-        DatabaseManager manager = new DefaultDatabaseManager(this.configuration, timeSeriesManager);
+        DatabaseManager manager = new OnDiskDatabaseManager(this.configuration, timeSeriesManager);
         manager.start();
 
         try {
@@ -105,7 +101,7 @@ public class DefaultDatabaseManagerTest {
 
         TimeSeriesManager timeSeriesManager = EasyMock.createNiceMock(TimeSeriesManager.class);
 
-        DatabaseManager manager = new DefaultDatabaseManager(this.configuration, timeSeriesManager);
+        DatabaseManager manager = new OnDiskDatabaseManager(this.configuration, timeSeriesManager);
 
         manager.start();
 
@@ -130,7 +126,7 @@ public class DefaultDatabaseManagerTest {
 
         TimeSeriesManager timeSeriesManager = EasyMock.createNiceMock(TimeSeriesManager.class);
 
-        DatabaseManager manager = new DefaultDatabaseManager(this.configuration, timeSeriesManager);
+        DatabaseManager manager = new OnDiskDatabaseManager(this.configuration, timeSeriesManager);
 
         manager.start();
 

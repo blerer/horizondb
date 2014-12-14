@@ -35,10 +35,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 /**
- * @author Benjamin
  * 
  */
-public class DefaultTimeSeriesManagerTest {
+public class OnDiskTimeSeriesManagerTest {
     
     private Path testDirectory;
 
@@ -69,7 +68,7 @@ public class DefaultTimeSeriesManagerTest {
     @Test
     public void testCreateTimeSeries() throws IOException, InterruptedException, HorizonDBException {
 
-        TimeSeriesManager manager = new DefaultTimeSeriesManager(this.partitionManager, this.configuration);
+        TimeSeriesManager manager = new OnDiskTimeSeriesManager(this.partitionManager, this.configuration);
 
         RecordTypeDefinition quote = RecordTypeDefinition.newBuilder("Quote")
                                                          .addDecimalField("bestBid")
@@ -97,7 +96,7 @@ public class DefaultTimeSeriesManagerTest {
     @Test
     public void testGetTimeSeriesWithUnknownTimeSeries() throws IOException, InterruptedException {
 
-        TimeSeriesManager manager = new DefaultTimeSeriesManager(this.partitionManager, this.configuration);
+        TimeSeriesManager manager = new OnDiskTimeSeriesManager(this.partitionManager, this.configuration);
         manager.start();
 
         try {
@@ -116,7 +115,7 @@ public class DefaultTimeSeriesManagerTest {
     @Test
     public void testCreateTimeSeriesWithExistingTimeSeries() throws IOException, InterruptedException {
 
-        TimeSeriesManager manager = new DefaultTimeSeriesManager(this.partitionManager, this.configuration);
+        TimeSeriesManager manager = new OnDiskTimeSeriesManager(this.partitionManager, this.configuration);
 
         manager.start();
 
@@ -159,7 +158,7 @@ public class DefaultTimeSeriesManagerTest {
                                                                                   InterruptedException,
                                                                                   HorizonDBException {
 
-        TimeSeriesManager manager = new DefaultTimeSeriesManager(this.partitionManager, this.configuration);
+        TimeSeriesManager manager = new OnDiskTimeSeriesManager(this.partitionManager, this.configuration);
 
         manager.start();
 

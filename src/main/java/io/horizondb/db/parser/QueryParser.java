@@ -33,8 +33,6 @@ import org.slf4j.LoggerFactory;
 
 /**
  * The parser used to parse the HQL queries.
- * 
- * @author Benjamin
  */
 public final class QueryParser {
 

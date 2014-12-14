@@ -1,6 +1,4 @@
 /**
- * Copyright 2013 Benjamin Lerer
- * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,13 +13,10 @@
  */
 package io.horizondb.db.databases;
 
-import io.horizondb.db.AbstractComponent;
 import io.horizondb.db.Configuration;
-import io.horizondb.db.HorizonDBException;
-import io.horizondb.db.Names;
 import io.horizondb.db.btree.AbstractNodeReader;
 import io.horizondb.db.btree.AbstractNodeWriter;
-import io.horizondb.db.btree.BTree;
+import io.horizondb.db.btree.NodeManager;
 import io.horizondb.db.btree.NodeReader;
 import io.horizondb.db.btree.NodeReaderFactory;
 import io.horizondb.db.btree.NodeWriter;
@@ -33,7 +28,6 @@ import io.horizondb.io.ByteWriter;
 import io.horizondb.io.encoding.VarInts;
 import io.horizondb.io.files.FileDataOutput;
 import io.horizondb.io.files.SeekableFileDataInput;
-import io.horizondb.model.ErrorCodes;
 import io.horizondb.model.schema.DatabaseDefinition;
 
 import java.io.IOException;
@@ -42,20 +36,10 @@ import java.nio.file.Path;
 
 import com.codahale.metrics.MetricRegistry;
 
-import static org.apache.commons.lang.Validate.notNull;
-
 /**
- * The default database manager.
- * 
- * @author Benjamin
- * 
+ * <code>DatabaseManager</code> that store all data on disk.
  */
-public final class DefaultDatabaseManager extends AbstractComponent implements DatabaseManager {
-
-    /**
-     * The B+Tree branching factor.
-     */
-    private static final int BRANCHING_FACTOR = 10;
+public final class OnDiskDatabaseManager extends AbstractDatabaseManager {
 
     /**
      * The name of the databases file.
@@ -63,62 +47,24 @@ public final class DefaultDatabaseManager extends AbstractComponent implements D
     private static final String DATABASES_FILENAME = "databases.b3";
 
     /**
-     * The database server configuration.
-     */
-    private final Configuration configuration;
-
-    /**
-     * The time series manager.
-     */
-    private final TimeSeriesManager timeSeriesManager;
-
-    /**
-     * The B+Tree in which are stored the databases meta data.
-     */
-    private BTree<String, DatabaseDefinition> btree;
-
-    /**
-     * The B+Tree node manager.
-     */
-    private OnDiskNodeManager<String, DatabaseDefinition> nodeManager;
-
-    /**
-     * Creates a new <code>DefaultDatabaseManager</code> that will used the specified configuration.
+     * Creates a new <code>InMemoryDatabaseManager</code> that will used the specified configuration.
      * 
      * @param configuration the database configuration
+     * @param timeSeriesManager the time series manager
      */
-    public DefaultDatabaseManager(Configuration configuration, TimeSeriesManager timeSeriesManager) {
-
-        notNull(configuration, "the configuration parameter must not be null.");
-
-        this.configuration = configuration;
-        this.timeSeriesManager = timeSeriesManager;
+    public OnDiskDatabaseManager(Configuration configuration, TimeSeriesManager timeSeriesManager) {
+        super(configuration, timeSeriesManager);
     }
-
+    
     /**
-     * {@inheritDoc}
+     * {@inheritDoc} 
      */
     @Override
-    public void register(MetricRegistry registry) {
+    protected NodeManager<String, DatabaseDefinition> createNodeManager(Configuration configuration, 
+                                                                        String name) 
+                                                                        throws IOException {
         
-        register(registry, this.nodeManager, this.timeSeriesManager);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void unregister(MetricRegistry registry) {
-        unregister(registry, this.timeSeriesManager, this.nodeManager);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void doStart() throws IOException, InterruptedException {
-
-        Path dataDirectory = this.configuration.getDataDirectory();
+        Path dataDirectory = configuration.getDataDirectory();
         Path systemDirectory = dataDirectory.resolve("system");
 
         if (!Files.exists(systemDirectory)) {
@@ -127,68 +73,10 @@ public final class DefaultDatabaseManager extends AbstractComponent implements D
 
         Path databasesFile = systemDirectory.resolve(DATABASES_FILENAME);
 
-        this.nodeManager = new OnDiskNodeManager<>(MetricRegistry.name(getName(), "bTree"),
-                                                   databasesFile,
-                                                   DatabaseDefinitionNodeWriter.FACTORY,
-                                                   DatabaseDefinitionNodeReader.FACTORY);
-
-        this.btree = new BTree<>(this.nodeManager, BRANCHING_FACTOR);
-
-        this.timeSeriesManager.start();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void doShutdown() throws InterruptedException {
-
-        this.timeSeriesManager.shutdown();
-        this.nodeManager.close();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void createDatabase(DatabaseDefinition definition, 
-                               boolean throwExceptionIfExists) 
-                                       throws IOException, HorizonDBException {
-
-        String name = definition.getName();
-        String lowerCaseName = name.toLowerCase();
-
-        Names.checkDatabaseName(name);
-
-        if (!this.btree.insertIfAbsent(lowerCaseName, definition) && throwExceptionIfExists) {
-
-            throw new HorizonDBException(ErrorCodes.DUPLICATE_DATABASE, "Duplicate database name " + name);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Database getDatabase(String name) throws IOException, HorizonDBException {
-
-        String lowerCaseName = name.toLowerCase();
-
-        DatabaseDefinition definition = this.btree.get(lowerCaseName);
-
-        if (definition == null) {
-            throw new HorizonDBException(ErrorCodes.UNKNOWN_DATABASE, "The database " + name + " does not exists.");
-        }
-
-        return new Database(this.configuration, definition, this.timeSeriesManager);
-    }
-
-    /**    
-     * {@inheritDoc}
-     */
-    @Override
-    public TimeSeriesManager getTimeSeriesManager() {
-        return this.timeSeriesManager;
+        return new OnDiskNodeManager<>(MetricRegistry.name(name, "bTree"),
+                                       databasesFile,
+                                       DatabaseDefinitionNodeWriter.FACTORY,
+                                       DatabaseDefinitionNodeReader.FACTORY);
     }
 
     /**

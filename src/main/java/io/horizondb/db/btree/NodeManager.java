@@ -15,17 +15,18 @@
  */
 package io.horizondb.db.btree;
 
+import io.horizondb.db.metrics.Monitorable;
+
+import java.io.Closeable;
 import java.io.IOException;
 
 /**
  * Manager in charge of saving and loading BTree nodes.
  * 
- * @author Benjamin
- * 
  * @param <K> the Key type.
  * @param <V> the Value type.
  */
-public interface NodeManager<K extends Comparable<K>, V> {
+public interface NodeManager<K extends Comparable<K>, V> extends Closeable, Monitorable {
 
     /**
      * Returns the root node of the specified <code>BTree</code>.
@@ -80,4 +81,10 @@ public interface NodeManager<K extends Comparable<K>, V> {
      * @throws IOException if an I/O problem occurs.
      */
     ValueWrapper<V> wrapValue(V value) throws IOException;
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    void close();
 }

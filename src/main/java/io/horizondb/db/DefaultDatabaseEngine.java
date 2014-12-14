@@ -17,6 +17,7 @@ package io.horizondb.db;
 
 import io.horizondb.db.commitlog.CommitLog;
 import io.horizondb.db.commitlog.ReplayPosition;
+import io.horizondb.db.databases.DatabaseManager;
 import io.horizondb.io.Buffer;
 import io.horizondb.io.ReadableBuffer;
 import io.horizondb.io.buffers.Buffers;
@@ -89,6 +90,14 @@ public class DefaultDatabaseEngine extends AbstractComponent implements Database
     protected void doShutdown() throws InterruptedException {
 
         shutdown(this.commitLog, this.storageEngine);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public DatabaseManager getDatabaseManager() {
+        return this.storageEngine.getDatabaseManager();
     }
 
     /**

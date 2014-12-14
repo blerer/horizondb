@@ -83,7 +83,7 @@ public class TimeSeriesPartitionManagerCachesTest {
     @Test
     public void testGlobalCacheWithWriteAndRead() throws InterruptedException, IOException, HorizonDBException {
 
-        DefaultTimeSeriesPartitionManager partitionManager = new DefaultTimeSeriesPartitionManager(this.configuration);
+        AbstractTimeSeriesPartitionManager partitionManager = new OnDiskTimeSeriesPartitionManager(this.configuration);
 
         TimeSeriesPartitionManagerCaches caches = new TimeSeriesPartitionManagerCaches(this.configuration,
                                                                                        partitionManager);
@@ -179,7 +179,7 @@ public class TimeSeriesPartitionManagerCachesTest {
 
         Files.createDirectories(this.configuration.getDataDirectory().resolve("test"));
 
-        DefaultTimeSeriesPartitionManager partitionManager = new DefaultTimeSeriesPartitionManager(this.configuration);
+        AbstractTimeSeriesPartitionManager partitionManager = new OnDiskTimeSeriesPartitionManager(this.configuration);
 
         TimeSeriesPartitionManagerCaches caches = new TimeSeriesPartitionManagerCaches(this.configuration,
                                                                                        partitionManager);
@@ -239,7 +239,7 @@ public class TimeSeriesPartitionManagerCachesTest {
             caches.shutdown();
         }
         
-        partitionManager = new DefaultTimeSeriesPartitionManager(this.configuration);
+        partitionManager = new OnDiskTimeSeriesPartitionManager(this.configuration);
 
         caches = new TimeSeriesPartitionManagerCaches(this.configuration, partitionManager);
         caches.start();
@@ -321,7 +321,7 @@ public class TimeSeriesPartitionManagerCachesTest {
     @Test
     public void testGlobalCacheWithReadAndWrite() throws InterruptedException, IOException, HorizonDBException  {
 
-        DefaultTimeSeriesPartitionManager partitionManager = new DefaultTimeSeriesPartitionManager(this.configuration);
+        AbstractTimeSeriesPartitionManager partitionManager = new OnDiskTimeSeriesPartitionManager(this.configuration);
 
         TimeSeriesPartitionManagerCaches caches = new TimeSeriesPartitionManagerCaches(this.configuration,
                                                                                        partitionManager);
@@ -398,7 +398,7 @@ public class TimeSeriesPartitionManagerCachesTest {
 
         Files.createDirectories(this.configuration.getDataDirectory().resolve("test"));
 
-        DefaultTimeSeriesPartitionManager partitionManager = new DefaultTimeSeriesPartitionManager(this.configuration);
+        AbstractTimeSeriesPartitionManager partitionManager = new OnDiskTimeSeriesPartitionManager(this.configuration);
 
         TimeSeriesPartitionManagerCaches caches = new TimeSeriesPartitionManagerCaches(this.configuration,
                                                                                        partitionManager);

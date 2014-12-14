@@ -24,9 +24,6 @@ import java.io.IOException;
 
 /**
  * Databases manager.
- * 
- * @author Benjamin
- * 
  */
 public interface DatabaseManager extends Component {
 

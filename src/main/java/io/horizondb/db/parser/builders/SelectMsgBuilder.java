@@ -42,9 +42,6 @@ import org.antlr.v4.runtime.misc.NotNull;
 
 /**
  * <code>Builder</code> for <code>SelectQuery</code> message instances.
- * 
- * @author Benjamin
- *
  */
 final class SelectMsgBuilder extends HqlBaseListener implements MsgBuilder {
     

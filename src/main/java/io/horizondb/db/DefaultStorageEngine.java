@@ -18,10 +18,10 @@ package io.horizondb.db;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.db.databases.DatabaseManager;
 import io.horizondb.db.databases.DatabaseManagerCache;
-import io.horizondb.db.databases.DefaultDatabaseManager;
+import io.horizondb.db.databases.OnDiskDatabaseManager;
 import io.horizondb.db.operations.Operations;
-import io.horizondb.db.series.DefaultTimeSeriesManager;
-import io.horizondb.db.series.DefaultTimeSeriesPartitionManager;
+import io.horizondb.db.series.OnDiskTimeSeriesManager;
+import io.horizondb.db.series.OnDiskTimeSeriesPartitionManager;
 import io.horizondb.db.series.TimeSeriesManager;
 import io.horizondb.db.series.TimeSeriesManagerCache;
 import io.horizondb.db.series.TimeSeriesPartitionManager;
@@ -39,8 +39,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 /**
- * @author Benjamin
- * 
+ * The default implementation for the <code>StorageEngine</code>.
  */
 public class DefaultStorageEngine extends AbstractComponent implements StorageEngine {
 
@@ -57,15 +56,23 @@ public class DefaultStorageEngine extends AbstractComponent implements StorageEn
     public DefaultStorageEngine(Configuration configuration) {
 
         TimeSeriesPartitionManager partitionManager = new TimeSeriesPartitionManagerCaches(configuration,
-                                                                                           new DefaultTimeSeriesPartitionManager(configuration));
+                                                                                           new OnDiskTimeSeriesPartitionManager(configuration));
 
         TimeSeriesManager seriesManager = new TimeSeriesManagerCache(configuration,
-                                                                     new DefaultTimeSeriesManager(partitionManager,
-                                                                                                  configuration));
+                                                                     new OnDiskTimeSeriesManager(partitionManager,
+                                                                                                 configuration));
 
-        this.databaseManager = new DatabaseManagerCache(configuration, new DefaultDatabaseManager(configuration,
-                                                                                                  seriesManager));        
+        this.databaseManager = new DatabaseManagerCache(configuration, new OnDiskDatabaseManager(configuration,
+                                                                                                 seriesManager));        
         this.contextBuilder = OperationContext.newBuilder(this.databaseManager);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public DatabaseManager getDatabaseManager() {
+        return this.databaseManager;
     }
 
     /**
@@ -120,7 +127,7 @@ public class DefaultStorageEngine extends AbstractComponent implements StorageEn
 
         if (operation == null) {
 
-            String message = "The operation code message " + opCode + " is unknown.";
+            String message = String.format("The operation code message %s is unknown.", opCode);
 
             this.logger.error(message);
 

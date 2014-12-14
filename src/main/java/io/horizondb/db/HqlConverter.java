@@ -15,6 +15,7 @@
  */
 package io.horizondb.db;
 
+import io.horizondb.db.databases.DatabaseManager;
 import io.horizondb.db.parser.QueryParser;
 import io.horizondb.io.ReadableBuffer;
 import io.horizondb.model.ErrorCodes;
@@ -85,6 +86,14 @@ public class HqlConverter extends AbstractComponent implements DatabaseEngine {
     protected void doShutdown() throws InterruptedException {
 
         this.databaseEngine.shutdown();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public DatabaseManager getDatabaseManager() {
+        return this.databaseEngine.getDatabaseManager();
     }
 
     /**
