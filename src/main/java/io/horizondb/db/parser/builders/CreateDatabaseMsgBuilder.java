@@ -29,8 +29,6 @@ import org.antlr.v4.runtime.misc.NotNull;
 
 /**
  * <code>Builder</code> for <code>CreateDatabaseRequest</code> instances.
- * 
- * @author Benjamin
  *
  */
 final class CreateDatabaseMsgBuilder extends HqlBaseListener implements MsgBuilder {

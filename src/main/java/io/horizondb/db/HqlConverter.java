@@ -111,7 +111,10 @@ public class HqlConverter extends AbstractComponent implements DatabaseEngine {
             if (opCode.isHql()) {
                 
                 @SuppressWarnings("unchecked")
-                Msg<?> msg = QueryParser.parse(this.configuration, (Msg<HqlQueryPayload>) request);
+                Msg<?> msg = QueryParser.parse(this.configuration, 
+                                               this.databaseEngine.getDatabaseManager(),
+                                               (Msg<HqlQueryPayload>) request);
+
                 return this.databaseEngine.execute(msg, null);
             } 
 
