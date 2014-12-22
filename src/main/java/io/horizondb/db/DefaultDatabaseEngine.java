@@ -131,6 +131,10 @@ public class DefaultDatabaseEngine extends AbstractComponent implements Database
 
             return this.storageEngine.execute(request, future);
 
+        } catch (HorizonDBException e) {
+            
+            return Msgs.newErrorMsg(e.getCode(), e.getMessage());
+            
         } catch (Exception e) {
 
             this.logger.error("", e);
