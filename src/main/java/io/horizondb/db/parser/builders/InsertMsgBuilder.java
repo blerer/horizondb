@@ -33,9 +33,6 @@ import org.antlr.v4.runtime.misc.NotNull;
 
 /**
  * <code>Builder</code> for messages requesting some data insertion.
- * 
- * @author Benjamin
- *
  */
 final class InsertMsgBuilder extends HqlBaseListener implements MsgBuilder {
 

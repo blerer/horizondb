@@ -13,17 +13,17 @@
  */
 package io.horizondb.db.parser;
 
-import java.io.IOException;
-
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.databases.DatabaseManager;
-import io.horizondb.db.parser.ErrorCollector.ParsingError;
+import io.horizondb.db.parser.ErrorHandler.SyntaxException;
 import io.horizondb.db.parser.HqlParser.StatementsContext;
 import io.horizondb.db.parser.builders.MsgBuilderDispatcher;
 import io.horizondb.io.serialization.Serializable;
 import io.horizondb.model.protocol.HqlQueryPayload;
 import io.horizondb.model.protocol.Msg;
+
+import java.io.IOException;
 
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CharStream;
@@ -63,49 +63,33 @@ public final class QueryParser {
         String query = payload.getQuery();
 
         LOGGER.debug("parsing query: [{}] for database {}.", query, database);
+        try {
+            final ErrorHandler errorHandler = new ErrorHandler();
 
-        final ErrorCollector errorCollector = new ErrorCollector();
+            CharStream stream = new ANTLRInputStream(query);
+            HqlLexer lexer = new HqlLexer(stream);
+            lexer.removeErrorListeners();
+            lexer.addErrorListener(errorHandler);
+            CommonTokenStream tokens = new CommonTokenStream(lexer);
 
-        CharStream stream = new ANTLRInputStream(query);
-        HqlLexer lexer = new HqlLexer(stream);
-        lexer.removeErrorListeners();
-        lexer.addErrorListener(errorCollector);
-        CommonTokenStream tokens = new CommonTokenStream(lexer);
+            HqlParser parser = new HqlParser(tokens);
+            parser.removeErrorListeners();
+            parser.addErrorListener(errorHandler);
 
-        processErrorsIfNeeded(query, errorCollector);
+            StatementsContext statements = parser.statements();
 
-        HqlParser parser = new HqlParser(tokens);
-        parser.removeErrorListeners();
-        parser.addErrorListener(errorCollector);
+            ParseTreeWalker walker = new ParseTreeWalker();
+            MsgBuilder msgBuilder = new MsgBuilderDispatcher(configuration, msg.getHeader(), database);
+            walker.walk(msgBuilder, statements);
 
-        StatementsContext statements = parser.statements();
-
-        ParseTreeWalker walker = new ParseTreeWalker();
-        MsgBuilder msgBuilder = new MsgBuilderDispatcher(configuration, msg.getHeader(), database);
-        walker.walk(msgBuilder, statements);
-
-        processErrorsIfNeeded(query, errorCollector);
-
-        return (Msg<T>) msgBuilder.build();
-    }
-
-    /**
-     * Throw a <code>BadHqlGrammarException</code> if any parsing error has occurred.
-     *
-     * @param query the Hql query that was being parsed
-     * @param errorCollector the error collector
-     * @throws BadHqlGrammarException if any parsing error has occurred
-     */
-    private static void processErrorsIfNeeded(String query, 
-                                              ErrorCollector errorCollector) throws BadHqlGrammarException {
-        if (errorCollector.hasError()) {
-
-            ParsingError error = errorCollector.getError();
+            return (Msg<T>) msgBuilder.build();
+        
+        } catch (SyntaxException e) {
             
             throw new BadHqlGrammarException(query, 
-                                             error.getLineNumber(), 
-                                             error.getCharPosition(), 
-                                             error.getMessage());
+                                             e.getLineNumber(), 
+                                             e.getCharPosition(), 
+                                             e.getMessage());
         }
     }
 }

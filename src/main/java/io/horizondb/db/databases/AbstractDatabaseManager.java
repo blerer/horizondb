@@ -27,6 +27,8 @@ import io.horizondb.model.schema.DatabaseDefinition;
 
 import java.io.IOException;
 
+import org.apache.commons.lang.StringUtils;
+
 import com.codahale.metrics.MetricRegistry;
 
 import static org.apache.commons.lang.Validate.notNull;
@@ -153,11 +155,15 @@ abstract class AbstractDatabaseManager extends AbstractComponent implements Data
     public final Database getDatabase(String name) throws IOException, HorizonDBException {
 
         String lowerCaseName = name.toLowerCase();
+        
+        if (StringUtils.isEmpty(lowerCaseName)) {
+            throw new HorizonDBException(ErrorCodes.UNKNOWN_DATABASE, "No database has been specified.");
+        }
 
         DatabaseDefinition definition = this.btree.get(lowerCaseName);
 
         if (definition == null) {
-            throw new HorizonDBException(ErrorCodes.UNKNOWN_DATABASE, "The database " + name + " does not exists.");
+            throw new HorizonDBException(ErrorCodes.UNKNOWN_DATABASE, "The database '" + name + "' does not exists.");
         }
 
         return new Database(this.configuration, definition, this.timeSeriesManager);

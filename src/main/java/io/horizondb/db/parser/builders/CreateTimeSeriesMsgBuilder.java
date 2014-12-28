@@ -100,15 +100,15 @@ final class CreateTimeSeriesMsgBuilder extends HqlBaseListener implements MsgBui
         this.timeSeriesDefBuilder.addRecordType(this.recordTypeDefBuilder);
     }
 
-    /**    
+    /**
      * {@inheritDoc}
      */
     @Override
-    public void enterFieldDefinition(@NotNull FieldDefinitionContext ctx) {
-        
+    public void exitFieldDefinition(@NotNull FieldDefinitionContext ctx) {
+
         String fieldName = ctx.ID().getText();
         String fieldType = ctx.type().getText();
-                        
+
         this.recordTypeDefBuilder.addField(fieldName, FieldType.valueOf(fieldType.toUpperCase()));
     }
 

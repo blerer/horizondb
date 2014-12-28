@@ -41,9 +41,6 @@ import org.antlr.v4.runtime.misc.NotNull;
 
 /**
  * <code>MsgBuilder</code> that dispatch to the proper builder based on the received callback.
- * 
- * @author Benjamin
- *
  */
 public final class MsgBuilderDispatcher extends HqlBaseListener implements MsgBuilder {
 

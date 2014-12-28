@@ -18,9 +18,6 @@ import io.horizondb.model.ErrorCodes;
 
 /**
  * Exception thrown by the HQL parser when an HQL query is invalid.
- * 
- * @author Benjamin
- *
  */
 public final class BadHqlGrammarException extends HorizonDBException {
 
