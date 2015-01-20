@@ -15,6 +15,7 @@ package io.horizondb.db.parser;
 
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
+import io.horizondb.db.databases.Database;
 import io.horizondb.db.databases.DatabaseManager;
 import io.horizondb.db.parser.ErrorHandler.SyntaxException;
 import io.horizondb.db.parser.HqlParser.StatementsContext;
@@ -29,6 +30,7 @@ import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,10 +61,15 @@ public final class QueryParser {
               
         HqlQueryPayload payload = msg.getPayload();
         
-        String database = payload.getDatabaseName();
+        String databaseName = payload.getDatabaseName();
+        Database database = null;
+        if (StringUtils.isNotEmpty(databaseName)) {
+            database = databaseManager.getDatabase(databaseName);
+        }
+        
         String query = payload.getQuery();
 
-        LOGGER.debug("parsing query: [{}] for database {}.", query, database);
+        LOGGER.debug("parsing query: [{}] for database {}.", query, databaseName);
         try {
             final ErrorHandler errorHandler = new ErrorHandler();
 

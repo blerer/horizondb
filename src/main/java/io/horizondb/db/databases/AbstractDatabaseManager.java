@@ -46,7 +46,7 @@ abstract class AbstractDatabaseManager extends AbstractComponent implements Data
     /**
      * The database server configuration.
      */
-    private final Configuration configuration;
+    protected final Configuration configuration;
 
     /**
      * The time series manager.
@@ -142,10 +142,24 @@ abstract class AbstractDatabaseManager extends AbstractComponent implements Data
 
         Names.checkDatabaseName(name);
 
-        if (!this.btree.insertIfAbsent(lowerCaseName, definition) && throwExceptionIfExists) {
+        if (!this.btree.insertIfAbsent(lowerCaseName, definition)) {
 
-            throw new HorizonDBException(ErrorCodes.DUPLICATE_DATABASE, "Duplicate database name " + name);
+            if (throwExceptionIfExists) {
+                throw new HorizonDBException(ErrorCodes.DUPLICATE_DATABASE, "Duplicate database name " + name);
+            }
+        
+        } else {
+            afterCreate(definition);
         }
+    }
+
+    /**
+     * Called once the database has been created.
+     * @param definition the database definition.
+     * @throws IOException if an I/O problem occurs.
+     */
+    protected void afterCreate(DatabaseDefinition definition) throws IOException {
+
     }
 
     /**
@@ -166,7 +180,7 @@ abstract class AbstractDatabaseManager extends AbstractComponent implements Data
             throw new HorizonDBException(ErrorCodes.UNKNOWN_DATABASE, "The database '" + name + "' does not exists.");
         }
 
-        return new Database(this.configuration, definition, this.timeSeriesManager);
+        return new Database(definition, this.timeSeriesManager);
     }
 
     /**    

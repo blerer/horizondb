@@ -15,7 +15,6 @@
  */
 package io.horizondb.db.databases;
 
-import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.series.TimeSeries;
 import io.horizondb.db.series.TimeSeriesManager;
@@ -23,19 +22,10 @@ import io.horizondb.model.schema.DatabaseDefinition;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 /**
- * @author Benjamin
- * 
  */
 public final class Database {
-
-    /**
-     * The Database server configuration.
-     */
-    private final Configuration configuration;
 
     /**
      * The database meta data.
@@ -48,26 +38,15 @@ public final class Database {
     private final TimeSeriesManager timeSeriesManager;
 
     /**
-     * The database directory.
-     */
-    private Path directory;
-
-    /**
-     * @param configuration
-     * @param metaData
+     * 
+     * @param definition the database definition
      * @param timeSeriesManager the time series manager used to create or retrieve the database time series.
      * @throws IOException if a problem occurs while creating the database.
      */
-    public Database(Configuration configuration, DatabaseDefinition definition, TimeSeriesManager timeSeriesManager) throws IOException {
+    public Database(DatabaseDefinition definition, TimeSeriesManager timeSeriesManager) throws IOException {
 
-        this.configuration = configuration;
         this.definition = definition;
         this.timeSeriesManager = timeSeriesManager;
-
-        Path dataDirectory = this.configuration.getDataDirectory();
-        this.directory = dataDirectory.resolve(definition.getName());
-
-        createDirectoriesIfNeeded();
     }
 
     /**
@@ -117,17 +96,5 @@ public final class Database {
     public TimeSeries getTimeSeries(String seriesName) throws IOException, HorizonDBException {
 
         return this.timeSeriesManager.getTimeSeries(getName(), seriesName);
-    }
-
-    /**
-     * Creates the database directory if it does not exists.
-     * 
-     * @throws IOException if an I/O problem occurs.
-     */
-    private void createDirectoriesIfNeeded() throws IOException {
-
-        if (!Files.exists(this.directory)) {
-            Files.createDirectories(this.directory);
-        }
     }
 }

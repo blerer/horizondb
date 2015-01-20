@@ -14,12 +14,15 @@
 package io.horizondb.db.parser.builders;
 
 import io.horizondb.db.Configuration;
+import io.horizondb.db.HorizonDBException;
+import io.horizondb.db.databases.Database;
 import io.horizondb.db.parser.HqlBaseListener;
 import io.horizondb.db.parser.HqlParser.CreateTimeSeriesContext;
 import io.horizondb.db.parser.HqlParser.FieldDefinitionContext;
 import io.horizondb.db.parser.HqlParser.RecordDefinitionContext;
 import io.horizondb.db.parser.HqlParser.TimeSeriesOptionContext;
 import io.horizondb.db.parser.MsgBuilder;
+import io.horizondb.model.ErrorCodes;
 import io.horizondb.model.protocol.CreateTimeSeriesPayload;
 import io.horizondb.model.protocol.Msg;
 import io.horizondb.model.protocol.MsgHeader;
@@ -53,9 +56,9 @@ final class CreateTimeSeriesMsgBuilder extends HqlBaseListener implements MsgBui
     private final MsgHeader requestHeader;
     
     /**
-     * The name of the database in which the time series must be created.
+     * The database in which the time series must be created.
      */
-    private final String database;    
+    private final Database database;    
     
     /**
      * The time series definition builder.
@@ -74,7 +77,7 @@ final class CreateTimeSeriesMsgBuilder extends HqlBaseListener implements MsgBui
      * @param requestHeader the original request header
      * @param database the database in which the time series must be created
      */
-    public CreateTimeSeriesMsgBuilder(Configuration configuration, MsgHeader requestHeader, String database) {
+    public CreateTimeSeriesMsgBuilder(Configuration configuration, MsgHeader requestHeader, Database database) {
         
         this.configuration = configuration;
         this.requestHeader = requestHeader;
@@ -150,9 +153,13 @@ final class CreateTimeSeriesMsgBuilder extends HqlBaseListener implements MsgBui
      * {@inheritDoc}
      */
     @Override
-    public Msg<?> build() throws IOException {
+    public Msg<?> build() throws IOException, HorizonDBException {
         
-        Payload payload = new CreateTimeSeriesPayload(this.database, this.timeSeriesDefBuilder.build());
+        if (this.database == null) {
+            throw new HorizonDBException(ErrorCodes.UNKNOWN_DATABASE, "No database has been specified.");
+        }
+
+        Payload payload = new CreateTimeSeriesPayload(this.database.getName(), this.timeSeriesDefBuilder.build());
         return Msg.newRequestMsg(this.requestHeader, OpCode.CREATE_TIMESERIES, payload);
     }
 }

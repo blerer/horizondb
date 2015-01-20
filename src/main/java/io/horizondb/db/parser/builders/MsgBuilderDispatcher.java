@@ -13,9 +13,9 @@
  */
 package io.horizondb.db.parser.builders;
 
-import java.io.IOException;
-
 import io.horizondb.db.Configuration;
+import io.horizondb.db.HorizonDBException;
+import io.horizondb.db.databases.Database;
 import io.horizondb.db.parser.HqlBaseListener;
 import io.horizondb.db.parser.HqlParser.BetweenPredicateContext;
 import io.horizondb.db.parser.HqlParser.CreateDatabaseContext;
@@ -37,6 +37,8 @@ import io.horizondb.db.parser.MsgBuilder;
 import io.horizondb.model.protocol.Msg;
 import io.horizondb.model.protocol.MsgHeader;
 
+import java.io.IOException;
+
 import org.antlr.v4.runtime.misc.NotNull;
 
 /**
@@ -55,9 +57,9 @@ public final class MsgBuilderDispatcher extends HqlBaseListener implements MsgBu
     private final MsgHeader requestHeader;
     
     /**
-     * The database name on which the query must be executed.
+     * The database on which the query must be executed.
      */
-    private final String database;
+    private final Database database;
     
     /**
      * The builder to which the calls must be dispatched.
@@ -69,9 +71,9 @@ public final class MsgBuilderDispatcher extends HqlBaseListener implements MsgBu
      * 
      * @param configuration the database configuration
      * @param requestHeader the original request header.
-     * @param database the name of the database on which the query must be executed.
+     * @param database the database on which the query must be executed.
      */
-    public MsgBuilderDispatcher(Configuration configuration, MsgHeader requestHeader, String database) {
+    public MsgBuilderDispatcher(Configuration configuration, MsgHeader requestHeader, Database database) {
         
         this.configuration = configuration;
         this.requestHeader = requestHeader;
@@ -212,7 +214,7 @@ public final class MsgBuilderDispatcher extends HqlBaseListener implements MsgBu
      */
     @Override
     public void enterSelect(@NotNull SelectContext ctx) {
-        this.builder = new SelectMsgBuilder(this.requestHeader, this.database);
+        this.builder = new SelectMsgBuilder(this.requestHeader, this.database.getName());
         this.builder.enterSelect(ctx);
     }
 
@@ -301,7 +303,7 @@ public final class MsgBuilderDispatcher extends HqlBaseListener implements MsgBu
      * {@inheritDoc}
      */
     @Override
-    public Msg<?> build() throws IOException {
+    public Msg<?> build() throws IOException, HorizonDBException {
         return this.builder.build();
     }
 }

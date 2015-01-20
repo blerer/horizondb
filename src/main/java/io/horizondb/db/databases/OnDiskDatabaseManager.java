@@ -80,6 +80,30 @@ public final class OnDiskDatabaseManager extends AbstractDatabaseManager {
     }
 
     /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void afterCreate(DatabaseDefinition definition) throws IOException {
+        Path dataDirectory = this.configuration.getDataDirectory();
+        Path directory = dataDirectory.resolve(definition.getName());
+
+        createDirectoriesIfNeeded(directory);
+    }
+
+    /**
+     * Creates the database directory if it does not exists.
+     * 
+     * @param directory the database directory
+     * @throws IOException if an I/O problem occurs.
+     */
+    private static void createDirectoriesIfNeeded(Path directory) throws IOException {
+
+        if (!Files.exists(directory)) {
+            Files.createDirectories(directory);
+        }
+    }
+    
+    /**
      * <code>NodeWriter</code> for the <code>DatabaseDefinition</code>.
      * 
      */

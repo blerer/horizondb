@@ -13,15 +13,23 @@
  */
 package io.horizondb.db.parser.builders;
 
+import io.horizondb.db.HorizonDBException;
+import io.horizondb.db.databases.Database;
+import io.horizondb.db.parser.BadHqlGrammarException;
 import io.horizondb.db.parser.HqlBaseListener;
 import io.horizondb.db.parser.HqlParser.InsertContext;
 import io.horizondb.db.parser.HqlParser.RecordNameContext;
 import io.horizondb.db.parser.MsgBuilder;
+import io.horizondb.db.series.TimeSeries;
+import io.horizondb.io.Buffer;
+import io.horizondb.io.buffers.Buffers;
+import io.horizondb.model.core.records.TimeSeriesRecord;
 import io.horizondb.model.protocol.InsertPayload;
 import io.horizondb.model.protocol.Msg;
 import io.horizondb.model.protocol.MsgHeader;
 import io.horizondb.model.protocol.OpCode;
 import io.horizondb.model.protocol.Payload;
+import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -30,6 +38,8 @@ import java.util.List;
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.misc.NotNull;
+
+import static java.lang.String.format;
 
 /**
  * <code>Builder</code> for messages requesting some data insertion.
@@ -42,9 +52,9 @@ final class InsertMsgBuilder extends HqlBaseListener implements MsgBuilder {
     private final MsgHeader requestHeader;
     
     /**
-     * The name of the database in which the data must be inserted.
+     * The database in which the data must be inserted.
      */
-    private final String database; 
+    private final Database database; 
     
     /**
      * The time series in which the data must be inserted.
@@ -72,7 +82,7 @@ final class InsertMsgBuilder extends HqlBaseListener implements MsgBuilder {
      * @param requestHeader the original request header
      * @param database the database in which the data must be inserted
      */
-    public InsertMsgBuilder(MsgHeader requestHeader, String database) {
+    public InsertMsgBuilder(MsgHeader requestHeader, Database database) {
         
         this.requestHeader = requestHeader;
         this.database = database;
@@ -118,13 +128,58 @@ final class InsertMsgBuilder extends HqlBaseListener implements MsgBuilder {
      * {@inheritDoc}
      */
     @Override
-    public Msg<?> build() throws IOException {
-        Payload payload = new InsertPayload(this.database,
+    public Msg<?> build() throws IOException, HorizonDBException {
+        
+        TimeSeries timeSeries = this.database.getTimeSeries(this.series);
+        TimeSeriesDefinition definition = timeSeries.getDefinition();
+        int recordTypeIndex = definition.getRecordTypeIndex(this.recordType);
+        TimeSeriesRecord record = newRecord(definition, recordTypeIndex);
+        Buffer buffer = Buffers.allocate(record.computeSerializedSize());
+        record.writeTo(buffer);
+
+        Payload payload = new InsertPayload(this.database.getName(),
                                             this.series,
-                                            this.recordType,
-                                            this.fieldNames,
-                                            this.fieldValues);
+                                            recordTypeIndex,
+                                            buffer);
         
         return Msg.newRequestMsg(this.requestHeader, OpCode.INSERT, payload);
+    }
+    
+    /**
+     * Creates a new record from the specified payload.
+     * 
+     * @param definition the time series definition
+     * @param payload the payload
+     * @return the new record
+     * @throws BadHqlGrammarException if some values are invalid
+     */
+    private TimeSeriesRecord newRecord(TimeSeriesDefinition definition, int recordIndex) throws BadHqlGrammarException {
+        
+        String fieldValue = null;
+        
+        try {
+            TimeSeriesRecord record = definition.newRecord(recordIndex);
+
+            
+            if (this.fieldNames.isEmpty()) {
+                for (int i = 0, m = this.fieldValues.size();  i < m ; i++) {
+                    fieldValue = this.fieldValues.get(i);
+                    record.getField(i).setValueFromString(definition.getTimeZone(), this.fieldValues.get(i));
+                }
+            } else {
+                for (int i = 0, m = this.fieldNames.size();  i < m ; i++) {
+                    String fieldName = this.fieldNames.get(i);
+                    fieldValue = this.fieldValues.get(i);
+                    int fieldIndex = definition.getFieldIndex(recordIndex, fieldName);
+                     
+                    record.getField(fieldIndex).setValueFromString(definition.getTimeZone(), this.fieldValues.get(i));
+                }
+            }
+            return record;
+        } catch (NumberFormatException e) {
+            throw new BadHqlGrammarException(format("The value %s cannot be converted into a number", fieldValue));
+        } catch (IllegalArgumentException e) {
+            throw new BadHqlGrammarException(e.getMessage());
+        }
     }
 }

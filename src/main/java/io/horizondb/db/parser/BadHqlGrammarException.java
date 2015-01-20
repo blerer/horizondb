@@ -22,16 +22,16 @@ import io.horizondb.model.ErrorCodes;
 public final class BadHqlGrammarException extends HorizonDBException {
 
     /**
-     * 
+     * Serial UID
      */
     private static final long serialVersionUID = 8906102712317030814L;
 
-    /**
-     * @param code
-     * @param errorMessage(message)
-     */
     public BadHqlGrammarException(String query, int lineNumber, int charPosition, String message) {
         super(ErrorCodes.INVALID_QUERY, errorMessage(query, lineNumber, charPosition, message));
+    }
+
+    public BadHqlGrammarException(String message) {
+        super(ErrorCodes.INVALID_QUERY, message);
     }
 
     /**

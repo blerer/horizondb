@@ -69,7 +69,7 @@ public class DatabaseManagerCacheTest {
 
         manager.start();
         manager.createDatabase(new DatabaseDefinition("test"), true);
-        Database database = new Database(this.configuration, new DatabaseDefinition("test"), timeSeriesManager);
+        Database database = new Database(new DatabaseDefinition("test"), timeSeriesManager);
         EasyMock.expect(manager.getDatabase("test")).andReturn(database);
         manager.shutdown();
 
@@ -117,7 +117,7 @@ public class DatabaseManagerCacheTest {
 
         manager.start();
         manager.createDatabase(new DatabaseDefinition("test"), true);
-        Database database = new Database(this.configuration, new DatabaseDefinition("test"), timeSeriesManager);
+        Database database = new Database(new DatabaseDefinition("test"), timeSeriesManager);
         EasyMock.expect(manager.getDatabase("test")).andReturn(database);
         manager.shutdown();
 

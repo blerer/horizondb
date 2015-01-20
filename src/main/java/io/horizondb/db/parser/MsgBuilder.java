@@ -15,6 +15,7 @@ package io.horizondb.db.parser;
 
 import java.io.IOException;
 
+import io.horizondb.db.HorizonDBException;
 import io.horizondb.model.protocol.Msg;
 
 /**
@@ -27,6 +28,7 @@ public interface MsgBuilder extends HqlListener {
      * 
      * @return a new message instance
      * @throws IOException if an I/O problem occurs while building the message
+     * @throws HorizonDBException if a problem occurs while building the message
      */
-    public Msg<?> build() throws IOException;
+    public Msg<?> build() throws IOException, HorizonDBException;
 }

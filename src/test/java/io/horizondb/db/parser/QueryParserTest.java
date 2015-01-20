@@ -15,12 +15,15 @@ package io.horizondb.db.parser;
 
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
+import io.horizondb.db.databases.Database;
 import io.horizondb.db.databases.DatabaseManager;
 import io.horizondb.db.databases.InMemoryDatabaseManager;
 import io.horizondb.db.series.InMemoryTimeSeriesManager;
 import io.horizondb.db.series.InMemoryTimeSeriesPartitionManager;
 import io.horizondb.db.series.TimeSeriesManager;
 import io.horizondb.db.series.TimeSeriesPartitionManager;
+import io.horizondb.io.Buffer;
+import io.horizondb.model.core.records.BinaryTimeSeriesRecord;
 import io.horizondb.model.protocol.CreateDatabasePayload;
 import io.horizondb.model.protocol.CreateTimeSeriesPayload;
 import io.horizondb.model.protocol.HqlQueryPayload;
@@ -38,9 +41,14 @@ import java.io.IOException;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
-import static io.horizondb.test.AssertCollections.assertListContains;
+import static io.horizondb.test.AssertExceptions.assertErrorMessageContains;
+
+import static io.horizondb.model.core.util.TimeUtils.EUROPE_BERLIN_TIMEZONE;
+import static io.horizondb.model.core.util.TimeUtils.parseDateTime;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -52,19 +60,42 @@ import static org.junit.Assert.fail;
  */
 public class QueryParserTest {
 
+    /**
+     * The database configuration used during the tests
+     */
+    private Configuration configuration;
+    
+    /**
+     * The database manager used during the tests
+     */
+    private DatabaseManager databaseManager;
+    
+    @Before
+    public void setUp() throws IOException, InterruptedException {
+        this.configuration = newConfiguration();
+        this.databaseManager = newDatabaseManager(this.configuration);
+        this.databaseManager.start();
+    }
+    
+    @After
+    public void tearDown() throws InterruptedException {
+        this.databaseManager.shutdown();
+        this.databaseManager = null;
+        this.configuration = null;
+    }
+    
     @Test
     public void testParseCreateDatabase() throws HorizonDBException, IOException {
        
-        Configuration configuration = newConfiguration();
-        Msg<CreateDatabasePayload> msg = QueryParser.parse(configuration, 
-                                                           newDatabaseManager(configuration),
-                                                           newMsg(" CREATE DATABASE TEST;"));
+        Msg<CreateDatabasePayload> msg = QueryParser.parse(this.configuration, 
+                                                           this.databaseManager,
+                                                           newMsg("", " CREATE DATABASE TEST;"));
         
         assertNotNull(msg);
         
-        msg = QueryParser.parse(configuration,
-                                newDatabaseManager(configuration),
-                                newMsg("CREATE DATABASE test ;"));
+        msg = QueryParser.parse(this.configuration,
+                                this.databaseManager,
+                                newMsg("", "CREATE DATABASE test ;"));
         
         assertNotNull(msg);
         assertEquals(new DatabaseDefinition("test"), msg.getPayload().getDefinition());
@@ -73,11 +104,9 @@ public class QueryParserTest {
     @Test
     public void testParseUseDatabase() throws HorizonDBException, IOException  {
        
-        Configuration configuration = newConfiguration();
-        DatabaseManager databaseManager = newDatabaseManager(configuration);
-        Msg<UseDatabasePayload> msg = QueryParser.parse(configuration,
-                                                        databaseManager,
-                                                        newMsg("USE TEST;"));
+        Msg<UseDatabasePayload> msg = QueryParser.parse(this.configuration,
+                                                        this.databaseManager,
+                                                        newMsg("", "USE TEST;"));
         
         assertNotNull(msg);
         assertEquals("TEST", msg.getPayload().getDatabase());
@@ -86,41 +115,26 @@ public class QueryParserTest {
     @Test
     public void testParseCreateTimeSeries() throws HorizonDBException, IOException  {
 
-        RecordTypeDefinition quote = RecordTypeDefinition.newBuilder("Quote")
-                                                         .addNanosecondTimestampField("received")
-                                                         .addDecimalField("bidPrice")
-                                                         .addDecimalField("askPrice")
-                                                         .addIntegerField("bidVolume")
-                                                         .addIntegerField("askVolume")
-                                                         .build();
-
-        RecordTypeDefinition trade = RecordTypeDefinition.newBuilder("Trade")
-                                                         .addNanosecondTimestampField("received")
-                                                         .addDecimalField("price")
-                                                         .addIntegerField("volume")
-                                                         .build();
-
-        TimeSeriesDefinition expected = TimeSeriesDefinition.newBuilder("Dax")
-                                                            .addRecordType(quote)
-                                                            .addRecordType(trade)
-                                                            .timeUnit(TimeUnit.NANOSECONDS)
-                                                            .timeZone(TimeZone.getTimeZone("Europe/Berlin"))
-                                                            .build();
+        TimeSeriesDefinition expected = getTimeSeriesDefinition();
         
-        Configuration configuration = newConfiguration();
-        Msg<CreateTimeSeriesPayload> msg = QueryParser.parse(configuration,
-                                                             newDatabaseManager(configuration),
-                                                             newMsg("CREATE TIMESERIES Dax (" +
-                                        "Quote(received NANOSECONDS_TIMESTAMP, bidPrice DECIMAL, askPrice DECIMAL, bidVolume INTEGER, askVolume INTEGER), " +
-                                        "Trade(received NANOSECONDS_TIMESTAMP, price DECIMAL, volume INTEGER))TIME_UNIT = NANOSECONDS TIMEZONE = 'Europe/Berlin';"));
+        createDatabase();
+        
+        Msg<CreateTimeSeriesPayload> msg = QueryParser.parse(this.configuration,
+                                                             this.databaseManager,
+                                                             newMsg("test", "CREATE TIMESERIES Dax (" +
+                                        "Quote(bidPrice DECIMAL, askPrice DECIMAL, bidVolume INTEGER, askVolume INTEGER), " +
+                                        "Trade(price DECIMAL, volume INTEGER))TIME_UNIT = NANOSECONDS TIMEZONE = 'Europe/Berlin';"));
         assertNotNull(msg);
         
         assertEquals(expected, msg.getPayload().getDefinition());
     }
+
     
     @Test
     public void testParseCreateTimeSeriesWithDefaultTimeUnit() throws HorizonDBException, IOException  {
 
+        createDatabase();
+        
         RecordTypeDefinition quote = RecordTypeDefinition.newBuilder("Quote")
                                                          .addNanosecondTimestampField("received")
                                                          .addDecimalField("bidPrice")
@@ -142,10 +156,9 @@ public class QueryParserTest {
                                                             .timeZone(TimeZone.getTimeZone("America/Los_Angeles"))
                                                             .build();
         
-        Configuration configuration = newConfiguration();
-        Msg<CreateTimeSeriesPayload> msg = QueryParser.parse(configuration,
-                                                             newDatabaseManager(configuration),
-                                                             newMsg("CREATE TIMESERIES Dax (" +
+        Msg<CreateTimeSeriesPayload> msg = QueryParser.parse(this.configuration,
+                                                             this.databaseManager,
+                                                             newMsg("test", "CREATE TIMESERIES Dax (" +
                                         "Quote(received NANOSECONDS_TIMESTAMP, bidPrice DECIMAL, askPrice DECIMAL, bidVolume INTEGER, askVolume INTEGER), " +
                                         "Trade(received NANOSECONDS_TIMESTAMP, price DECIMAL, volume INTEGER))TIMEZONE = 'America/Los_Angeles';"));
         assertNotNull(msg);
@@ -156,10 +169,11 @@ public class QueryParserTest {
     @Test
     public void testParseSelectAll() throws HorizonDBException, IOException  {
         
-        Configuration configuration = newConfiguration();
-        Msg<SelectPayload> msg = QueryParser.parse(configuration,
-                                                   newDatabaseManager(configuration),
-                                                   newMsg("SELECT * FROM Dax;"));
+        createDatabaseAndTimeSeries();
+        
+        Msg<SelectPayload> msg = QueryParser.parse(this.configuration,
+                                                   this.databaseManager,
+                                                   newMsg("test", "SELECT * FROM Dax;"));
         assertEquals("Dax", msg.getPayload().getSeriesName());
         assertEquals("", msg.getPayload().getPredicate().toString());
     }
@@ -227,30 +241,83 @@ public class QueryParserTest {
     @Test
     public void testParseInsert() throws HorizonDBException, IOException  {
         
-        Configuration configuration = newConfiguration();
-        Msg<InsertPayload> msg = QueryParser.parse(configuration,
-                                                   newDatabaseManager(configuration),
-                                                   newMsg("INSERT INTO Dax.Trade (timestamp, price, volume) VALUES ('23-05-2014 09:44:30', 125E-1, 10);"));
+        createDatabaseAndTimeSeries();
         
-        assertEquals("Dax", msg.getPayload().getSeries());
-        assertEquals("Trade", msg.getPayload().getRecordType());
-        assertListContains(msg.getPayload().getFieldNames(), "timestamp", "price", "volume");
-        assertListContains(msg.getPayload().getFieldValues(), "'23-05-2014 09:44:30'", "125E-1", "10");
+        Msg<InsertPayload> msg = QueryParser.parse(this.configuration,
+                                                   this.databaseManager,
+                                                   newMsg("test", "INSERT INTO Dax.Trade (timestamp, price, volume) VALUES ('2014-05-23 09:44:30', 125E-1, 10);"));
+        
+        InsertPayload payload = msg.getPayload();
+        assertEquals("Dax", payload.getSeries());
+        assertEquals(1, payload.getRecordType());
+        
+        TimeSeriesDefinition definition = getTimeSeriesDefinition();
+        Buffer buffer = payload.getBuffer(); 
+        BinaryTimeSeriesRecord binaryRecord = definition.newBinaryRecord(payload.getRecordType());
+        binaryRecord.fill(buffer);
+        assertEquals(parseDateTime(EUROPE_BERLIN_TIMEZONE, "2014-05-23 09:44:30"), binaryRecord.getTimestampInMillis(0));
+        assertEquals(12.5, binaryRecord.getDouble(1), 0.0);
+        assertEquals(10L, binaryRecord.getLong(2));
     }
     
     @Test
     public void testParseInsertWithoutFieldNames() throws HorizonDBException, IOException  {
         
-        Configuration configuration = newConfiguration();
-        Msg<InsertPayload> msg = QueryParser.parse(configuration,
-                                                   newDatabaseManager(configuration),
-                                                   newMsg("INSERT INTO Dax.Trade VALUES ('23-05-2014 09:44:30', 125E-1, 10);"));
-        assertEquals("Dax", msg.getPayload().getSeries());
-        assertEquals("Trade", msg.getPayload().getRecordType());
-        assertTrue(msg.getPayload().getFieldNames().isEmpty());
-        assertListContains(msg.getPayload().getFieldValues(), "'23-05-2014 09:44:30'", "125E-1", "10");
+        createDatabaseAndTimeSeries();
+        
+        Msg<InsertPayload> msg = QueryParser.parse(this.configuration,
+                                                   this.databaseManager,
+                                                   newMsg("test", "INSERT INTO Dax.Trade VALUES ('2014-05-23 09:44:30', 125E-1, 10);"));
+        
+        InsertPayload payload = msg.getPayload();
+        assertEquals("Dax", payload.getSeries());
+        assertEquals(1, payload.getRecordType());
+        
+        TimeSeriesDefinition definition = getTimeSeriesDefinition();
+        Buffer buffer = payload.getBuffer(); 
+        BinaryTimeSeriesRecord binaryRecord = definition.newBinaryRecord(payload.getRecordType());
+        binaryRecord.fill(buffer);
+        assertEquals(parseDateTime(EUROPE_BERLIN_TIMEZONE, "2014-05-23 09:44:30"), binaryRecord.getTimestampInMillis(0));
+        assertEquals(12.5, binaryRecord.getDouble(1), 0.0);
+        assertEquals(10L, binaryRecord.getLong(2));
     }
     
+    @Test
+    public void testParseInsertWithInvalidTimeValue() throws HorizonDBException, IOException  {
+        
+        createDatabaseAndTimeSeries();
+        
+        try {
+        
+            QueryParser.parse(this.configuration,
+                              this.databaseManager,
+                              newMsg("test",
+                                     "INSERT INTO Dax.Trade (timestamp, price, volume) VALUES ('2014.05.23 09:44:30', 125E-1, 10);"));
+            fail();
+        } catch (BadHqlGrammarException e) {
+            String msgFragment = "The value 2014.05.23 09:44:30 cannot be parsed into a valid date";
+            assertErrorMessageContains(msgFragment, e);
+        }
+    }
+
+    @Test
+    public void testParseInsertWithInvalidLongValue() throws HorizonDBException, IOException {
+
+        createDatabaseAndTimeSeries();
+
+        try {
+
+            QueryParser.parse(this.configuration,
+                              this.databaseManager,
+                              newMsg("test",
+                                     "INSERT INTO Dax.Trade (timestamp, price, volume) VALUES ('2014-05-23 09:44:30', 125E-1, 'test');"));
+            fail();
+        } catch (BadHqlGrammarException e) {
+            String msgFragment = "The value 'test' cannot be converted into a number";
+            assertErrorMessageContains(msgFragment, e);
+        }
+    }
+
     @Test
     public void testParseWithInvalidQuery() throws HorizonDBException, IOException  {
        
@@ -259,7 +326,7 @@ public class QueryParserTest {
             Configuration configuration = newConfiguration();
             QueryParser.parse(configuration,
                               newDatabaseManager(configuration),
-                              newMsg("CREATE DB TEST;"));
+                              newMsg("", "CREATE DB TEST;"));
             fail();
             
         } catch (BadHqlGrammarException e) {
@@ -270,43 +337,30 @@ public class QueryParserTest {
     @Test
     public void testParseSelectWithOneRecordProjection() throws HorizonDBException, IOException {
 
-        RecordTypeDefinition trade = RecordTypeDefinition.newBuilder("Trade")
-                                                         .addDecimalField("price")
-                                                         .addIntegerField("volume")
-                                                         .build();
-
-        RecordTypeDefinition quote = RecordTypeDefinition.newBuilder("Quote")
-                                                         .addDecimalField("bidPrice")
-                                                         .addDecimalField("askPrice")
-                                                         .addIntegerField("bidVolume")
-                                                         .addIntegerField("askValume")
-                                                         .build();
-
-        TimeSeriesDefinition timeSeriesDefinition = TimeSeriesDefinition.newBuilder("Dax")
-                                                                        .addRecordType(quote)
-                                                                        .addRecordType(trade)
-                                                                        .build();
+        createDatabaseAndTimeSeries();
         
-        Configuration configuration = newConfiguration();
-        Msg<SelectPayload> msg = QueryParser.parse(configuration,
-                                                   newDatabaseManager(configuration),
-                                                   newMsg("SELECT Trade.* FROM Dax;"));
+        TimeSeriesDefinition timeSeriesDefinition = getTimeSeriesDefinition();
+        
+        Msg<SelectPayload> msg = QueryParser.parse(this.configuration,
+                                                   this.databaseManager,
+                                                   newMsg("test", "SELECT Trade.* FROM Dax;"));
         assertEquals("Dax", msg.getPayload().getSeriesName());
         
         RecordSetDefinition definition = msg.getPayload().getProjection().getDefinition(timeSeriesDefinition);
         assertEquals(1, definition.getNumberOfRecordTypes());
-        assertEquals(trade, definition.getRecordType(0));
+        assertEquals(timeSeriesDefinition.getRecordType(1), definition.getRecordType(0));
     }
 
     /**
      * Creates a new HQL query message for use within the tests.
      * 
+     * @param database the database name
      * @param query the HQL query
      * @return a new HQL query message for use within the tests.
      */
-    private static Msg<HqlQueryPayload> newMsg(String query) throws IOException  {
+    private static Msg<HqlQueryPayload> newMsg(String database, String query) throws IOException  {
         
-        HqlQueryPayload payload = new HqlQueryPayload("TEST", query);
+        HqlQueryPayload payload = new HqlQueryPayload(database, query);
         return Msg.newRequestMsg(OpCode.HQL_QUERY, payload);
     }
     
@@ -316,12 +370,13 @@ public class QueryParserTest {
      * @param predicate the predicate to test
      * @throws HorizonDBException if a problem occurs
      */
-    private static void testParseSelectWithPredicate(String predicate) throws HorizonDBException, IOException  {
+    private void testParseSelectWithPredicate(String predicate) throws HorizonDBException, IOException  {
         
-        Configuration configuration = newConfiguration();
-        Msg<SelectPayload> msg = QueryParser.parse(configuration,
-                                                   newDatabaseManager(configuration),
-                                                   newMsg("SELECT * FROM Dax WHERE " + predicate + ";"));
+        createDatabaseAndTimeSeries();
+        
+        Msg<SelectPayload> msg = QueryParser.parse(this.configuration,
+                                                   this.databaseManager,
+                                                   newMsg("test", "SELECT * FROM Dax WHERE " + predicate + ";"));
         assertEquals("Dax", msg.getPayload().getSeriesName());
         assertEquals(predicate, msg.getPayload().getPredicate().toString());
     }
@@ -334,6 +389,25 @@ public class QueryParserTest {
         return Configuration.newBuilder().build();
     }
    
+
+    /**
+     * Creates a new database with a time series.
+     */
+    private void createDatabaseAndTimeSeries() throws IOException, HorizonDBException {
+        createDatabase();
+        Database database = this.databaseManager.getDatabase("test");
+        database.createTimeSeries(getTimeSeriesDefinition(), true);
+    }
+
+    /**
+     * Creates a new database
+     * @throws IOException if an I/O problem occurs while creating the database.
+     * @throws HorizonDBException if the database cannot be created
+     */
+    private void createDatabase() throws IOException, HorizonDBException {
+        this.databaseManager.createDatabase(new DatabaseDefinition("test"), true);
+    }
+    
     /**
      * Creates a new <code>DatabaseManager</code> stub.
      * @param configuration the database configuration
@@ -345,4 +419,32 @@ public class QueryParserTest {
         TimeSeriesManager timeSeriesManager = new InMemoryTimeSeriesManager(partitionManager, configuration);
         return new InMemoryDatabaseManager(configuration, timeSeriesManager);
     }
+
+    /**
+     * Returns the definition of the time series used within the tests 
+     * @return the definition of the time series used by within tests 
+     */
+    private static TimeSeriesDefinition getTimeSeriesDefinition() {
+        RecordTypeDefinition quote = RecordTypeDefinition.newBuilder("Quote")
+                                                         .addDecimalField("bidPrice")
+                                                         .addDecimalField("askPrice")
+                                                         .addIntegerField("bidVolume")
+                                                         .addIntegerField("askVolume")
+                                                         .build();
+
+        RecordTypeDefinition trade = RecordTypeDefinition.newBuilder("Trade")
+                                                         .addDecimalField("price")
+                                                         .addIntegerField("volume")
+                                                         .build();
+
+        TimeSeriesDefinition expected = TimeSeriesDefinition.newBuilder("Dax")
+                                                            .addRecordType(quote)
+                                                            .addRecordType(trade)
+                                                            .timeUnit(TimeUnit.NANOSECONDS)
+                                                            .timeZone(TimeZone.getTimeZone("Europe/Berlin"))
+                                                            .build();
+        return expected;
+    }
 }
+
+
