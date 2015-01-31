@@ -15,14 +15,13 @@ package io.horizondb.db.parser.builders;
 
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
-import io.horizondb.db.databases.Database;
+import io.horizondb.db.databases.DatabaseManager;
 import io.horizondb.db.parser.HqlBaseListener;
 import io.horizondb.db.parser.HqlParser.CreateTimeSeriesContext;
 import io.horizondb.db.parser.HqlParser.FieldDefinitionContext;
 import io.horizondb.db.parser.HqlParser.RecordDefinitionContext;
 import io.horizondb.db.parser.HqlParser.TimeSeriesOptionContext;
 import io.horizondb.db.parser.MsgBuilder;
-import io.horizondb.model.ErrorCodes;
 import io.horizondb.model.protocol.CreateTimeSeriesPayload;
 import io.horizondb.model.protocol.Msg;
 import io.horizondb.model.protocol.MsgHeader;
@@ -51,6 +50,11 @@ final class CreateTimeSeriesMsgBuilder extends HqlBaseListener implements MsgBui
     private final Configuration configuration;
     
     /**
+     * The database manager.
+     */
+    private final DatabaseManager databaseManager;
+    
+    /**
      * The original request header.
      */
     private final MsgHeader requestHeader;
@@ -58,7 +62,7 @@ final class CreateTimeSeriesMsgBuilder extends HqlBaseListener implements MsgBui
     /**
      * The database in which the time series must be created.
      */
-    private final Database database;    
+    private String databaseName;    
     
     /**
      * The time series definition builder.
@@ -74,14 +78,19 @@ final class CreateTimeSeriesMsgBuilder extends HqlBaseListener implements MsgBui
      * Creates a new <code>CreateTimeSeriesMsgBuilder</code> instance.
      * 
      * @param configuration the database configuration
+     * @param databaseManager the database manager used to retrieve the database
      * @param requestHeader the original request header
-     * @param database the database in which the time series must be created
+     * @param databaseName the name of the database in which the time series must be created
      */
-    public CreateTimeSeriesMsgBuilder(Configuration configuration, MsgHeader requestHeader, Database database) {
+    public CreateTimeSeriesMsgBuilder(Configuration configuration, 
+                                      DatabaseManager databaseManager,
+                                      MsgHeader requestHeader, 
+                                      String databaseName) {
         
         this.configuration = configuration;
+        this.databaseManager = databaseManager;
         this.requestHeader = requestHeader;
-        this.database = database;
+        this.databaseName = databaseName;
     }
 
     /**
@@ -121,7 +130,10 @@ final class CreateTimeSeriesMsgBuilder extends HqlBaseListener implements MsgBui
     @Override
     public void enterCreateTimeSeries(@NotNull CreateTimeSeriesContext ctx) {
         
-        String timeSeriesName = ctx.ID().getText();
+        if (ctx.databaseName() != null) {
+            this.databaseName = ctx.databaseName().getText();
+        }
+        String timeSeriesName = ctx.timeSeriesName().getText();
         this.timeSeriesDefBuilder = TimeSeriesDefinition.newBuilder(timeSeriesName)
                                                         .blockSize(this.configuration.getBlockSizeInBytes())
                                                         .compressionType(this.configuration.getCompressionType());
@@ -155,11 +167,10 @@ final class CreateTimeSeriesMsgBuilder extends HqlBaseListener implements MsgBui
     @Override
     public Msg<?> build() throws IOException, HorizonDBException {
         
-        if (this.database == null) {
-            throw new HorizonDBException(ErrorCodes.UNKNOWN_DATABASE, "No database has been specified.");
-        }
+        // Checks that the database exists.
+        this.databaseManager.getDatabase(this.databaseName);
 
-        Payload payload = new CreateTimeSeriesPayload(this.database.getName(), this.timeSeriesDefBuilder.build());
+        Payload payload = new CreateTimeSeriesPayload(this.databaseName, this.timeSeriesDefBuilder.build());
         return Msg.newRequestMsg(this.requestHeader, OpCode.CREATE_TIMESERIES, payload);
     }
 }

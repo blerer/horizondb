@@ -262,7 +262,7 @@ createDatabase
     ;
 
 createTimeSeries
-    : CREATE TIMESERIES ID '(' recordsDefinition ')' timeSeriesOptions 
+    : CREATE TIMESERIES (databaseName'.')?timeSeriesName '(' recordsDefinition ')' timeSeriesOptions 
     ;
 
 recordsDefinition
@@ -313,11 +313,19 @@ useDatabase
     ;
 
 insert
-    : INSERT INTO recordName ('(' fieldList ')')? VALUES '(' valueList ')' 
+    : INSERT INTO (databaseName'.')?recordName ('(' fieldList ')')? VALUES '(' valueList ')' 
     ;
-    
+
+timeSeriesName
+    : ID
+    ;
+
+databaseName
+    : ID
+    ;
+
 recordName
-    : ID'.'ID 
+    : timeSeriesName'.'ID 
     ;    
 
 fieldList

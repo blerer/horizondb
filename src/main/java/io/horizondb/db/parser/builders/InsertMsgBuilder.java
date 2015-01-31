@@ -15,6 +15,7 @@ package io.horizondb.db.parser.builders;
 
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.databases.Database;
+import io.horizondb.db.databases.DatabaseManager;
 import io.horizondb.db.parser.BadHqlGrammarException;
 import io.horizondb.db.parser.HqlBaseListener;
 import io.horizondb.db.parser.HqlParser.InsertContext;
@@ -47,14 +48,19 @@ import static java.lang.String.format;
 final class InsertMsgBuilder extends HqlBaseListener implements MsgBuilder {
 
     /**
+     * The database manager.
+     */
+    private final DatabaseManager databaseManager;
+    
+    /**
      * The original request header.
      */
     private final MsgHeader requestHeader;
     
     /**
-     * The database in which the data must be inserted.
+     * The name of the database in which the data must be inserted.
      */
-    private final Database database; 
+    private String databaseName; 
     
     /**
      * The time series in which the data must be inserted.
@@ -79,13 +85,15 @@ final class InsertMsgBuilder extends HqlBaseListener implements MsgBuilder {
     /**
      * Creates a new <code>CreateTimeSeriesRequestBuilder</code> instance.
      * 
+     * @param databaseManager the database manager
      * @param requestHeader the original request header
-     * @param database the database in which the data must be inserted
+     * @param databaseName the name of the database in which the data must be inserted
      */
-    public InsertMsgBuilder(MsgHeader requestHeader, Database database) {
+    public InsertMsgBuilder(DatabaseManager databaseManager, MsgHeader requestHeader, String databaseName) {
         
+        this.databaseManager = databaseManager;
         this.requestHeader = requestHeader;
-        this.database = database;
+        this.databaseName = databaseName;
     }
     
     /**
@@ -94,10 +102,14 @@ final class InsertMsgBuilder extends HqlBaseListener implements MsgBuilder {
     @Override
     public void enterInsert(@NotNull InsertContext ctx) {
 
+        if (ctx.databaseName() != null) {
+            this.databaseName = ctx.databaseName().getText();
+        }
+        
         RecordNameContext recordName = ctx.recordName();
         
-        this.series = recordName.ID(0).getText();
-        this.recordType = recordName.ID(1).getText();
+        this.series = recordName.timeSeriesName().getText();
+        this.recordType = recordName.ID().getText();
         
         this.fieldNames = toList(ctx.fieldList());
         this.fieldValues = toList(ctx.valueList());
@@ -130,14 +142,15 @@ final class InsertMsgBuilder extends HqlBaseListener implements MsgBuilder {
     @Override
     public Msg<?> build() throws IOException, HorizonDBException {
         
-        TimeSeries timeSeries = this.database.getTimeSeries(this.series);
+        Database database = this.databaseManager.getDatabase(this.databaseName);
+        TimeSeries timeSeries = database.getTimeSeries(this.series);
         TimeSeriesDefinition definition = timeSeries.getDefinition();
         int recordTypeIndex = definition.getRecordTypeIndex(this.recordType);
         TimeSeriesRecord record = newRecord(definition, recordTypeIndex);
         Buffer buffer = Buffers.allocate(record.computeSerializedSize());
         record.writeTo(buffer);
 
-        Payload payload = new InsertPayload(this.database.getName(),
+        Payload payload = new InsertPayload(this.databaseName,
                                             this.series,
                                             recordTypeIndex,
                                             buffer);

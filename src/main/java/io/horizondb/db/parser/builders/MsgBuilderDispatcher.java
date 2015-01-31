@@ -15,7 +15,7 @@ package io.horizondb.db.parser.builders;
 
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
-import io.horizondb.db.databases.Database;
+import io.horizondb.db.databases.DatabaseManager;
 import io.horizondb.db.parser.HqlBaseListener;
 import io.horizondb.db.parser.HqlParser.BetweenPredicateContext;
 import io.horizondb.db.parser.HqlParser.CreateDatabaseContext;
@@ -52,14 +52,19 @@ public final class MsgBuilderDispatcher extends HqlBaseListener implements MsgBu
     private final Configuration configuration;
     
     /**
+     * The database manager.
+     */
+    private final DatabaseManager databaseManager;
+    
+    /**
      * The original request header.
      */
     private final MsgHeader requestHeader;
     
     /**
-     * The database on which the query must be executed.
+     * The name of the database on which the query must be executed.
      */
-    private final Database database;
+    private final String databaseName;
     
     /**
      * The builder to which the calls must be dispatched.
@@ -70,14 +75,18 @@ public final class MsgBuilderDispatcher extends HqlBaseListener implements MsgBu
      * Creates a dispatcher.
      * 
      * @param configuration the database configuration
-     * @param requestHeader the original request header.
-     * @param database the database on which the query must be executed.
+     * @param requestHeader the original request header
+     * @param databaseName the name of the database on which the query must be executed
      */
-    public MsgBuilderDispatcher(Configuration configuration, MsgHeader requestHeader, Database database) {
+    public MsgBuilderDispatcher(Configuration configuration, 
+                                DatabaseManager databaseManager,
+                                MsgHeader requestHeader, 
+                                String databaseName) {
         
         this.configuration = configuration;
+        this.databaseManager = databaseManager;
         this.requestHeader = requestHeader;
-        this.database = database;
+        this.databaseName = databaseName;
     }
 
     /**
@@ -196,8 +205,9 @@ public final class MsgBuilderDispatcher extends HqlBaseListener implements MsgBu
     public void enterCreateTimeSeries(@NotNull CreateTimeSeriesContext ctx) {
         
         this.builder = new CreateTimeSeriesMsgBuilder(this.configuration,
+                                                      this.databaseManager,
                                                       this.requestHeader, 
-                                                      this.database);
+                                                      this.databaseName);
         this.builder.enterCreateTimeSeries(ctx);
     }
 
@@ -214,7 +224,7 @@ public final class MsgBuilderDispatcher extends HqlBaseListener implements MsgBu
      */
     @Override
     public void enterSelect(@NotNull SelectContext ctx) {
-        this.builder = new SelectMsgBuilder(this.requestHeader, this.database.getName());
+        this.builder = new SelectMsgBuilder(this.requestHeader, this.databaseName);
         this.builder.enterSelect(ctx);
     }
 
@@ -295,7 +305,7 @@ public final class MsgBuilderDispatcher extends HqlBaseListener implements MsgBu
      */
     @Override
     public void enterInsert(@NotNull InsertContext ctx) {
-        this.builder = new InsertMsgBuilder(this.requestHeader, this.database);
+        this.builder = new InsertMsgBuilder(this.databaseManager, this.requestHeader, this.databaseName);
         this.builder.enterInsert(ctx);
     }
 

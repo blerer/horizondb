@@ -128,6 +128,22 @@ public class QueryParserTest {
         assertEquals(expected, msg.getPayload().getDefinition());
     }
 
+    @Test
+    public void testParseCreateTimeSeriesWithDatabaseNameSpecifiedInTheQuery() throws HorizonDBException, IOException  {
+
+        TimeSeriesDefinition expected = getTimeSeriesDefinition();
+        
+        createDatabase();
+        
+        Msg<CreateTimeSeriesPayload> msg = QueryParser.parse(this.configuration,
+                                                             this.databaseManager,
+                                                             newMsg("", "CREATE TIMESERIES test.Dax (" +
+                                        "Quote(bidPrice DECIMAL, askPrice DECIMAL, bidVolume INTEGER, askVolume INTEGER), " +
+                                        "Trade(price DECIMAL, volume INTEGER))TIME_UNIT = NANOSECONDS TIMEZONE = 'Europe/Berlin';"));
+        assertNotNull(msg);
+        
+        assertEquals(expected, msg.getPayload().getDefinition());
+    }
     
     @Test
     public void testParseCreateTimeSeriesWithDefaultTimeUnit() throws HorizonDBException, IOException  {
@@ -245,6 +261,28 @@ public class QueryParserTest {
         Msg<InsertPayload> msg = QueryParser.parse(this.configuration,
                                                    this.databaseManager,
                                                    newMsg("test", "INSERT INTO Dax.Trade (timestamp, price, volume) VALUES ('2014-05-23 09:44:30', 125E-1, 10);"));
+        
+        InsertPayload payload = msg.getPayload();
+        assertEquals("Dax", payload.getSeries());
+        assertEquals(1, payload.getRecordType());
+        
+        TimeSeriesDefinition definition = getTimeSeriesDefinition();
+        ReadableBuffer buffer = payload.getBuffer(); 
+        BinaryTimeSeriesRecord binaryRecord = definition.newBinaryRecord(payload.getRecordType());
+        binaryRecord.fill(buffer);
+        assertEquals(parseDateTime(EUROPE_BERLIN_TIMEZONE, "2014-05-23 09:44:30"), binaryRecord.getTimestampInMillis(0));
+        assertEquals(12.5, binaryRecord.getDouble(1), 0.0);
+        assertEquals(10L, binaryRecord.getLong(2));
+    }
+    
+    @Test
+    public void testParseInsertWithDatabaseNameSpecifiedInTheQuery() throws HorizonDBException, IOException  {
+        
+        createDatabaseAndTimeSeries();
+        
+        Msg<InsertPayload> msg = QueryParser.parse(this.configuration,
+                                                   this.databaseManager,
+                                                   newMsg("", "INSERT INTO test.Dax.Trade (timestamp, price, volume) VALUES ('2014-05-23 09:44:30', 125E-1, 10);"));
         
         InsertPayload payload = msg.getPayload();
         assertEquals("Dax", payload.getSeries());
