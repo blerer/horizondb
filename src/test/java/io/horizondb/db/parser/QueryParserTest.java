@@ -22,7 +22,7 @@ import io.horizondb.db.series.InMemoryTimeSeriesManager;
 import io.horizondb.db.series.InMemoryTimeSeriesPartitionManager;
 import io.horizondb.db.series.TimeSeriesManager;
 import io.horizondb.db.series.TimeSeriesPartitionManager;
-import io.horizondb.io.Buffer;
+import io.horizondb.io.ReadableBuffer;
 import io.horizondb.model.core.records.BinaryTimeSeriesRecord;
 import io.horizondb.model.protocol.CreateDatabasePayload;
 import io.horizondb.model.protocol.CreateTimeSeriesPayload;
@@ -45,10 +45,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static io.horizondb.test.AssertExceptions.assertErrorMessageContains;
-
 import static io.horizondb.model.core.util.TimeUtils.EUROPE_BERLIN_TIMEZONE;
 import static io.horizondb.model.core.util.TimeUtils.parseDateTime;
+import static io.horizondb.test.AssertExceptions.assertErrorMessageContains;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -252,7 +251,7 @@ public class QueryParserTest {
         assertEquals(1, payload.getRecordType());
         
         TimeSeriesDefinition definition = getTimeSeriesDefinition();
-        Buffer buffer = payload.getBuffer(); 
+        ReadableBuffer buffer = payload.getBuffer(); 
         BinaryTimeSeriesRecord binaryRecord = definition.newBinaryRecord(payload.getRecordType());
         binaryRecord.fill(buffer);
         assertEquals(parseDateTime(EUROPE_BERLIN_TIMEZONE, "2014-05-23 09:44:30"), binaryRecord.getTimestampInMillis(0));
@@ -274,7 +273,7 @@ public class QueryParserTest {
         assertEquals(1, payload.getRecordType());
         
         TimeSeriesDefinition definition = getTimeSeriesDefinition();
-        Buffer buffer = payload.getBuffer(); 
+        ReadableBuffer buffer = payload.getBuffer(); 
         BinaryTimeSeriesRecord binaryRecord = definition.newBinaryRecord(payload.getRecordType());
         binaryRecord.fill(buffer);
         assertEquals(parseDateTime(EUROPE_BERLIN_TIMEZONE, "2014-05-23 09:44:30"), binaryRecord.getTimestampInMillis(0));

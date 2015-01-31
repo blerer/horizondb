@@ -1,6 +1,4 @@
 /**
- * Copyright 2013 Benjamin Lerer
- * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -66,6 +64,6 @@ final class InsertOperation implements Operation {
     private static Record newRecord(TimeSeriesDefinition definition, InsertPayload payload) throws IOException {
         
         int recordIndex = payload.getRecordType();
-        return definition.newBinaryRecord(recordIndex).fill(payload.getBuffer()).toTimeSeriesRecord();
+        return definition.newBinaryRecord(recordIndex).fill(payload.getBuffer());
     }
 }
