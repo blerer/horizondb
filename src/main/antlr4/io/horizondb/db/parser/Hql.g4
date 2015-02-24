@@ -337,7 +337,7 @@ valueList
     ;    
     
 select
-    : SELECT selectList FROM ID (whereClause)?
+    : SELECT selectList FROM (databaseName'.')?ID (whereClause)?
     ;
 selectList
     : '*'
@@ -363,7 +363,7 @@ predicate
     ;
 
 inPredicate 
-    : ID NOT? IN '(' value (',' value )* ')'
+    : ID NOT? IN '(' (value (',' value )*)? ')'
     ;
     
 betweenPredicate 

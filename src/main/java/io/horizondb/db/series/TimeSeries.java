@@ -31,7 +31,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.TimeZone;
 
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
@@ -39,9 +38,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 /**
  * Represents a time series.
- * 
- * @author Benjamin
- * 
  */
 public final class TimeSeries {
 
@@ -134,12 +130,9 @@ public final class TimeSeries {
      * @throws HorizonDBException if another problem occurs
      */
     public RecordIterator read(Projection projection, Predicate predicate) throws IOException, HorizonDBException {
-
-        Field prototype = this.definition.newField(Record.TIMESTAMP_FIELD_NAME);
-        TimeZone timezone = this.definition.getTimeZone();
         
-        Filter<String> recordTypeFilter = projection.getRecordTypeFilter();
-        RangeSet<Field> timeRanges = predicate.getTimestampRanges(prototype, timezone);
+        Filter<String> recordTypeFilter = projection.getRecordTypeFilter(this.definition);
+        RangeSet<Field> timeRanges = predicate.getTimestampRanges();
         Filter<Record> filter = predicate.toFilter(this.definition);
         
         return projection.filterFields(this.definition, read(timeRanges, recordTypeFilter, filter));

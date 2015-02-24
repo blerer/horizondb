@@ -13,6 +13,9 @@
  */
 package io.horizondb.db.parser.builders;
 
+import io.horizondb.db.HorizonDBException;
+import io.horizondb.db.databases.Database;
+import io.horizondb.db.databases.DatabaseManager;
 import io.horizondb.db.parser.HqlBaseListener;
 import io.horizondb.db.parser.HqlParser.BetweenPredicateContext;
 import io.horizondb.db.parser.HqlParser.InPredicateContext;
@@ -21,14 +24,15 @@ import io.horizondb.db.parser.HqlParser.SelectContext;
 import io.horizondb.db.parser.HqlParser.SelectListContext;
 import io.horizondb.db.parser.HqlParser.SimplePredicateContext;
 import io.horizondb.db.parser.MsgBuilder;
+import io.horizondb.db.series.TimeSeries;
 import io.horizondb.model.core.Predicate;
 import io.horizondb.model.core.Projection;
 import io.horizondb.model.core.predicates.Operator;
-import io.horizondb.model.core.predicates.Predicates;
 import io.horizondb.model.protocol.Msg;
 import io.horizondb.model.protocol.MsgHeader;
 import io.horizondb.model.protocol.OpCode;
 import io.horizondb.model.protocol.SelectPayload;
+import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -44,43 +48,51 @@ import org.antlr.v4.runtime.misc.NotNull;
  * <code>Builder</code> for <code>SelectQuery</code> message instances.
  */
 final class SelectMsgBuilder extends HqlBaseListener implements MsgBuilder {
-    
+
+    /**
+     * The database manager.
+     */
+    private final DatabaseManager databaseManager;
+
     /**
      * The original request header.
      */
     private final MsgHeader requestHeader;
-    
+
     /**
      * The name of the database in which the time series must be created.
      */
-    private final String database; 
-    
+    private String databaseName; 
+
     /**
      * The time series name.
      */
     private String timeSeriesName;
-    
+
     /**
-     * The record and field projection.
+     * The record and field projectionBuilder.
      */
-    private Projection projection;
-    
+    private ProjectionBuilder projectionBuilder;
+
     /**
-     * The predicates.
+     * The predicate builders.
      */
-    private Deque<Predicate> predicates = new LinkedList<>();
-        
+    private Deque<PredicateBuilder> predicateBuilders = new LinkedList<>();
+
     /**
      * Creates a new <code>CreateTimeSeriesRequestBuilder</code> instance.
      * 
      * @param requestHeader the original request header
      * @param database the database in which the time series must be created
      */
-    public SelectMsgBuilder(MsgHeader requestHeader, String database) {
-        
+    public SelectMsgBuilder(DatabaseManager databaseManager, 
+                            MsgHeader requestHeader, 
+                            String databaseName) {
+
+        this.databaseManager = databaseManager;
         this.requestHeader = requestHeader;
-        this.database = database;
-        this.predicates.addFirst(Predicates.noop());
+        this.databaseName = databaseName;
+        this.predicateBuilders.addFirst(PredicateBuilders.noop());
     }
 
     /**
@@ -88,6 +100,10 @@ final class SelectMsgBuilder extends HqlBaseListener implements MsgBuilder {
      */
     @Override
     public void enterSelect(@NotNull SelectContext ctx) {
+        
+        if (ctx.databaseName() != null) {
+            this.databaseName = ctx.databaseName().getText();
+        }
         this.timeSeriesName = ctx.ID().getText();
     }
 
@@ -95,12 +111,20 @@ final class SelectMsgBuilder extends HqlBaseListener implements MsgBuilder {
      * {@inheritDoc}
      */
     @Override
-    public Msg<?> build() throws IOException {
+    public Msg<?> build() throws IOException, HorizonDBException {
 
-        SelectPayload payload = new SelectPayload(this.database, 
+        Database database = this.databaseManager.getDatabase(this.databaseName);
+        TimeSeries timeSeries = database.getTimeSeries(this.timeSeriesName);
+        TimeSeriesDefinition definition = timeSeries.getDefinition();
+        
+        PredicateBuilder builder = this.predicateBuilders.poll();
+        Predicate predicate = builder.build(definition);
+        
+        Projection projection = this.projectionBuilder.build(definition);
+        SelectPayload payload = new SelectPayload(this.databaseName, 
                                                   this.timeSeriesName, 
-                                                  this.projection, 
-                                                  this.predicates.poll());
+                                                  projection, 
+                                                  predicate);
         
         return Msg.newRequestMsg(this.requestHeader, OpCode.SELECT, payload);
     }
@@ -110,7 +134,7 @@ final class SelectMsgBuilder extends HqlBaseListener implements MsgBuilder {
      */
     @Override
     public void enterSelectList(@NotNull SelectListContext ctx) {
-        this.projection = new Projection(toList(ctx));
+        this.projectionBuilder = new ProjectionBuilder(toList(ctx));
     }
 
     /**
@@ -130,20 +154,20 @@ final class SelectMsgBuilder extends HqlBaseListener implements MsgBuilder {
         
         if (ctx.AND() != null) {
             
-            Predicate right = this.predicates.removeFirst();
-            Predicate left = this.predicates.removeFirst();
+            PredicateBuilder right = this.predicateBuilders.removeFirst();
+            PredicateBuilder left = this.predicateBuilders.removeFirst();
             
-            Predicate expression = Predicates.and(left, right);
+            PredicateBuilder expression = PredicateBuilders.and(left, right);
             
-            this.predicates.addFirst(expression);
+            this.predicateBuilders.addFirst(expression);
         
         } else if (ctx.OR() != null) {
             
-            Predicate right = this.predicates.removeFirst();
-            Predicate left = this.predicates.removeFirst();
+            PredicateBuilder right = this.predicateBuilders.removeFirst();
+            PredicateBuilder left = this.predicateBuilders.removeFirst();
             
-            Predicate expression = Predicates.or(left, right);
-            this.predicates.addFirst(expression);
+            PredicateBuilder expression = PredicateBuilders.or(left, right);
+            this.predicateBuilders.addFirst(expression);
         }
     }
 
@@ -175,11 +199,11 @@ final class SelectMsgBuilder extends HqlBaseListener implements MsgBuilder {
         
         if (notIn) {
             
-            this.predicates.addFirst(Predicates.notIn(fieldName, values));
+            this.predicateBuilders.addFirst(PredicateBuilders.notIn(fieldName, values));
             
         } else {
             
-            this.predicates.addFirst(Predicates.in(fieldName, values));
+            this.predicateBuilders.addFirst(PredicateBuilders.in(fieldName, values));
         }
     }
 
@@ -198,14 +222,14 @@ final class SelectMsgBuilder extends HqlBaseListener implements MsgBuilder {
             String min = ctx.getChild(3).getText();
             String max = ctx.getChild(5).getText();
             
-            this.predicates.addFirst(Predicates.notBetween(fieldName, min, max));
+            this.predicateBuilders.addFirst(PredicateBuilders.notBetween(fieldName, min, max));
         
         } else {
             
             String min = ctx.getChild(2).getText();
             String max = ctx.getChild(4).getText();
             
-            this.predicates.addFirst(Predicates.between(fieldName, min, max));
+            this.predicateBuilders.addFirst(PredicateBuilders.between(fieldName, min, max));
         }
     }
 
@@ -219,7 +243,7 @@ final class SelectMsgBuilder extends HqlBaseListener implements MsgBuilder {
       Operator operator = Operator.fromSymbol(ctx.operator().getText());
       String value = ctx.value().getText();
     
-      this.predicates.addFirst(Predicates.simplePredicate(fieldName, operator, value));
+      this.predicateBuilders.addFirst(PredicateBuilders.simplePredicate(fieldName, operator, value));
     }
     
     /**

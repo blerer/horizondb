@@ -173,7 +173,6 @@ final class InsertMsgBuilder extends HqlBaseListener implements MsgBuilder {
         try {
             TimeSeriesRecord record = definition.newRecord(recordIndex);
 
-            
             if (this.fieldNames.isEmpty()) {
                 for (int i = 0, m = this.fieldValues.size();  i < m ; i++) {
                     fieldValue = this.fieldValues.get(i);

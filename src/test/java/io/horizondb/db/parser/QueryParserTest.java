@@ -196,61 +196,55 @@ public class QueryParserTest {
     @Test
     public void testParseSelectWithTimestampGreaterThan() throws HorizonDBException, IOException  {
 
-        testParseSelectWithPredicate("timestamp > 2");
+        testParseSelectWithPredicate("timestamp > 2ns");
     }
     
     @Test
     public void testParseSelectWithAndAndOr() throws HorizonDBException, IOException  {
 
-        testParseSelectWithPredicate("timestamp > 2 AND timestamp < 4 OR timestamp > 6 AND timestamp < 8");
-    }
-    
-    @Test
-    public void testParseSelectWithTimestampUnit() throws HorizonDBException, IOException  {
-
-        testParseSelectWithPredicate("timestamp >= 1384425960200ms AND timestamp < 1384425960400ms");
+        testParseSelectWithPredicate("timestamp > 2ns AND timestamp < 4ns OR timestamp > 6ns AND timestamp < 8ns");
     }
     
     @Test
     public void testParseSelectWithAndOrAndParentheses() throws HorizonDBException, IOException  {
 
-        testParseSelectWithPredicate("timestamp > 2 AND (timestamp < 4 OR timestamp > 6)");
+        testParseSelectWithPredicate("timestamp > 2ns AND (timestamp < 4ns OR timestamp > 6ns)");
     }
     
     @Test
     public void testParseSelectWithInExpression() throws HorizonDBException, IOException  {
 
-        testParseSelectWithPredicate("timestamp IN (2, 4)");
+        testParseSelectWithPredicate("timestamp IN (2ns, 4ns)");
     }
     
     @Test
     public void testParseSelectWithBetweenExpression() throws HorizonDBException, IOException  {
 
-        testParseSelectWithPredicate("timestamp BETWEEN 2 AND 4");
+        testParseSelectWithPredicate("timestamp BETWEEN 2ns AND 4ns");
     }
     
     @Test
     public void testParseSelectWithNotBetweenExpression() throws HorizonDBException, IOException  {
 
-        testParseSelectWithPredicate("timestamp NOT BETWEEN 2 AND 6");
+        testParseSelectWithPredicate("timestamp NOT BETWEEN 2ns AND 6ns");
     }
     
     @Test
     public void testParseSelectWithBetweenAndInExpression() throws HorizonDBException, IOException  {
 
-        testParseSelectWithPredicate("timestamp BETWEEN 2 AND 6 AND timestamp IN (5, 6)");
+        testParseSelectWithPredicate("timestamp BETWEEN 2ns AND 6ns AND timestamp IN (5ns, 6ns)");
     }
     
     @Test
     public void testParseSelectWithNotInExpression() throws HorizonDBException, IOException  {
 
-        testParseSelectWithPredicate("timestamp NOT IN (2, 4)");
+        testParseSelectWithPredicate("timestamp NOT IN (2ns, 4ns)");
     }
     
     @Test
     public void testParseSelectWithInExpressionAndOnlyOneValue() throws HorizonDBException, IOException  {
 
-        testParseSelectWithPredicate("timestamp IN (2)");
+        testParseSelectWithPredicate("timestamp IN (2ns)");
     }
     
     @Test
@@ -388,6 +382,66 @@ public class QueryParserTest {
         assertEquals(timeSeriesDefinition.getRecordType(1), definition.getRecordType(0));
     }
 
+    @Test
+    public void testParseSelectWithDatabaseNameSpecifiedInTheQuery() throws HorizonDBException, IOException {
+
+        createDatabaseAndTimeSeries();
+
+        Msg<SelectPayload> msg = QueryParser.parse(this.configuration,
+                                                   this.databaseManager,
+                                                   newMsg("", "SELECT * FROM test.Dax;"));
+        assertEquals("test", msg.getPayload().getDatabaseName());
+        assertEquals("Dax", msg.getPayload().getSeriesName());
+    }
+    
+    @Test
+    public void testParseSelectWithEmptyIn() throws HorizonDBException, IOException {
+
+        createDatabaseAndTimeSeries();
+
+        Msg<SelectPayload> msg = QueryParser.parse(this.configuration,
+                                                   this.databaseManager,
+                                                   newMsg("test", "SELECT * FROM Dax WHERE timestamp IN ();"));
+        assertEquals("test", msg.getPayload().getDatabaseName());
+        assertEquals("Dax", msg.getPayload().getSeriesName());
+    }
+    
+    @Test
+    public void testParseSelectWithInvalidLongValue() throws HorizonDBException, IOException {
+
+        createDatabaseAndTimeSeries();
+
+        try {
+
+            QueryParser.parse(this.configuration,
+                              this.databaseManager,
+                              newMsg("test",
+                                     "SELECT Trade.* FROM Dax WHERE timestamp = 'test';"));
+            fail();
+        } catch (BadHqlGrammarException e) {
+            String msgFragment = "The format of the date/time: test does not match the expected one: yyyy-MM-dd HH:mm:ss.SSS";
+            assertErrorMessageContains(msgFragment, e);
+        }
+    }
+    
+    @Test
+    public void testParseSelectWithInvalidFieldName() throws HorizonDBException, IOException {
+
+        createDatabaseAndTimeSeries();
+
+        try {
+
+            QueryParser.parse(this.configuration,
+                              this.databaseManager,
+                              newMsg("test",
+                                     "SELECT Trade.* FROM Dax WHERE unknown = 'test';"));
+            fail();
+        } catch (HorizonDBException e) {
+            String msgFragment = "Unknown field: unknown";
+            assertErrorMessageContains(msgFragment, e);
+        }
+    }
+    
     /**
      * Creates a new HQL query message for use within the tests.
      * 

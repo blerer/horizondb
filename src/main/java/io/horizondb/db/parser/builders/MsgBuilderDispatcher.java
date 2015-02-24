@@ -224,7 +224,7 @@ public final class MsgBuilderDispatcher extends HqlBaseListener implements MsgBu
      */
     @Override
     public void enterSelect(@NotNull SelectContext ctx) {
-        this.builder = new SelectMsgBuilder(this.requestHeader, this.databaseName);
+        this.builder = new SelectMsgBuilder(this.databaseManager, this.requestHeader, this.databaseName);
         this.builder.enterSelect(ctx);
     }
 
