@@ -13,12 +13,14 @@
  */
 package io.horizondb.db.parser.builders;
 
+import io.horizondb.db.parser.BadHqlGrammarException;
 import io.horizondb.model.core.Projection;
 import io.horizondb.model.core.projections.DefaultProjection;
 import io.horizondb.model.core.projections.DefaultRecordTypeProjection;
 import io.horizondb.model.core.projections.NoopProjection;
 import io.horizondb.model.core.projections.NoopRecordTypeProjection;
 import io.horizondb.model.core.projections.RecordTypeProjection;
+import io.horizondb.model.schema.RecordTypeDefinition;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.util.ArrayList;
@@ -26,6 +28,8 @@ import java.util.List;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
+
+import static java.lang.String.format;
 
 /**
  * Builder for Projections.
@@ -43,7 +47,7 @@ final class ProjectionBuilder {
         this.selection = selection;
     }
 
-    public Projection build(TimeSeriesDefinition definition) {
+    public Projection build(TimeSeriesDefinition definition) throws BadHqlGrammarException {
         
         if (isSelectAll(this.selection)) {
             return new NoopProjection();
@@ -53,14 +57,41 @@ final class ProjectionBuilder {
         
         List<RecordTypeProjection> projections = new ArrayList<>(multimap.size());
         
-        for (String recordType: multimap.keySet()) {
+        try {
             
-            int index = definition.getRecordTypeIndex(recordType);
-            List<String> fields = multimap.get(recordType);
-            projections.add(toRecordTypeProjection(index, fields));
+            for (String recordType: multimap.keySet()) {
+                
+                int index = definition.getRecordTypeIndex(recordType);
+                List<String> fields = multimap.get(recordType);
+                projections.add(toRecordTypeProjection(index, definition.getRecordType(index), fields));
+            }
+            
+        } catch (IllegalArgumentException e) {
+            throw new BadHqlGrammarException(e.getMessage());
         }
         
         return new DefaultProjection(projections);
+    }
+
+    /**
+     * Validates that the specified fields exists within the specified record.
+     *
+     * @param typeDefinition the definition of the record type
+     * @param fields the fields names
+     * @throws BadHqlGrammarException if one of the field at list does not exists
+     */
+    private static void validateFields(RecordTypeDefinition typeDefinition, 
+                                       List<String> fields) throws BadHqlGrammarException {
+        
+        for (int i = 0, m = fields.size(); i < m; i++) {
+            
+            String field = fields.get(i);
+            if (typeDefinition.getFieldIndex(field) < 0) {
+                throw new BadHqlGrammarException(format("the field %s does not exists within the record %s",
+                                                        field,
+                                                        typeDefinition.getName()));
+            }
+        }
     }
 
     /**
@@ -82,15 +113,23 @@ final class ProjectionBuilder {
     }
 
     /**
-     * @param index
-     * @param fields
-     * @return
+     * Creates the <code>RecordTypeProjection</code> corresponding to the specified record type.
+     *
+     * @param index the record type index
+     * @param definition the record type definition
+     * @param fields the projected fields
+     * @return the <code>RecordTypeProjection</code> corresponding to the specified record type.
+     * @throws BadHqlGrammarException if the field names are not valid
      */
-    private static RecordTypeProjection toRecordTypeProjection(int index, List<String> fields) {
+    private static RecordTypeProjection toRecordTypeProjection(int index,
+                                                               RecordTypeDefinition definition,
+                                                               List<String> fields) throws BadHqlGrammarException {
 
         if (isSelectAll(fields)) {
             return new NoopRecordTypeProjection(index);
         }
+
+        validateFields(definition, fields);
         return new DefaultRecordTypeProjection(index, fields);
     }
 

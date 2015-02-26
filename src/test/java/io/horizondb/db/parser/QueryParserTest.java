@@ -54,8 +54,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 /**
- * @author Benjamin
- *
  */
 public class QueryParserTest {
 
@@ -438,6 +436,60 @@ public class QueryParserTest {
             fail();
         } catch (HorizonDBException e) {
             String msgFragment = "Unknown field: unknown";
+            assertErrorMessageContains(msgFragment, e);
+        }
+    }
+    
+    @Test
+    public void testParseSelectWithInvalidProjectionRecordName() throws HorizonDBException, IOException {
+
+        createDatabaseAndTimeSeries();
+
+        try {
+
+            QueryParser.parse(this.configuration,
+                              this.databaseManager,
+                              newMsg("test",
+                                     "SELECT Tarde.priec FROM Dax;"));
+            fail();
+        } catch (HorizonDBException e) {
+            String msgFragment = "No Tarde records have not been defined within this record set";
+            assertErrorMessageContains(msgFragment, e);
+        }
+    }
+    
+    @Test
+    public void testParseSelectWithInvalidProjectionFieldName() throws HorizonDBException, IOException {
+
+        createDatabaseAndTimeSeries();
+
+        try {
+
+            QueryParser.parse(this.configuration,
+                              this.databaseManager,
+                              newMsg("test",
+                                     "SELECT Trade.priec FROM Dax;"));
+            fail();
+        } catch (HorizonDBException e) {
+            String msgFragment = "the field priec does not exists within the record Trade";
+            assertErrorMessageContains(msgFragment, e);
+        }
+    }
+    
+    @Test
+    public void testParseSelectWithInvalidProjectionFieldNameMix() throws HorizonDBException, IOException {
+
+        createDatabaseAndTimeSeries();
+
+        try {
+
+            QueryParser.parse(this.configuration,
+                              this.databaseManager,
+                              newMsg("test",
+                                     "SELECT Trade.price, Trade.* FROM Dax;"));
+            fail();
+        } catch (HorizonDBException e) {
+            String msgFragment = "the field * does not exists within the record Trade";
             assertErrorMessageContains(msgFragment, e);
         }
     }
