@@ -25,6 +25,7 @@ import io.horizondb.model.core.Predicate;
 import io.horizondb.model.core.Projection;
 import io.horizondb.model.core.Record;
 import io.horizondb.model.core.RecordIterator;
+import io.horizondb.model.schema.DatabaseDefinition;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
@@ -42,9 +43,9 @@ import com.google.common.util.concurrent.ListenableFuture;
 public final class TimeSeries {
 
     /**
-     * The database name.
+     * The database definition.
      */
-    private final String databaseName;
+    private final DatabaseDefinition databaseDefinition;
     
     /**
      * The time series definition
@@ -59,15 +60,15 @@ public final class TimeSeries {
     /**
      * Creates a new <code>TimeSeries</code> instance.
      * 
-     * @param databaseName the name of database to which belongs this time series 
+     * @param databaseDefinition the database to which belongs this time series 
      * @param definition the time series definition
      * @param partitionManager the partition manager 
      */
-    public TimeSeries(String databaseName, 
+    public TimeSeries(DatabaseDefinition databaseDefinition, 
                       TimeSeriesDefinition definition, 
                       TimeSeriesPartitionManager partitionManager) {
 
-        this.databaseName = databaseName;
+        this.databaseDefinition = databaseDefinition;
         this.partitionManager = partitionManager;
         this.definition = definition;
     }
@@ -174,7 +175,7 @@ public final class TimeSeries {
      * @return the partition ID associated to the specified time range.
      */
     private PartitionId toPartitionId(Range<Field> range) {
-        return new PartitionId(this.databaseName, this.definition.getName(), range);
+        return new PartitionId(this.databaseDefinition, this.definition, range);
     }
     
     /**

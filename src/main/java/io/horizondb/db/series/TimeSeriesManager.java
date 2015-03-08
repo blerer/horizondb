@@ -17,6 +17,7 @@ package io.horizondb.db.series;
 
 import io.horizondb.db.Component;
 import io.horizondb.db.HorizonDBException;
+import io.horizondb.model.schema.DatabaseDefinition;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
@@ -26,14 +27,14 @@ public interface TimeSeriesManager extends Component {
     /**
      * Creates the specified time series.
      * 
-     * @param databaseName the database name.
-     * @param definition the time series definition.
+     * @param databaseDefinition the database definition.
+     * @param timeSeriesdefinition the time series definition.
      * @param throwExceptionIfExists <code>true</code> if an exception must be thrown if the time series already exists.
      * @throws IOException if an I/O problem occurs while creating the time series.
      * @throws HorizonDBException if a time series with the same name already exists.
      */
-    void createTimeSeries(String databaseName, 
-                          TimeSeriesDefinition definition, 
+    void createTimeSeries(DatabaseDefinition databaseDefinition, 
+                          TimeSeriesDefinition timeSeriesdefinition, 
                           boolean throwExceptionIfExists) 
                                   throws IOException,
                                          HorizonDBException;
@@ -41,13 +42,29 @@ public interface TimeSeriesManager extends Component {
     /**
      * Returns the time series of the specified database with the specified name if it exists.
      * 
-     * @param databaseName the database name.
+     * @param databaseDefinition the database definition.
      * @param seriesName the time series name.
      * @return the time series with the specified name if it exists.
      * @throws IOException if an I/O problem occurs while retrieving the time series.
      * @throws HorizonDBException if the time series with the specified name does not exists.
      */
-    TimeSeries getTimeSeries(String databaseName, String seriesName) throws IOException, HorizonDBException;
+    TimeSeries getTimeSeries(DatabaseDefinition databaseDefinition, 
+                             String seriesName) throws IOException, HorizonDBException;
+
+    /**
+     * Drops the specified time series.
+     *
+     * @param databaseDefinition the database definition.
+     * @param seriesName the time series name.
+     * @param throwExceptionIfDoesNotExist <code>true</code> if an exception must be thrown if the time series does not exists.
+     * @throws IOException if an I/O problem occurs while creating the time series.
+     * @throws HorizonDBException if a time series does not exists.
+     */
+    void dropTimeSeries(DatabaseDefinition databaseDefinition, 
+                        String seriesName, 
+                        boolean throwExceptionIfDoesNotExist) 
+                                throws IOException,
+                                       HorizonDBException;
 
     /**
      * Returns the time series with the specified ID if it exists.

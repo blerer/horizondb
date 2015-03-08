@@ -86,9 +86,9 @@ public class OnDiskTimeSeriesManagerTest {
 
         manager.start();
 
-        manager.createTimeSeries("test", definition, true);
+        manager.createTimeSeries(databaseDefinition, definition, true);
 
-        manager.getTimeSeries("test", "DAX");
+        manager.getTimeSeries(databaseDefinition, "DAX");
 
         manager.shutdown();
     }
@@ -101,7 +101,7 @@ public class OnDiskTimeSeriesManagerTest {
 
         try {
 
-            manager.getTimeSeries("test", "DAX");
+            manager.getTimeSeries(new DatabaseDefinition("test"), "DAX");
             Assert.fail();
 
         } catch (HorizonDBException e) {
@@ -135,14 +135,14 @@ public class OnDiskTimeSeriesManagerTest {
                                                                 .addRecordType(quote)
                                                                 .build();
 
-            manager.createTimeSeries("test", definition, true);
+            manager.createTimeSeries(databaseDefinition, definition, true);
 
             TimeSeriesDefinition definition2 = databaseDefinition.newTimeSeriesDefinitionBuilder("dax")
                                                                  .timeUnit(TimeUnit.NANOSECONDS)
                                                                  .addRecordType(quote)
                                                                  .build();
 
-            manager.createTimeSeries("test", definition2, true);
+            manager.createTimeSeries(databaseDefinition, definition2, true);
             Assert.fail();
 
         } catch (HorizonDBException e) {
@@ -176,14 +176,14 @@ public class OnDiskTimeSeriesManagerTest {
                                                             .addRecordType(quote)
                                                             .build();
 
-        manager.createTimeSeries("test", definition, true);
+        manager.createTimeSeries(databaseDefinition, definition, true);
 
         TimeSeriesDefinition definition2 = databaseDefinition.newTimeSeriesDefinitionBuilder("dax")
                                                              .timeUnit(TimeUnit.NANOSECONDS)
                                                              .addRecordType(quote)
                                                              .build();
 
-        manager.createTimeSeries("test", definition2, false);
+        manager.createTimeSeries(databaseDefinition, definition2, false);
         manager.shutdown();
     }
 }

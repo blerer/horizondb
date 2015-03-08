@@ -19,6 +19,7 @@ import io.horizondb.db.AbstractComponent;
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.cache.ValueLoader;
+import io.horizondb.model.schema.DatabaseDefinition;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
@@ -28,8 +29,6 @@ import com.google.common.cache.CacheStats;
 
 /**
  * Decorator that add caching functionalities to a <code>TimeSeriesManager</code>
- * 
- * @author Benjamin
  * 
  */
 public final class TimeSeriesManagerCache extends AbstractComponent implements TimeSeriesManager {
@@ -95,20 +94,30 @@ public final class TimeSeriesManagerCache extends AbstractComponent implements T
      * {@inheritDoc}
      */
     @Override
-    public void createTimeSeries(String databaseName, 
-                                 TimeSeriesDefinition definition, 
+    public void createTimeSeries(DatabaseDefinition databaseDefinition, 
+                                 TimeSeriesDefinition timeSeriesDefinition, 
                                  boolean throwExceptionIfExists) 
                                          throws IOException, HorizonDBException {
         
-        this.manager.createTimeSeries(databaseName, definition, throwExceptionIfExists);
+        this.manager.createTimeSeries(databaseDefinition, timeSeriesDefinition, throwExceptionIfExists);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public TimeSeries getTimeSeries(String databaseName, String seriesName) throws IOException, HorizonDBException {
-        return getTimeSeries(new TimeSeriesId(databaseName, seriesName));
+    public void dropTimeSeries(DatabaseDefinition databaseDefinition, String seriesName, boolean throwExceptionIfDoesNotExist) throws IOException,
+                                                                                                            HorizonDBException {
+        this.manager.dropTimeSeries(databaseDefinition, seriesName, throwExceptionIfDoesNotExist);
+        this.cache.invalidate(new TimeSeriesId(databaseDefinition, seriesName));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public TimeSeries getTimeSeries(DatabaseDefinition databaseDefinition, String seriesName) throws IOException, HorizonDBException {
+        return getTimeSeries(new TimeSeriesId(databaseDefinition, seriesName));
     }
 
     /**

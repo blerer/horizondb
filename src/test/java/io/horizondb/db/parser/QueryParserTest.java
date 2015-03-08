@@ -26,6 +26,7 @@ import io.horizondb.io.ReadableBuffer;
 import io.horizondb.model.core.records.BinaryTimeSeriesRecord;
 import io.horizondb.model.protocol.CreateDatabasePayload;
 import io.horizondb.model.protocol.CreateTimeSeriesPayload;
+import io.horizondb.model.protocol.DropTimeSeriesPayload;
 import io.horizondb.model.protocol.HqlQueryPayload;
 import io.horizondb.model.protocol.InsertPayload;
 import io.horizondb.model.protocol.Msg;
@@ -126,6 +127,32 @@ public class QueryParserTest {
         assertEquals(expected, msg.getPayload().getDefinition());
     }
 
+    @Test
+    public void testParseDropTimeSeries() throws HorizonDBException, IOException  {
+
+        createDatabaseAndTimeSeries();
+        
+        Msg<DropTimeSeriesPayload> msg = QueryParser.parse(this.configuration,
+                                                           this.databaseManager,
+                                                           newMsg("test", "DROP TIMESERIES Dax;"));
+        assertNotNull(msg);
+        assertEquals("test", msg.getPayload().getDatabase());
+        assertEquals("Dax", msg.getPayload().getTimeSeries());
+    }
+    
+    @Test
+    public void testParseDropTimeSeriesWithDatabaseNameSpecified() throws HorizonDBException, IOException  {
+
+        createDatabaseAndTimeSeries();
+        
+        Msg<DropTimeSeriesPayload> msg = QueryParser.parse(this.configuration,
+                                                           this.databaseManager,
+                                                           newMsg("", "DROP TIMESERIES test.Dax;"));
+        assertNotNull(msg);
+        assertEquals("test", msg.getPayload().getDatabase());
+        assertEquals("Dax", msg.getPayload().getTimeSeries());
+    }
+    
     @Test
     public void testParseCreateTimeSeriesWithDatabaseNameSpecifiedInTheQuery() throws HorizonDBException, IOException  {
 

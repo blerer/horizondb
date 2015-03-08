@@ -1,6 +1,4 @@
 /**
- * Copyright 2013 Benjamin Lerer
- * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,6 +19,7 @@ import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.Names;
 import io.horizondb.db.btree.BTreeStore;
 import io.horizondb.model.ErrorCodes;
+import io.horizondb.model.schema.DatabaseDefinition;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
@@ -36,12 +35,12 @@ abstract class AbstractTimeSeriesManager extends AbstractComponent implements Ti
     /**
      * The B+Tree branching factor.
      */
-    private static final int BRANCHING_FACTOR = 100;
+    private static final int BRANCHING_FACTOR = 128;
 
     /**
      * The Database server configuration.
      */
-    private final Configuration configuration;
+    protected final Configuration configuration;
 
     /**
      * The time series partition manager
@@ -119,19 +118,54 @@ abstract class AbstractTimeSeriesManager extends AbstractComponent implements Ti
      * {@inheritDoc}
      */
     @Override
-    public final void createTimeSeries(String databaseName,
-                                       TimeSeriesDefinition definition, 
+    public final void createTimeSeries(DatabaseDefinition databaseDefinition,
+                                       TimeSeriesDefinition timeSeriesDefinition, 
                                        boolean throwExceptionIfExists) 
                                        throws IOException, HorizonDBException {
 
-        TimeSeriesId id = new TimeSeriesId(databaseName, definition.getName());
+        TimeSeriesDefinition definition = timeSeriesDefinition.newInstance();
+        
+        TimeSeriesId id = new TimeSeriesId(databaseDefinition, definition.getName());
 
         Names.checkTimeSeriesName(id.getSeriesName());
 
-        if (!this.btree.insertIfAbsent(id, definition) && throwExceptionIfExists) {
+        
+        if (!this.btree.insertIfAbsent(id, definition)) {
+            
+            if (throwExceptionIfExists) {
+                throw new HorizonDBException(ErrorCodes.DUPLICATE_TIMESERIES, "Duplicate time series name "
+                    + timeSeriesDefinition.getName() + " in database " + databaseDefinition.getName());
+            }
+        } else {
+            afterCreate(databaseDefinition, definition);
+        }
+    }
 
-            throw new HorizonDBException(ErrorCodes.DUPLICATE_TIMESERIES, "Duplicate time series name "
-                    + definition.getName() + " in database " + databaseName);
+    /**
+     * Called once the time series has been created.
+     * @param databaseDefinition the database definition
+     * @param timeSeriesDefinition the time series definition
+     * @throws IOException if an I/O problem occurs
+     */
+    protected void afterCreate(DatabaseDefinition databaseDefinition,
+                               TimeSeriesDefinition timeSeriesDefinition) throws IOException {
+
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void dropTimeSeries(DatabaseDefinition databaseDefinition,
+                               String seriesName,
+                               boolean throwExceptionIfDoesNotExist) throws IOException, HorizonDBException {
+        
+        TimeSeriesId id = new TimeSeriesId(databaseDefinition, seriesName);
+
+        if (!this.btree.deleteIfPresent(id) && throwExceptionIfDoesNotExist) {
+
+            throw new HorizonDBException(ErrorCodes.UNKNOWN_TIMESERIES, "Unknown time series "
+                    + seriesName + " in database " + databaseDefinition.getName());
         }
     }
 
@@ -139,11 +173,11 @@ abstract class AbstractTimeSeriesManager extends AbstractComponent implements Ti
      * {@inheritDoc}
      */
     @Override
-    public final TimeSeries getTimeSeries(String databaseName, 
+    public final TimeSeries getTimeSeries(DatabaseDefinition databaseDefinition, 
                                           String seriesName) 
                                           throws IOException, HorizonDBException {
 
-        return getTimeSeries(new TimeSeriesId(databaseName, seriesName));
+        return getTimeSeries(new TimeSeriesId(databaseDefinition, seriesName));
     }
 
     /**
@@ -159,7 +193,8 @@ abstract class AbstractTimeSeriesManager extends AbstractComponent implements Ti
                     + " does not exists within the database " + id.getDatabaseName() + ".");
         }
 
-        return new TimeSeries(id.getDatabaseName(), definition, this.partitionManager);
+        DatabaseDefinition databaseDefinition = new DatabaseDefinition(id.getDatabaseName(), id.getDatabaseTimestamp());
+        return new TimeSeries(databaseDefinition, definition, this.partitionManager);
     }
 
     /**

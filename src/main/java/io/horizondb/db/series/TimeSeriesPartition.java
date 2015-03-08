@@ -25,6 +25,7 @@ import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.core.fields.TimestampField;
 import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;
 import io.horizondb.model.core.iterators.FilteringRecordIterator;
+import io.horizondb.model.schema.DatabaseDefinition;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
@@ -46,7 +47,6 @@ import com.google.common.collect.RangeSet;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import static io.horizondb.io.files.FileUtils.printNumberOfBytes;
-import static org.apache.commons.lang.Validate.notEmpty;
 import static org.apache.commons.lang.Validate.notNull;
 
 /**
@@ -74,9 +74,9 @@ public final class TimeSeriesPartition implements Comparable<TimeSeriesPartition
     private final PartitionId id;
     
     /**
-     * The database name.
+     * The database definition.
      */
-    private final String databaseName;
+    private final DatabaseDefinition databaseDefinition;
 
     /**
      * The partitions manager.
@@ -115,36 +115,36 @@ public final class TimeSeriesPartition implements Comparable<TimeSeriesPartition
      * 
      * @param manager the manager that created this time series partition
      * @param configuration the database configuration
-     * @param databaseName the database name
+     * @param databaseDefinition the database database definition
      * @param definition the time series definition
      * @param metadata the meta data of this partition
      * @throws IOException if an I/O problem occurs while creating this partition
      */
     public TimeSeriesPartition(TimeSeriesPartitionManager manager,
                                Configuration configuration,
-                               String databaseName,
+                               DatabaseDefinition databaseDefinition,
                                TimeSeriesDefinition definition,
                                TimeSeriesPartitionMetaData metadata) throws IOException {
 
         notNull(manager, "the manager parameter must not be null.");
         notNull(configuration, "the configuration parameter must not be null.");
-        notEmpty(databaseName, "the databaseName parameter must not be empty.");
+        notNull(databaseDefinition, "the databaseDefinition parameter must not be null.");
         notNull(definition, "the definition parameter must not be null.");
         notNull(metadata, "the metadata parameter must not be null.");
 
         this.configuration = configuration;
         this.manager = manager;
         this.timeRange = metadata.getRange();
-        this.databaseName = databaseName;
+        this.databaseDefinition = databaseDefinition;
         this.definition = definition;
         
-        this.id = new PartitionId(this.databaseName,
-                                  this.definition.getName(),
+        this.id = new PartitionId(this.databaseDefinition,
+                                  this.definition,
                                   this.timeRange);
         
         this.allocator = new SlabAllocator(configuration.getMemTimeSeriesSize());
 
-        TimeSeriesElement file = TimeSeriesFile.open(configuration, databaseName, definition, metadata);
+        TimeSeriesElement file = TimeSeriesFile.open(configuration, this.databaseDefinition, definition, metadata);
 
         this.elements.set(new TimeSeriesElements(configuration, definition, file));
     }

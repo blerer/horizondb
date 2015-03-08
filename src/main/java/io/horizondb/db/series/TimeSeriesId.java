@@ -20,6 +20,7 @@ import io.horizondb.io.ByteWriter;
 import io.horizondb.io.encoding.VarInts;
 import io.horizondb.io.serialization.Parser;
 import io.horizondb.io.serialization.Serializable;
+import io.horizondb.model.schema.DatabaseDefinition;
 
 import java.io.IOException;
 
@@ -33,8 +34,6 @@ import org.apache.commons.lang.builder.ToStringStyle;
 
 /**
  * ID used to identify uniquely a time series.
- * 
- * @author Benjamin
  * 
  */
 @Immutable
@@ -51,7 +50,9 @@ final class TimeSeriesId implements Comparable<TimeSeriesId>, Serializable {
         @Override
         public TimeSeriesId parseFrom(ByteReader reader) throws IOException {
 
-            return new TimeSeriesId(VarInts.readString(reader), VarInts.readString(reader));
+            return new TimeSeriesId(VarInts.readString(reader), 
+                                    VarInts.readLong(reader),
+                                    VarInts.readString(reader));
         }
     };
 
@@ -59,6 +60,11 @@ final class TimeSeriesId implements Comparable<TimeSeriesId>, Serializable {
      * The database name.
      */
     private final String databaseName;
+    
+    /**
+     * The database timestamp.
+     */
+    private final long timestamp;
 
     /**
      * The time series name.
@@ -68,11 +74,25 @@ final class TimeSeriesId implements Comparable<TimeSeriesId>, Serializable {
     /**
      * Creates a new <code>TimeSeriesId</code>.
      * 
-     * @param databaseName the database name.
+     * @param databaseDefinition the database definition.
      * @param seriesName the time series name.
      */
-    public TimeSeriesId(String databaseName, String seriesName) {
+    public TimeSeriesId(DatabaseDefinition databaseDefinition, String seriesName) {
+        this.databaseName = databaseDefinition.getName().toLowerCase();
+        this.timestamp = databaseDefinition.getTimestamp();
+        this.seriesName = seriesName.toLowerCase();
+    }
+    
+    /**
+     * Creates a new <code>TimeSeriesId</code>.
+     * 
+     * @param databaseName the database name.
+     * @param timestamp the database timestamp.
+     * @param seriesName the time series name.
+     */
+    public TimeSeriesId(String databaseName, long timestamp, String seriesName) {
         this.databaseName = databaseName.toLowerCase();
+        this.timestamp = timestamp;
         this.seriesName = seriesName.toLowerCase();
     }
 
@@ -116,6 +136,14 @@ final class TimeSeriesId implements Comparable<TimeSeriesId>, Serializable {
     }
 
     /**
+     * Returns the database creation time.
+     * @return the database creation time
+     */
+    public long getDatabaseTimestamp() {
+        return this.timestamp;
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
@@ -128,6 +156,7 @@ final class TimeSeriesId implements Comparable<TimeSeriesId>, Serializable {
         }
         TimeSeriesId rhs = (TimeSeriesId) object;
         return new EqualsBuilder().append(this.databaseName, rhs.databaseName)
+                                  .append(this.timestamp, rhs.timestamp)
                                   .append(this.seriesName, rhs.seriesName)
                                   .isEquals();
     }
@@ -138,6 +167,7 @@ final class TimeSeriesId implements Comparable<TimeSeriesId>, Serializable {
     @Override
     public int hashCode() {
         return new HashCodeBuilder(-881768609, -777990173).append(this.databaseName)
+                                                          .append(this.timestamp)
                                                           .append(this.seriesName)
                                                           .toHashCode();
     }
@@ -148,6 +178,7 @@ final class TimeSeriesId implements Comparable<TimeSeriesId>, Serializable {
     @Override
     public String toString() {
         return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE).append("databaseName", this.databaseName)
+                                                                          .append("timestamp", this.timestamp)
                                                                           .append("seriesName", this.seriesName)
                                                                           .toString();
     }
@@ -158,6 +189,7 @@ final class TimeSeriesId implements Comparable<TimeSeriesId>, Serializable {
     @Override
     public int compareTo(TimeSeriesId other) {
         return new CompareToBuilder().append(this.databaseName, other.databaseName)
+                                     .append(this.timestamp, other.timestamp)
                                      .append(this.seriesName, other.seriesName)
                                      .toComparison();
     }
@@ -167,7 +199,9 @@ final class TimeSeriesId implements Comparable<TimeSeriesId>, Serializable {
      */
     @Override
     public int computeSerializedSize() {
-        return VarInts.computeStringSize(this.databaseName) + VarInts.computeStringSize(this.seriesName);
+        return VarInts.computeStringSize(this.databaseName) 
+                + VarInts.computeLongSize(this.timestamp) 
+                + VarInts.computeStringSize(this.seriesName);
     }
 
     /**
@@ -176,6 +210,7 @@ final class TimeSeriesId implements Comparable<TimeSeriesId>, Serializable {
     @Override
     public void writeTo(ByteWriter writer) throws IOException {
         VarInts.writeString(writer, this.databaseName);
+        VarInts.writeLong(writer, this.timestamp);
         VarInts.writeString(writer, this.seriesName);
     }
 }

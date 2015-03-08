@@ -17,6 +17,7 @@ package io.horizondb.db.series;
 
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
+import io.horizondb.db.HorizonDBFiles;
 import io.horizondb.db.btree.KeyValueIterator;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.files.FileUtils;
@@ -100,8 +101,6 @@ public class TimeSeriesPartitionManagerCachesTest {
                                                                             .addField("status", FieldType.BYTE)
                                                                             .build();
 
-            Files.createDirectory(this.testDirectory.resolve("test"));
-
             DatabaseDefinition databaseDefinition = new DatabaseDefinition("test");
 
             TimeSeriesDefinition definition = databaseDefinition.newTimeSeriesDefinitionBuilder("DAX")
@@ -109,7 +108,11 @@ public class TimeSeriesPartitionManagerCachesTest {
                                                                 .addRecordType(recordTypeDefinition)
                                                                 .build();
 
-            PartitionId id = new PartitionId("test", "DAX", range);
+            Files.createDirectories(HorizonDBFiles.getTimeSeriesDirectory(this.configuration,
+                                                                          databaseDefinition,
+                                                                          definition));
+
+            PartitionId id = new PartitionId(databaseDefinition, definition, range);
 
             caches.getPartitionForWrite(id, definition);
 
@@ -185,27 +188,30 @@ public class TimeSeriesPartitionManagerCachesTest {
                                                                                        partitionManager);
         caches.start();
 
+        RecordTypeDefinition recordTypeDefinition = RecordTypeDefinition.newBuilder("exchangeState")
+                                                                        .addField("timestampInMillis",
+                                                                                  FieldType.MILLISECONDS_TIMESTAMP)
+                                                                        .addField("status", FieldType.BYTE)
+                                                                        .build();
+
+        DatabaseDefinition databaseDefinition = new DatabaseDefinition("test");
+
+        TimeSeriesDefinition daxDefinition = databaseDefinition.newTimeSeriesDefinitionBuilder("DAX")
+                                                               .timeUnit(TimeUnit.NANOSECONDS)
+                                                               .addRecordType(recordTypeDefinition)
+                                                               .build();
+
+        Files.createDirectories(HorizonDBFiles.getTimeSeriesDirectory(this.configuration,
+                                                                      databaseDefinition,
+                                                                      daxDefinition));
+
+        Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26 00:00:00.000'", 
+                                                          "'2013-11-27 00:00:00.000'");
+        
         try {
 
-            RecordTypeDefinition recordTypeDefinition = RecordTypeDefinition.newBuilder("exchangeState")
-                                                                            .addField("timestampInMillis",
-                                                                                      FieldType.MILLISECONDS_TIMESTAMP)
-                                                                            .addField("status", FieldType.BYTE)
-                                                                            .build();
-
-            Files.createDirectory(this.testDirectory.resolve("test"));
-
-            DatabaseDefinition databaseDefinition = new DatabaseDefinition("test");
-
-            TimeSeriesDefinition daxDefinition = databaseDefinition.newTimeSeriesDefinitionBuilder("DAX")
-                                                                   .timeUnit(TimeUnit.NANOSECONDS)
-                                                                   .addRecordType(recordTypeDefinition)
-                                                                   .build();
-
-            Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26 00:00:00.000'", 
-                                                              "'2013-11-27 00:00:00.000'");
             
-            PartitionId daxPartitionId = new PartitionId("test", "DAX", range);
+            PartitionId daxPartitionId = new PartitionId(databaseDefinition, daxDefinition, range);
 
             TimeSeriesPartition daxPartition = caches.getPartitionForWrite(daxPartitionId, daxDefinition);
 
@@ -245,26 +251,14 @@ public class TimeSeriesPartitionManagerCachesTest {
         caches.start();
 
         try {
+            
+            Files.createDirectories(HorizonDBFiles.getTimeSeriesDirectory(this.configuration,
+                                                                          databaseDefinition,
+                                                                          daxDefinition));
 
-            Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26 00:00:00.000'", 
-                                                              "'2013-11-27 00:00:00.000'");
+            PartitionId id = new PartitionId(databaseDefinition, daxDefinition, range);
 
-            RecordTypeDefinition recordTypeDefinition = RecordTypeDefinition.newBuilder("exchangeState")
-                                                                            .addField("timestampInMillis",
-                                                                                      FieldType.MILLISECONDS_TIMESTAMP)
-                                                                            .addField("status", FieldType.BYTE)
-                                                                            .build();
-
-            DatabaseDefinition databaseDefinition = new DatabaseDefinition("test");
-
-            TimeSeriesDefinition definition = databaseDefinition.newTimeSeriesDefinitionBuilder("DAX")
-                                                                .timeUnit(TimeUnit.NANOSECONDS)
-                                                                .addRecordType(recordTypeDefinition)
-                                                                .build();
-
-            PartitionId id = new PartitionId("test", "DAX", range);
-
-            KeyValueIterator<PartitionId, TimeSeriesPartition> iterator = caches.getRangeForRead(id, id, definition);
+            KeyValueIterator<PartitionId, TimeSeriesPartition> iterator = caches.getRangeForRead(id, id, daxDefinition);
             
             assertTrue(iterator.next());
             assertEquals(id, iterator.getKey());
@@ -290,7 +284,7 @@ public class TimeSeriesPartitionManagerCachesTest {
 
             System.gc();
 
-            iterator = caches.getRangeForRead(id, id, definition);
+            iterator = caches.getRangeForRead(id, id, daxDefinition);
             
             assertTrue(iterator.next());
             assertEquals(id, iterator.getKey());
@@ -338,8 +332,6 @@ public class TimeSeriesPartitionManagerCachesTest {
                                                                             .addField("status", FieldType.BYTE)
                                                                             .build();
 
-            Files.createDirectory(this.testDirectory.resolve("test"));
-
             DatabaseDefinition databaseDefinition = new DatabaseDefinition("test");
 
             TimeSeriesDefinition definition = databaseDefinition.newTimeSeriesDefinitionBuilder("DAX")
@@ -347,7 +339,11 @@ public class TimeSeriesPartitionManagerCachesTest {
                                                                 .addRecordType(recordTypeDefinition)
                                                                 .build();
 
-            PartitionId id = new PartitionId("test", "DAX", range);
+            Files.createDirectories(HorizonDBFiles.getTimeSeriesDirectory(this.configuration,
+                                                                          databaseDefinition,
+                                                                          definition));
+
+            PartitionId id = new PartitionId(databaseDefinition, definition, range);
 
             KeyValueIterator<PartitionId, TimeSeriesPartition> iterator = caches.getRangeForRead(id, id, definition);
 
@@ -412,8 +408,6 @@ public class TimeSeriesPartitionManagerCachesTest {
                                                                             .addField("status", FieldType.BYTE)
                                                                             .build();
 
-            Files.createDirectory(this.testDirectory.resolve("test"));
-
             DatabaseDefinition databaseDefinition = new DatabaseDefinition("test");
 
             TimeSeriesDefinition daxDefinition = databaseDefinition.newTimeSeriesDefinitionBuilder("DAX")
@@ -421,15 +415,23 @@ public class TimeSeriesPartitionManagerCachesTest {
                                                                    .addRecordType(recordTypeDefinition)
                                                                    .build();
 
+            Files.createDirectories(HorizonDBFiles.getTimeSeriesDirectory(this.configuration,
+                                                                          databaseDefinition,
+                                                                          daxDefinition));
+
             TimeSeriesDefinition cacDefinition = databaseDefinition.newTimeSeriesDefinitionBuilder("CAC40")
                                                                    .timeUnit(TimeUnit.NANOSECONDS)
                                                                    .addRecordType(recordTypeDefinition)
                                                                    .build();
 
+            Files.createDirectories(HorizonDBFiles.getTimeSeriesDirectory(this.configuration,
+                                                                          databaseDefinition,
+                                                                          cacDefinition));
+
             Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26 00:00:00.000'", 
                                                               "'2013-11-27 00:00:00.000'");
             
-            PartitionId daxPartitionId = new PartitionId("test", "DAX", range);
+            PartitionId daxPartitionId = new PartitionId(databaseDefinition, daxDefinition, range);
 
             TimeSeriesPartition daxPartition = caches.getPartitionForWrite(daxPartitionId, daxDefinition);
 
@@ -456,7 +458,7 @@ public class TimeSeriesPartitionManagerCachesTest {
 
             daxPartition.write(recordIterator, Futures.immediateFuture(new ReplayPosition(0, 0)));
 
-            PartitionId cacPartitionId = new PartitionId("test", "CAC40", range);
+            PartitionId cacPartitionId = new PartitionId(databaseDefinition, cacDefinition, range);
 
             TimeSeriesPartition cacPartition = caches.getPartitionForWrite(cacPartitionId, cacDefinition);
 

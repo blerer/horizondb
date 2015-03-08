@@ -1,6 +1,4 @@
 /**
- * Copyright 2013 Benjamin Lerer
- * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,6 +17,7 @@ import io.horizondb.db.AbstractComponent;
 import io.horizondb.db.Configuration;
 import io.horizondb.db.btree.BTreeStore;
 import io.horizondb.db.btree.KeyValueIterator;
+import io.horizondb.model.schema.DatabaseDefinition;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
@@ -44,7 +43,7 @@ abstract class AbstractTimeSeriesPartitionManager extends AbstractComponent impl
     /**
      * The B+Tree branching factor.
      */
-    private static final int BRANCHING_FACTOR = 100;
+    private static final int BRANCHING_FACTOR = 128;
 
     /**
      * The Database server configuration.
@@ -287,8 +286,10 @@ abstract class AbstractTimeSeriesPartitionManager extends AbstractComponent impl
     private TimeSeriesPartition newTimeSeriesPartition(PartitionId partitionId,
                                                        TimeSeriesDefinition definition,
                                                        TimeSeriesPartitionMetaData metadata) throws IOException {
-        
-        return new TimeSeriesPartition(this, this.configuration, partitionId.getDatabaseName(), definition, metadata);
+
+        DatabaseDefinition databaseDefinition = new DatabaseDefinition(partitionId.getDatabaseName(), 
+                                                                       partitionId.getDatabaseTimestamp());
+        return new TimeSeriesPartition(this, this.configuration, databaseDefinition, definition, metadata);
     }
 
     /**

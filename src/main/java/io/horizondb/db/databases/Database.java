@@ -80,7 +80,7 @@ public final class Database {
                                          throws IOException,
                                                 HorizonDBException {
 
-        this.timeSeriesManager.createTimeSeries(this.definition.getName(), 
+        this.timeSeriesManager.createTimeSeries(this.definition, 
                                                 timeSeriesDefinition, 
                                                 throwExceptionIfExists);
     }
@@ -95,6 +95,15 @@ public final class Database {
      */
     public TimeSeries getTimeSeries(String seriesName) throws IOException, HorizonDBException {
 
-        return this.timeSeriesManager.getTimeSeries(getName(), seriesName);
+        return this.timeSeriesManager.getTimeSeries(this.definition, seriesName);
+    }
+
+    /**
+     * @param timeSeries
+     * @throws HorizonDBException 
+     * @throws IOException 
+     */
+    public void dropTimeSeries(String timeSeries) throws IOException, HorizonDBException {
+        this.timeSeriesManager.dropTimeSeries(this.definition, timeSeries, false);
     }
 }

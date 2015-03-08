@@ -154,6 +154,10 @@ DECIMAL
     : D_ E_ C_ I_ M_ A_ L_ 
     ;
     
+DROP
+    : D_ R_ O_ P_
+    ;
+
 FROM
     : F_ R_ O_ M_ 
     ;
@@ -254,6 +258,7 @@ statement
     | insert
     | useDatabase
     | createTimeSeries 
+    | dropTimeSeries
     | createDatabase
     ;
 
@@ -263,6 +268,10 @@ createDatabase
 
 createTimeSeries
     : CREATE TIMESERIES (databaseName'.')?timeSeriesName '(' recordsDefinition ')' timeSeriesOptions 
+    ;
+
+dropTimeSeries
+    : DROP TIMESERIES (databaseName'.')?timeSeriesName 
     ;
 
 recordsDefinition

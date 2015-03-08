@@ -14,22 +14,21 @@
 package io.horizondb.db.series;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static io.horizondb.io.files.FileUtils.createDirectoriesIfNeeded;
+
 import io.horizondb.db.Configuration;
+import io.horizondb.db.HorizonDBFiles;
 import io.horizondb.db.btree.BTreeStore;
+import io.horizondb.io.files.FileUtils;
+import io.horizondb.model.schema.DatabaseDefinition;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
 /**
  * A <code>TimeSeriesManager</code> that store its data on disk.
  */
 public final class OnDiskTimeSeriesManager extends AbstractTimeSeriesManager {
-
-    /**
-     * The name of the time series file.
-     */
-    private static final String TIMESERIES_FILENAME = "timeseries.b3";
 
     public OnDiskTimeSeriesManager(TimeSeriesPartitionManager partitionManager, Configuration configuration) {
         super(partitionManager, configuration);
@@ -42,15 +41,10 @@ public final class OnDiskTimeSeriesManager extends AbstractTimeSeriesManager {
     protected BTreeStore<TimeSeriesId, TimeSeriesDefinition> createBTreeStore(Configuration configuration, 
                                                                               int branchingFactor) 
                                                                               throws IOException {
+
+        createDirectoriesIfNeeded(HorizonDBFiles.getSystemDirectory(configuration));
         
-        Path dataDirectory = configuration.getDataDirectory();
-        Path systemDirectory = dataDirectory.resolve("system");
-
-        if (!Files.exists(systemDirectory)) {
-            Files.createDirectories(systemDirectory);
-        }
-
-        Path timeSeriesFile = systemDirectory.resolve(TIMESERIES_FILENAME);
+        Path timeSeriesFile = HorizonDBFiles.getTimeSeriesFile(configuration);
 
         return BTreeStore.newDiskStore(getName(),
                                        timeSeriesFile, 
@@ -58,4 +52,18 @@ public final class OnDiskTimeSeriesManager extends AbstractTimeSeriesManager {
                                        TimeSeriesId.getParser(), 
                                        TimeSeriesDefinition.getParser());
     }    
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void afterCreate(DatabaseDefinition databaseDefinition,
+                               TimeSeriesDefinition timeSeriesDefinition) throws IOException {
+      
+        Path timeSeriesDirectory = HorizonDBFiles.getTimeSeriesDirectory(this.configuration,
+                                                                         databaseDefinition,
+                                                                         timeSeriesDefinition);
+
+        FileUtils.createDirectoriesIfNeeded(timeSeriesDirectory);
+    }
 }

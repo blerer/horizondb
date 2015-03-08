@@ -1,6 +1,4 @@
 /**
- * Copyright 2013 Benjamin Lerer
- * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,6 +14,7 @@
 package io.horizondb.db.series;
 
 import io.horizondb.db.Configuration;
+import io.horizondb.db.HorizonDBFiles;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.files.RandomAccessDataFile;
 import io.horizondb.io.files.SeekableFileDataInput;
@@ -24,6 +23,7 @@ import io.horizondb.io.files.SeekableFileDataOutput;
 import io.horizondb.model.core.Field;
 import io.horizondb.model.core.fields.TimestampField;
 import io.horizondb.model.schema.BlockPosition;
+import io.horizondb.model.schema.DatabaseDefinition;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.Closeable;
@@ -45,8 +45,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 /**
  * File containing the time series data.
- * 
- * @author Benjamin
  * 
  */
 final class TimeSeriesFile implements Closeable, TimeSeriesElement {
@@ -92,11 +90,11 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
      * @throws IOException if an I/O problem occurs while opening the file.
      */
     public static TimeSeriesFile open(Configuration configuration,
-                                      String databaseName,
+                                      DatabaseDefinition databaseDefinition,
                                       TimeSeriesDefinition definition,
                                       TimeSeriesPartitionMetaData partitionMetadata) throws IOException {
 
-        Path path = getFilePath(configuration, databaseName, definition, partitionMetadata);
+        Path path = getFilePath(configuration, databaseDefinition, definition, partitionMetadata);
         
         RandomAccessDataFile file = RandomAccessDataFile.open(path, false, partitionMetadata.getFileSize());
 
@@ -110,7 +108,7 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
 
         } else {
 
-            fileMetaData = new FileMetaData(databaseName,
+            fileMetaData = new FileMetaData(databaseDefinition.getName(),
                                             definition.getName(),
                                             partitionMetadata.getRange());
         }
@@ -279,26 +277,24 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
      * Returns the path to the data file.
      * 
      * @param configuration the database configuration
-     * @param databaseName the database name
+     * @param databaseDefinition the database definition
      * @param definition the time series definition
      * @param partitionMetadata the partition meta data
      * @return the path to the data file
      */
     private static Path getFilePath(Configuration configuration,
-                                    String databaseName,
+                                    DatabaseDefinition databaseDefinition,
                                     TimeSeriesDefinition definition,
                                     TimeSeriesPartitionMetaData partitionMetadata) {
 
-        Path dataDirectory = configuration.getDataDirectory();
-        Path databaseDirectory = dataDirectory.resolve(databaseName);
+        Path seriesDirectory = HorizonDBFiles.getTimeSeriesDirectory(configuration, databaseDefinition, definition);
 
-        return databaseDirectory.resolve(filename(definition, partitionMetadata));
+        return seriesDirectory.resolve(filename(definition, partitionMetadata));
     }
 
     /**
      * Returns the filename of the data file associated to this partition.
      * 
-     * @param definition the time series definition
      * @param partitionMetadata the partition meta data
      * @return the filename of the data file associated to this partition.
      */

@@ -17,6 +17,7 @@ package io.horizondb.db.series;
 
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
+import io.horizondb.db.HorizonDBFiles;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.files.FileUtils;
 import io.horizondb.model.core.Field;
@@ -28,6 +29,7 @@ import io.horizondb.model.core.filters.Filters;
 import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;
 import io.horizondb.model.core.records.TimeSeriesRecord;
 import io.horizondb.model.core.util.TimeUtils;
+import io.horizondb.model.schema.DatabaseDefinition;
 import io.horizondb.model.schema.RecordTypeDefinition;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
@@ -74,6 +76,8 @@ public class TimeSeriesPartitionTest {
 
     private TimeSeriesPartition partition;
 
+    private DatabaseDefinition databaseDefinition;
+    
     private TimeSeriesDefinition def;
 
     private TimeSeriesPartitionManager manager;
@@ -96,7 +100,7 @@ public class TimeSeriesPartitionTest {
                                                              .addDecimalField("price")
                                                              .build();
 
-        Files.createDirectory(this.testDirectory.resolve("test"));
+        this.databaseDefinition = new DatabaseDefinition("test");
 
         this.def = TimeSeriesDefinition.newBuilder("test")
                                        .timeUnit(TimeUnit.NANOSECONDS)
@@ -104,6 +108,12 @@ public class TimeSeriesPartitionTest {
                                        .addRecordType(tradeType)
                                        .build();
 
+        Configuration configuration = Configuration.newBuilder()
+                                            .dataDirectory(this.testDirectory)
+                                            .build();
+        
+        Files.createDirectories(HorizonDBFiles.getTimeSeriesDirectory(configuration, this.databaseDefinition, this.def));
+        
         this.manager = EasyMock.createMock(TimeSeriesPartitionManager.class);
         this.listener = EasyMock.createMock(TimeSeriesPartitionListener.class);
     }
@@ -1271,7 +1281,7 @@ public class TimeSeriesPartitionTest {
 
         this.partition = new TimeSeriesPartition(this.manager, 
                                                  configuration, 
-                                                 "test", 
+                                                 this.databaseDefinition, 
                                                  this.def, 
                                                  metadata);
         

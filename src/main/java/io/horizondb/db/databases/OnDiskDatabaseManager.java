@@ -14,6 +14,7 @@
 package io.horizondb.db.databases;
 
 import io.horizondb.db.Configuration;
+import io.horizondb.db.HorizonDBFiles;
 import io.horizondb.db.btree.AbstractNodeReader;
 import io.horizondb.db.btree.AbstractNodeWriter;
 import io.horizondb.db.btree.NodeManager;
@@ -27,24 +28,21 @@ import io.horizondb.io.ByteReader;
 import io.horizondb.io.ByteWriter;
 import io.horizondb.io.encoding.VarInts;
 import io.horizondb.io.files.FileDataOutput;
+import io.horizondb.io.files.FileUtils;
 import io.horizondb.io.files.SeekableFileDataInput;
 import io.horizondb.model.schema.DatabaseDefinition;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 import com.codahale.metrics.MetricRegistry;
+
+import static io.horizondb.io.files.FileUtils.createDirectoriesIfNeeded;
 
 /**
  * <code>DatabaseManager</code> that store all data on disk.
  */
 public final class OnDiskDatabaseManager extends AbstractDatabaseManager {
-
-    /**
-     * The name of the databases file.
-     */
-    private static final String DATABASES_FILENAME = "databases.b3";
 
     /**
      * Creates a new <code>InMemoryDatabaseManager</code> that will used the specified configuration.
@@ -63,15 +61,10 @@ public final class OnDiskDatabaseManager extends AbstractDatabaseManager {
     protected NodeManager<String, DatabaseDefinition> createNodeManager(Configuration configuration, 
                                                                         String name) 
                                                                         throws IOException {
-        
-        Path dataDirectory = configuration.getDataDirectory();
-        Path systemDirectory = dataDirectory.resolve("system");
 
-        if (!Files.exists(systemDirectory)) {
-            Files.createDirectories(systemDirectory);
-        }
+        createDirectoriesIfNeeded(HorizonDBFiles.getSystemDirectory(configuration));
 
-        Path databasesFile = systemDirectory.resolve(DATABASES_FILENAME);
+        Path databasesFile = HorizonDBFiles.getDatabasesFile(configuration);
 
         return new OnDiskNodeManager<>(MetricRegistry.name(name, "bTree"),
                                        databasesFile,
@@ -84,25 +77,11 @@ public final class OnDiskDatabaseManager extends AbstractDatabaseManager {
      */
     @Override
     protected void afterCreate(DatabaseDefinition definition) throws IOException {
-        Path dataDirectory = this.configuration.getDataDirectory();
-        Path directory = dataDirectory.resolve(definition.getName());
 
-        createDirectoriesIfNeeded(directory);
+        Path directory = HorizonDBFiles.getDatabaseDirectory(this.configuration, definition);
+        FileUtils.createDirectoriesIfNeeded(directory);
     }
 
-    /**
-     * Creates the database directory if it does not exists.
-     * 
-     * @param directory the database directory
-     * @throws IOException if an I/O problem occurs.
-     */
-    private static void createDirectoriesIfNeeded(Path directory) throws IOException {
-
-        if (!Files.exists(directory)) {
-            Files.createDirectories(directory);
-        }
-    }
-    
     /**
      * <code>NodeWriter</code> for the <code>DatabaseDefinition</code>.
      * 

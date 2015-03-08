@@ -28,8 +28,6 @@ import com.codahale.metrics.MetricRegistry;
 /**
  * Base class for <code>Component</code> instance. This class manage the state of the component.
  * 
- * @author Benjamin
- * 
  */
 public abstract class AbstractComponent implements Component {
 

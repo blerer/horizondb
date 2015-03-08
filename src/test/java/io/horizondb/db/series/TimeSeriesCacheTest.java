@@ -91,9 +91,9 @@ public class TimeSeriesCacheTest {
                                                             .build();
 
         manager.start();
-        manager.createTimeSeries(databaseName, definition, true);
-        TimeSeries series = new TimeSeries(databaseName, definition, this.partitionManager);
-        EasyMock.expect(manager.getTimeSeries(new TimeSeriesId(databaseName, "dax"))).andReturn(series);
+        manager.createTimeSeries(databaseDefinition, definition, true);
+        TimeSeries series = new TimeSeries(databaseDefinition, definition, this.partitionManager);
+        EasyMock.expect(manager.getTimeSeries(new TimeSeriesId(databaseDefinition, "dax"))).andReturn(series);
         manager.shutdown();
 
         EasyMock.replay(manager);
@@ -101,15 +101,15 @@ public class TimeSeriesCacheTest {
         TimeSeriesManagerCache cache = new TimeSeriesManagerCache(this.configuration, manager);
         cache.start();
 
-        cache.createTimeSeries(databaseName, definition, true);
+        cache.createTimeSeries(databaseDefinition, definition, true);
 
-        TimeSeries firstCall = cache.getTimeSeries(databaseName, "DAX");
+        TimeSeries firstCall = cache.getTimeSeries(databaseDefinition, "DAX");
 
-        TimeSeries secondCall = cache.getTimeSeries(new TimeSeriesId(databaseName, "DAX"));
+        TimeSeries secondCall = cache.getTimeSeries(new TimeSeriesId(databaseDefinition, "DAX"));
 
         assertEquals(firstCall, secondCall);
 
-        TimeSeries thirdCall = cache.getTimeSeries(databaseName, "DAX");
+        TimeSeries thirdCall = cache.getTimeSeries(databaseDefinition, "DAX");
 
         assertEquals(firstCall, thirdCall);
 
@@ -146,13 +146,13 @@ public class TimeSeriesCacheTest {
                                                             .addRecordType(quote)
                                                             .build();
 
-        EasyMock.expect(manager.getTimeSeries(new TimeSeriesId(databaseName, "dax")))
+        EasyMock.expect(manager.getTimeSeries(new TimeSeriesId(databaseDefinition, "dax")))
                 .andThrow(new HorizonDBException(ErrorCodes.UNKNOWN_TIMESERIES, "boom"));
 
         manager.start();
-        manager.createTimeSeries(databaseName, definition, true);
-        TimeSeries series = new TimeSeries(databaseName, definition, this.partitionManager);
-        EasyMock.expect(manager.getTimeSeries(new TimeSeriesId(databaseName, "dax"))).andReturn(series);
+        manager.createTimeSeries(databaseDefinition, definition, true);
+        TimeSeries series = new TimeSeries(databaseDefinition, definition, this.partitionManager);
+        EasyMock.expect(manager.getTimeSeries(new TimeSeriesId(databaseDefinition, "dax"))).andReturn(series);
         manager.shutdown();
 
         EasyMock.replay(manager);
@@ -162,7 +162,7 @@ public class TimeSeriesCacheTest {
 
         try {
 
-            cache.getTimeSeries(databaseName, "DAX");
+            cache.getTimeSeries(databaseDefinition, "DAX");
             Assert.fail();
 
         } catch (HorizonDBException e) {
@@ -170,9 +170,9 @@ public class TimeSeriesCacheTest {
             Assert.assertEquals(ErrorCodes.UNKNOWN_TIMESERIES, e.getCode());
         }
 
-        cache.createTimeSeries(databaseName, definition, true);
+        cache.createTimeSeries(databaseDefinition, definition, true);
 
-        cache.getTimeSeries(databaseName, "DAX");
+        cache.getTimeSeries(databaseDefinition, "DAX");
 
         CacheStats stats = cache.stats();
 
@@ -209,8 +209,8 @@ public class TimeSeriesCacheTest {
                                                             .addRecordType(quote)
                                                             .build();
         manager.start();
-        manager.createTimeSeries("test", definition, true);
-        manager.createTimeSeries("test", definition, true);
+        manager.createTimeSeries(databaseDefinition, definition, true);
+        manager.createTimeSeries(databaseDefinition, definition, true);
         EasyMock.expectLastCall().andThrow(new HorizonDBException(ErrorCodes.DUPLICATE_TIMESERIES, "boom"));
         manager.shutdown();
 
@@ -221,8 +221,8 @@ public class TimeSeriesCacheTest {
 
         try {
 
-            cache.createTimeSeries("test", definition, true);
-            cache.createTimeSeries("test", definition, true);
+            cache.createTimeSeries(databaseDefinition, definition, true);
+            cache.createTimeSeries(databaseDefinition, definition, true);
             Assert.fail();
 
         } catch (HorizonDBException e) {

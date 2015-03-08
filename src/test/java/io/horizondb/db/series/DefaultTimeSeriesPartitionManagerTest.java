@@ -17,6 +17,7 @@ package io.horizondb.db.series;
 
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
+import io.horizondb.db.HorizonDBFiles;
 import io.horizondb.db.btree.KeyValueIterator;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.files.FileUtils;
@@ -85,8 +86,6 @@ public class DefaultTimeSeriesPartitionManagerTest {
                                                                             .addField("status", FieldType.BYTE)
                                                                             .build();
 
-            Files.createDirectory(this.testDirectory.resolve("test"));
-
             DatabaseDefinition databaseDefinition = new DatabaseDefinition("test");
 
             TimeSeriesDefinition definition = databaseDefinition.newTimeSeriesDefinitionBuilder("DAX")
@@ -94,10 +93,13 @@ public class DefaultTimeSeriesPartitionManagerTest {
                                                                 .addRecordType(recordTypeDefinition)
                                                                 .build();
 
-
+            Files.createDirectories(HorizonDBFiles.getTimeSeriesDirectory(this.configuration,
+                                                                          databaseDefinition,
+                                                                          definition));
+            
             Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26'", "'2013-11-27'");
             
-            PartitionId id = new PartitionId("test", "DAX", range);
+            PartitionId id = new PartitionId(databaseDefinition, definition, range);
 
             KeyValueIterator<PartitionId, TimeSeriesPartition> iterator = 
                     partitionManager.getRangeForRead(id, id, definition);
@@ -119,18 +121,20 @@ public class DefaultTimeSeriesPartitionManagerTest {
                                                                         .addField("status", FieldType.BYTE)
                                                                         .build();
 
-        Files.createDirectories(this.configuration.getDataDirectory().resolve("test"));
-
         DatabaseDefinition databaseDefinition = new DatabaseDefinition("test");
 
         TimeSeriesDefinition definition = databaseDefinition.newTimeSeriesDefinitionBuilder("DAX")
                                                             .timeUnit(TimeUnit.NANOSECONDS)
                                                             .addRecordType(recordTypeDefinition)
                                                             .build();
-        
+
+        Files.createDirectories(HorizonDBFiles.getTimeSeriesDirectory(this.configuration,
+                                                                      databaseDefinition,
+                                                                      definition));
+
         Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26'", "'2013-11-27'");
 
-        PartitionId id = new PartitionId("test", "DAX", range);
+        PartitionId id = new PartitionId(databaseDefinition, definition, range);
 
         OnDiskTimeSeriesPartitionManager partitionManager = new OnDiskTimeSeriesPartitionManager(this.configuration);
 

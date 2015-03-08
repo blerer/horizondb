@@ -19,6 +19,8 @@ import io.horizondb.io.encoding.VarInts;
 import io.horizondb.io.serialization.Parser;
 import io.horizondb.io.serialization.Serializable;
 import io.horizondb.model.core.Field;
+import io.horizondb.model.schema.DatabaseDefinition;
+import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
 
@@ -36,9 +38,6 @@ import static io.horizondb.model.core.util.SerializationUtils.writeRange;
 
 /**
  * ID used to identify uniquely a time series partition.
- * 
- * @author Benjamin
- * 
  */
 @Immutable
 final class PartitionId implements Comparable<PartitionId>, Serializable {
@@ -55,10 +54,12 @@ final class PartitionId implements Comparable<PartitionId>, Serializable {
         public PartitionId parseFrom(ByteReader reader) throws IOException {
 
             String database = VarInts.readString(reader);
+            long databaseTimestamp = VarInts.readLong(reader);
             String timeSeries = VarInts.readString(reader);
+            long timeSeriesTimestamp = VarInts.readLong(reader);
             Range<Field> range = parseRangeFrom(reader);
             
-            return new PartitionId(database, timeSeries, range);
+            return new PartitionId(database, databaseTimestamp, timeSeries, timeSeriesTimestamp, range);
         }
     };
 
@@ -68,9 +69,19 @@ final class PartitionId implements Comparable<PartitionId>, Serializable {
     private final String databaseName;
 
     /**
+     * The database creation time.
+     */
+    private final long databaseTimestamp;
+
+    /**
      * The time series name.
      */
     private final String seriesName;
+
+    /**
+     * The time series creation time.
+     */
+    private final long seriesTimestamp;
 
     /**
      * The partition time range.
@@ -78,16 +89,42 @@ final class PartitionId implements Comparable<PartitionId>, Serializable {
     private final Range<Field> range;
 
     /**
-     * Creates a new <code>TimeSeriesId</code>.
+     * Creates a new <code>PartitionId</code> for the partition belonging to the specified database and time series.
      * 
-     * @param databaseName the database name
-     * @param seriesName the time series name
+     * @param databaseDefinition the database definition
+     * @param timeSeriesDefinition the time series definition
      * @param range the partition time range
      */
-    public PartitionId(String databaseName, String seriesName, Range<Field> range) {
+    public PartitionId(DatabaseDefinition databaseDefinition, 
+                       TimeSeriesDefinition timeSeriesDefinition,
+                       Range<Field> range) {
+
+        this(databaseDefinition.getName(),
+             databaseDefinition.getTimestamp(),
+             timeSeriesDefinition.getName(),
+             timeSeriesDefinition.getTimestamp(),
+             range);
+    }
+    
+    /**
+     * Creates a new <code>PartitionId</code>.
+     * 
+     * @param databaseName the database name
+     * @param databaseTimestamp the database creation time
+     * @param seriesName the time series name
+     * @param seriesTimestamp the time series creation time
+     * @param range the partition time range
+     */
+    public PartitionId(String databaseName, 
+                       long databaseTimestamp, 
+                       String seriesName,
+                       long seriesTimestamp,
+                       Range<Field> range) {
 
         this.databaseName = databaseName.toLowerCase();
+        this.databaseTimestamp = databaseTimestamp;
         this.seriesName = seriesName.toLowerCase();
+        this.seriesTimestamp = seriesTimestamp;
         this.range = range;
     }
 
@@ -131,6 +168,22 @@ final class PartitionId implements Comparable<PartitionId>, Serializable {
     }
 
     /**
+     * Returns the database creation time.
+     * @return the database creation time
+     */
+    public long getDatabaseTimestamp() {
+        return this.databaseTimestamp;
+    }
+
+    /**
+     * Returns the time series creation time.
+     * @return the time series creation time
+     */
+    public long getSeriesTimestamp() {
+        return this.seriesTimestamp;
+    }
+
+    /**
      * Returns the partition range.
      * 
      * @return the partition range.
@@ -152,7 +205,9 @@ final class PartitionId implements Comparable<PartitionId>, Serializable {
         }
         PartitionId rhs = (PartitionId) object;
         return new EqualsBuilder().append(this.databaseName, rhs.databaseName)
+                                  .append(this.databaseTimestamp, rhs.databaseTimestamp)
                                   .append(this.seriesName, rhs.seriesName)
+                                  .append(this.seriesTimestamp, rhs.seriesTimestamp)
                                   .append(this.range, rhs.range)
                                   .isEquals();
     }
@@ -163,7 +218,9 @@ final class PartitionId implements Comparable<PartitionId>, Serializable {
     @Override
     public int hashCode() {
         return new HashCodeBuilder(-881768609, -777990173).append(this.databaseName)
+                                                          .append(this.databaseTimestamp)
                                                           .append(this.seriesName)
+                                                          .append(this.seriesTimestamp)
                                                           .append(this.range)
                                                           .toHashCode();
     }
@@ -190,7 +247,9 @@ final class PartitionId implements Comparable<PartitionId>, Serializable {
     @Override
     public int compareTo(PartitionId other) {
         return new CompareToBuilder().append(this.databaseName, other.databaseName)
+                                     .append(this.databaseTimestamp, other.databaseTimestamp)
                                      .append(this.seriesName, other.seriesName)
+                                     .append(this.seriesTimestamp, other.seriesTimestamp)
                                      .append(this.range.lowerEndpoint(), other.range.lowerEndpoint())
                                      .append(this.range.upperEndpoint(), other.range.upperEndpoint())
                                      .toComparison();
@@ -202,7 +261,9 @@ final class PartitionId implements Comparable<PartitionId>, Serializable {
     @Override
     public int computeSerializedSize() {
         return VarInts.computeStringSize(this.databaseName) 
+                + VarInts.computeLongSize(this.databaseTimestamp) 
                 + VarInts.computeStringSize(this.seriesName)
+                + VarInts.computeLongSize(this.seriesTimestamp) 
                 + computeRangeSerializedSize(this.range);
     }
 
@@ -212,7 +273,9 @@ final class PartitionId implements Comparable<PartitionId>, Serializable {
     @Override
     public void writeTo(ByteWriter writer) throws IOException {
         VarInts.writeString(writer, this.databaseName);
+        VarInts.writeLong(writer, this.databaseTimestamp);
         VarInts.writeString(writer, this.seriesName);
+        VarInts.writeLong(writer, this.seriesTimestamp);
         writeRange(writer, this.range);
     }
 }

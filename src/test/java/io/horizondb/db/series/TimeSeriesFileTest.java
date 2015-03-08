@@ -1,6 +1,4 @@
 /**
- * Copyright 2013 Benjamin Lerer
- * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,6 +15,7 @@ package io.horizondb.db.series;
 
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
+import io.horizondb.db.HorizonDBFiles;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.Buffer;
 import io.horizondb.io.ReadableBuffer;
@@ -106,15 +105,18 @@ public class TimeSeriesFileTest {
                                                                                   FieldType.MILLISECONDS_TIMESTAMP)
                                                                         .addField("status", FieldType.BYTE)
                                                                         .build();
-
-        Files.createDirectory(this.testDirectory.resolve("test"));
-
         this.databaseDefinition = new DatabaseDefinition("test");
 
         this.definition = this.databaseDefinition.newTimeSeriesDefinitionBuilder("test")
-                                            .timeUnit(TimeUnit.NANOSECONDS)
-                                            .addRecordType(recordTypeDefinition)
-                                            .build();
+                                                 .timeUnit(TimeUnit.NANOSECONDS)
+                                                 .addRecordType(recordTypeDefinition)
+                                                 .build();
+
+        Path seriesDirectory = HorizonDBFiles.getTimeSeriesDirectory(this.configuration,
+                                                                     this.databaseDefinition,
+                                                                     this.definition);
+
+        Files.createDirectories(seriesDirectory);
 
         Field prototype = FieldType.MILLISECONDS_TIMESTAMP.newField();
         
@@ -162,7 +164,7 @@ public class TimeSeriesFileTest {
         memTimeSeries = memTimeSeries.write(allocator, records, Futures.immediateFuture(new ReplayPosition(1, 0)));
 
         try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, 
-                                                       this.databaseDefinition.getName(), 
+                                                       this.databaseDefinition, 
                                                        this.definition, 
                                                        this.metadata)) {
 
@@ -201,7 +203,7 @@ public class TimeSeriesFileTest {
         memTimeSeries = memTimeSeries.write(allocator, records, Futures.immediateFuture(new ReplayPosition(1, 0)));
 
         try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, 
-                                                       this.databaseDefinition.getName(), 
+                                                       this.databaseDefinition, 
                                                        this.definition, 
                                                        this.metadata)) {
 
@@ -257,7 +259,7 @@ public class TimeSeriesFileTest {
         memTimeSeries2 = memTimeSeries2.write(allocator, records2, Futures.immediateFuture(replayPosition));
 
         try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, 
-                                                       this.databaseDefinition.getName(), 
+                                                       this.databaseDefinition, 
                                                        this.definition, 
                                                        this.metadata)) {
 
@@ -314,7 +316,7 @@ public class TimeSeriesFileTest {
         memTimeSeries2 = memTimeSeries2.write(allocator, records2, Futures.immediateFuture(replayPosition));
 
         try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, 
-                                                       this.databaseDefinition.getName(), 
+                                                       this.databaseDefinition, 
                                                        this.definition, 
                                                        this.metadata)) {
 
@@ -335,11 +337,17 @@ public class TimeSeriesFileTest {
                                                                         .addField("status", FieldType.BYTE)
                                                                         .build();
 
-        this.definition = this.databaseDefinition.newTimeSeriesDefinitionBuilder("test")
+        this.definition = this.databaseDefinition.newTimeSeriesDefinitionBuilder("test2")
                                                  .timeUnit(TimeUnit.NANOSECONDS)
                                                  .blockSize(40)
                                                  .addRecordType(recordTypeDefinition)
                                                  .build();
+        
+        Path seriesDirectory = HorizonDBFiles.getTimeSeriesDirectory(this.configuration,
+                                                                     this.databaseDefinition,
+                                                                     this.definition);
+
+        Files.createDirectories(seriesDirectory);
         
         SlabAllocator allocator = new SlabAllocator(this.configuration.getMemTimeSeriesSize());
 
@@ -378,18 +386,18 @@ public class TimeSeriesFileTest {
         memTimeSeries = memTimeSeries.write(allocator, records2, Futures.immediateFuture(replayPosition));
 
         try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, 
-                                                       this.databaseDefinition.getName(), 
+                                                       this.databaseDefinition, 
                                                        this.definition, 
                                                        this.metadata)) {
 
             TimeSeriesFile newFile = file.append(Arrays.<TimeSeriesElement> asList(memTimeSeries));
-            
+
             assertEquals(expectedBlockPositions, newFile.getBlockPositions());
             AssertFiles.assertFileContains(expectedFileContent, file.getPath());
             
             try (RecordIterator readIterator = new BinaryTimeSeriesRecordIterator(this.definition, 
                                                                                   newFile.newInput())) {
-                
+
                 assertTrue(readIterator.hasNext());
                 Record actual = readIterator.next();
 
@@ -441,7 +449,11 @@ public class TimeSeriesFileTest {
                                                  .blockSize(40)
                                                  .addRecordType(recordTypeDefinition)
                                                  .build();
-        
+
+        Files.createDirectories(HorizonDBFiles.getTimeSeriesDirectory(this.configuration,
+                                                                      this.databaseDefinition,
+                                                                      this.definition));
+
         SlabAllocator allocator = new SlabAllocator(this.configuration.getMemTimeSeriesSize());
 
         MemTimeSeries memTimeSeries = new MemTimeSeries(this.configuration, this.definition);
@@ -479,7 +491,7 @@ public class TimeSeriesFileTest {
         memTimeSeries = memTimeSeries.write(allocator, records2, Futures.immediateFuture(replayPosition));
 
         try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, 
-                                                       this.databaseDefinition.getName(), 
+                                                       this.databaseDefinition, 
                                                        this.definition, 
                                                        this.metadata)) {
 
@@ -542,7 +554,11 @@ public class TimeSeriesFileTest {
                                                  .blockSize(40)
                                                  .addRecordType(recordTypeDefinition)
                                                  .build();
-        
+
+        Files.createDirectories(HorizonDBFiles.getTimeSeriesDirectory(this.configuration,
+                                                                      this.databaseDefinition,
+                                                                      this.definition));
+
         SlabAllocator allocator = new SlabAllocator(this.configuration.getMemTimeSeriesSize());
 
         MemTimeSeries memTimeSeries = new MemTimeSeries(this.configuration, this.definition);
@@ -580,7 +596,7 @@ public class TimeSeriesFileTest {
         memTimeSeries = memTimeSeries.write(allocator, records2, Futures.immediateFuture(replayPosition));
 
         try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, 
-                                                       this.databaseDefinition.getName(), 
+                                                       this.databaseDefinition, 
                                                        this.definition, 
                                                        this.metadata)) {
 
@@ -637,7 +653,11 @@ public class TimeSeriesFileTest {
                                                  .blockSize(40)
                                                  .addRecordType(recordTypeDefinition)
                                                  .build();
-        
+
+        Files.createDirectories(HorizonDBFiles.getTimeSeriesDirectory(this.configuration,
+                                                                      this.databaseDefinition,
+                                                                      this.definition));
+
         SlabAllocator allocator = new SlabAllocator(this.configuration.getMemTimeSeriesSize());
 
         MemTimeSeries memTimeSeries = new MemTimeSeries(this.configuration, this.definition);
@@ -675,7 +695,7 @@ public class TimeSeriesFileTest {
         memTimeSeries = memTimeSeries.write(allocator, records2, Futures.immediateFuture(replayPosition));
 
         try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, 
-                                                       this.databaseDefinition.getName(), 
+                                                       this.databaseDefinition, 
                                                        this.definition, 
                                                        this.metadata)) {
 
@@ -728,7 +748,7 @@ public class TimeSeriesFileTest {
         memTimeSeries = memTimeSeries.write(allocator, records, Futures.immediateFuture(new ReplayPosition(1, 0)));
 
         try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, 
-                                                       this.databaseDefinition.getName(),
+                                                       this.databaseDefinition,
                                                        this.definition, 
                                                        this.metadata)) {
 
@@ -745,7 +765,7 @@ public class TimeSeriesFileTest {
     public void testNewInputWithEmptyFile() throws IOException {
 
         try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, 
-                                                       this.databaseDefinition.getName(), 
+                                                       this.databaseDefinition, 
                                                        this.definition, 
                                                        this.metadata)) {
 

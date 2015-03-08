@@ -81,6 +81,7 @@ public final class BTree<K extends Comparable<K>, V> {
      * 
      * @param key the record key.
      * @param value the record value.
+     * @return <code>true</code> if the record has been successfully inserted, <code>false</code> otherwise.
      * @throws IOException if an IO problem occurs.
      */
     public synchronized boolean insertIfAbsent(K key, V value) throws IOException {
@@ -93,6 +94,23 @@ public final class BTree<K extends Comparable<K>, V> {
         return true;
     }
 
+    /**
+     * Deletes the specified record from this tree if it exists.
+     * 
+     * @param key the record key.
+     * @throws IOException if an IO problem occurs.
+     * @return <code>true</code> if the record has been successfully deleted, <code>false</code> otherwise.     * 
+     */
+    public synchronized boolean deleteIfPresent(K key) throws IOException {
+        
+        if (!contains(key)) {
+            return false;
+        }
+        
+        delete(key);
+        return true;
+    }
+    
     /**
      * Delete the record with the specified key.
      * 

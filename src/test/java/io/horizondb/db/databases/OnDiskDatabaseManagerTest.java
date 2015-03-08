@@ -64,13 +64,15 @@ public class OnDiskDatabaseManagerTest {
 
         manager.start();
 
-        manager.createDatabase(new DatabaseDefinition("test"), true);
+        DatabaseDefinition definition = new DatabaseDefinition("test");
+        manager.createDatabase(definition, true);
 
         Database database = manager.getDatabase("Test");
 
         assertEquals("test", database.getName());
 
-        AssertFiles.assertFileExists(this.configuration.getDataDirectory().resolve("test"));
+        AssertFiles.assertFileExists(this.configuration.getDataDirectory()
+                                                       .resolve(definition.getName() + "-" + definition.getTimestamp()));
 
         manager.shutdown();
     }

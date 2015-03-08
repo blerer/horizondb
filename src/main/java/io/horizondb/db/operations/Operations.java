@@ -1,6 +1,4 @@
 /**
- * Copyright 2014 Benjamin Lerer
- * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -23,8 +21,6 @@ import java.util.Map;
 
 /**
  * The mapping between operation code and the actual operations.
- * 
- * @author Benjamin
  *
  */
 public final class Operations {
@@ -62,5 +58,6 @@ public final class Operations {
         this.operations.put(OpCode.CREATE_TIMESERIES, new CreateTimeSeriesOperation());
         this.operations.put(OpCode.SELECT, new SelectOperation());
         this.operations.put(OpCode.INSERT, new InsertOperation());
+        this.operations.put(OpCode.DROP_TIMESERIES, new DropTimeSeriesOperation());
     }
 }

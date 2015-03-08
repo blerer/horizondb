@@ -132,9 +132,29 @@ implements Monitorable, Closeable {
         this.btree.insert(key, value);
     }
 
+    /**
+     * Inserts the specified record into this tree if no record exists with the specified key.
+     * 
+     * @param key the record key.
+     * @param value the record value.
+     * @return <code>true</code> if the record has been successfully inserted, <code>false</code> otherwise.
+     * @throws IOException if an IO problem occurs.
+     */
     public boolean insertIfAbsent(K key, V value) throws IOException {
 
         return this.btree.insertIfAbsent(key, value);
+    }
+    
+    /**
+     * Deletes the specified record from this tree if it exists.
+     * 
+     * @param key the record key.
+     * @throws IOException if an IO problem occurs.
+     * @return <code>true</code> if the record has been successfully deleted, <code>false</code> otherwise.     * 
+     */
+    public boolean deleteIfPresent(K key) throws IOException {        
+        
+        return this.btree.deleteIfPresent(key);
     }
 
     public V get(K key) throws IOException {

@@ -41,7 +41,7 @@ abstract class AbstractDatabaseManager extends AbstractComponent implements Data
     /**
      * The B+Tree branching factor.
      */
-    private static final int BRANCHING_FACTOR = 10;
+    private static final int BRANCHING_FACTOR = 16;
 
     /**
      * The database server configuration.
