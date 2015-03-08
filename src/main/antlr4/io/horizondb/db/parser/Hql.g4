@@ -260,10 +260,15 @@ statement
     | createTimeSeries 
     | dropTimeSeries
     | createDatabase
+    | dropDatabase
     ;
 
 createDatabase
     : CREATE DATABASE ID 
+    ;
+
+dropDatabase
+    : DROP DATABASE ID 
     ;
 
 createTimeSeries

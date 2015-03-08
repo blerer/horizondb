@@ -55,4 +55,14 @@ public interface DatabaseManager extends Component {
      * @return the <code>TimeSeriesManager</code> used by this <code>DatabaseManager</code>.
      */
     TimeSeriesManager getTimeSeriesManager();
+
+    /**
+     * Drops the specified database.
+     * @param name the name of the database to drop.
+     * @param throwExceptionIfDoesNotExist <code>true</code> if an exception must be thrown if the time series does not exists.
+     * @throws IOException if an I/O problem occurs while dropping the database.
+     * @throws HorizonDBException if the database does not exists.
+     */
+    void dropDatabase(String name,
+                      boolean throwExceptionIfDoesNotExist) throws IOException, HorizonDBException;
 }

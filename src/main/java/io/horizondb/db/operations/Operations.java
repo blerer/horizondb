@@ -59,5 +59,6 @@ public final class Operations {
         this.operations.put(OpCode.SELECT, new SelectOperation());
         this.operations.put(OpCode.INSERT, new InsertOperation());
         this.operations.put(OpCode.DROP_TIMESERIES, new DropTimeSeriesOperation());
+        this.operations.put(OpCode.DROP_DATABASE, new DropDatabaseOperation());
     }
 }

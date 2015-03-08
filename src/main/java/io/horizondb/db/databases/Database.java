@@ -99,11 +99,13 @@ public final class Database {
     }
 
     /**
-     * @param timeSeries
-     * @throws HorizonDBException 
-     * @throws IOException 
+     * Drops the specified time series.
+     *
+     * @param timeSeries the time series name
+     * @throws HorizonDBException if the time series does not exists 
+     * @throws IOException if an I/O problem occurs 
      */
     public void dropTimeSeries(String timeSeries) throws IOException, HorizonDBException {
-        this.timeSeriesManager.dropTimeSeries(this.definition, timeSeries, false);
+        this.timeSeriesManager.dropTimeSeries(this.definition, timeSeries, true);
     }
 }

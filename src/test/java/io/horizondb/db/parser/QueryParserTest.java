@@ -26,6 +26,7 @@ import io.horizondb.io.ReadableBuffer;
 import io.horizondb.model.core.records.BinaryTimeSeriesRecord;
 import io.horizondb.model.protocol.CreateDatabasePayload;
 import io.horizondb.model.protocol.CreateTimeSeriesPayload;
+import io.horizondb.model.protocol.DropDatabasePayload;
 import io.horizondb.model.protocol.DropTimeSeriesPayload;
 import io.horizondb.model.protocol.HqlQueryPayload;
 import io.horizondb.model.protocol.InsertPayload;
@@ -127,6 +128,35 @@ public class QueryParserTest {
         assertEquals(expected, msg.getPayload().getDefinition());
     }
 
+    @Test
+    public void testParseDropDatabase() throws HorizonDBException, IOException  {
+
+        createDatabase();
+        
+        Msg<DropDatabasePayload> msg = QueryParser.parse(this.configuration,
+                                                         this.databaseManager,
+                                                         newMsg("", "DROP DATABASE test;"));
+        assertNotNull(msg);
+        assertEquals("test", msg.getPayload().getDatabase());
+    }
+    
+    @Test
+    public void testParseDropDatabaseWithCurrentDatabase() throws HorizonDBException, IOException {
+
+        createDatabase();
+
+        try {
+
+            QueryParser.parse(this.configuration, this.databaseManager, newMsg("test", "DROP DATABASE test;"));
+
+            fail();
+        } catch (HorizonDBException e) {
+            String msgFragment = "Cannot drop test as it is the currently used database."
+            		             + " You must first switch to an other database.";
+            assertErrorMessageContains(msgFragment, e);
+        }
+    }
+    
     @Test
     public void testParseDropTimeSeries() throws HorizonDBException, IOException  {
 

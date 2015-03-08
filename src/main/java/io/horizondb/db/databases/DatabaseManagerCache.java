@@ -1,6 +1,4 @@
 /**
- * Copyright 2013 Benjamin Lerer
- * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -29,8 +27,6 @@ import com.google.common.cache.CacheStats;
 
 /**
  * Decorator that add caching functionalities to a <code>DatabaseManager</code>
- * 
- * @author Benjamin
  * 
  */
 public final class DatabaseManagerCache extends AbstractComponent implements DatabaseManager {
@@ -119,6 +115,17 @@ public final class DatabaseManagerCache extends AbstractComponent implements Dat
                 return DatabaseManagerCache.this.manager.getDatabase(key);
             }
         });
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void dropDatabase(String name, boolean throwExceptionIfDoesNotExist) throws IOException, HorizonDBException {
+        
+        String lowerCaseName = name.toLowerCase();
+        this.manager.dropDatabase(lowerCaseName, throwExceptionIfDoesNotExist);
+        this.cache.invalidate(lowerCaseName);
     }
 
     /**    

@@ -20,6 +20,7 @@ import io.horizondb.db.parser.HqlBaseListener;
 import io.horizondb.db.parser.HqlParser.BetweenPredicateContext;
 import io.horizondb.db.parser.HqlParser.CreateDatabaseContext;
 import io.horizondb.db.parser.HqlParser.CreateTimeSeriesContext;
+import io.horizondb.db.parser.HqlParser.DropDatabaseContext;
 import io.horizondb.db.parser.HqlParser.DropTimeSeriesContext;
 import io.horizondb.db.parser.HqlParser.FieldDefinitionContext;
 import io.horizondb.db.parser.HqlParser.FieldsDefinitionContext;
@@ -212,8 +213,18 @@ public final class MsgBuilderDispatcher extends HqlBaseListener implements MsgBu
         this.builder.enterCreateTimeSeries(ctx);
     }
 
-    
-    
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void enterDropDatabase(@NotNull DropDatabaseContext ctx) {
+        this.builder = new DropDatabaseMsgBuilder(this.databaseManager,
+                                                  this.requestHeader,
+                                                  this.databaseName);
+        this.builder.enterDropDatabase(ctx);
+    }
+
     /**
      * {@inheritDoc}
      */

@@ -57,8 +57,8 @@ public interface TimeSeriesManager extends Component {
      * @param databaseDefinition the database definition.
      * @param seriesName the time series name.
      * @param throwExceptionIfDoesNotExist <code>true</code> if an exception must be thrown if the time series does not exists.
-     * @throws IOException if an I/O problem occurs while creating the time series.
-     * @throws HorizonDBException if a time series does not exists.
+     * @throws IOException if an I/O problem occurs while dropping the time series.
+     * @throws HorizonDBException if the time series does not exists.
      */
     void dropTimeSeries(DatabaseDefinition databaseDefinition, 
                         String seriesName, 

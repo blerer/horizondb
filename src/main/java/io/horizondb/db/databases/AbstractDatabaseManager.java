@@ -183,6 +183,21 @@ abstract class AbstractDatabaseManager extends AbstractComponent implements Data
         return new Database(definition, this.timeSeriesManager);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void dropDatabase(String name,
+                             boolean throwExceptionIfDoesNotExist) throws IOException, HorizonDBException {
+
+        String lowerCaseName = name.toLowerCase();
+
+        if (!this.btree.deleteIfPresent(lowerCaseName) && throwExceptionIfDoesNotExist) {
+
+            throw new HorizonDBException(ErrorCodes.UNKNOWN_DATABASE, "The database '" + name + "' does not exists.");
+        }
+    }
+
     /**    
      * {@inheritDoc}
      */
