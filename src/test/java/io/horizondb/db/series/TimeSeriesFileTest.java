@@ -339,7 +339,7 @@ public class TimeSeriesFileTest {
 
         this.definition = this.databaseDefinition.newTimeSeriesDefinitionBuilder("test2")
                                                  .timeUnit(TimeUnit.NANOSECONDS)
-                                                 .blockSize(40)
+                                                 .blockSize(35)
                                                  .addRecordType(recordTypeDefinition)
                                                  .build();
         
@@ -446,7 +446,7 @@ public class TimeSeriesFileTest {
 
         this.definition = this.databaseDefinition.newTimeSeriesDefinitionBuilder("test")
                                                  .timeUnit(TimeUnit.NANOSECONDS)
-                                                 .blockSize(40)
+                                                 .blockSize(32)
                                                  .addRecordType(recordTypeDefinition)
                                                  .build();
 
@@ -496,7 +496,7 @@ public class TimeSeriesFileTest {
                                                        this.metadata)) {
 
             TimeSeriesFile newFile = file.append(Arrays.<TimeSeriesElement> asList(memTimeSeries));
-            
+
             assertEquals(expectedBlockPositions, newFile.getBlockPositions());
             AssertFiles.assertFileContains(expectedFileContent, file.getPath());
             
@@ -551,7 +551,7 @@ public class TimeSeriesFileTest {
 
         this.definition = this.databaseDefinition.newTimeSeriesDefinitionBuilder("test")
                                                  .timeUnit(TimeUnit.NANOSECONDS)
-                                                 .blockSize(40)
+                                                 .blockSize(35)
                                                  .addRecordType(recordTypeDefinition)
                                                  .build();
 
@@ -650,7 +650,7 @@ public class TimeSeriesFileTest {
 
         this.definition = this.databaseDefinition.newTimeSeriesDefinitionBuilder("test")
                                                  .timeUnit(TimeUnit.NANOSECONDS)
-                                                 .blockSize(40)
+                                                 .blockSize(35)
                                                  .addRecordType(recordTypeDefinition)
                                                  .build();
 

@@ -455,7 +455,7 @@ public final class TimeSeriesPartition implements Comparable<TimeSeriesPartition
      * @throws InterruptedException if the thread was interrupted
      */
     private TimeSeriesPartitionMetaData getMetaData(TimeSeriesFile file) throws InterruptedException, ExecutionException {
-
+        System.out.println(file.getFuture());
         return TimeSeriesPartitionMetaData.newBuilder(this.timeRange)
                                           .fileSize(file.size())
                                           .blockPositions(file.getBlockPositions())

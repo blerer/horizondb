@@ -1,6 +1,4 @@
 /**
- * Copyright 2013 Benjamin Lerer
- * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -59,15 +57,14 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
- * @author Benjamin
- * 
+ *
  */
 public class TimeSeriesPartitionTest {
 
     /**
 	 * 
 	 */
-    private static final int MEMTIMESERIES_SIZE = 60;
+    private static final int MEMTIMESERIES_SIZE = 50;
 
     /**
      * The test directory.
