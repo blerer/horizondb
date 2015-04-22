@@ -1,6 +1,4 @@
 /**
- * Copyright 2013 Benjamin Lerer
- * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -22,9 +20,6 @@ import java.nio.ByteOrder;
 
 /**
  * Slice of a <code>BlockOrganizedByteReader</code>.
- * 
- * @author Benjamin
- * 
  */
 final class BlockOrganizedReadableBuffer extends AbstractBlockOrganizedByteReader implements ReadableBuffer {
 
@@ -263,6 +258,22 @@ final class BlockOrganizedReadableBuffer extends AbstractBlockOrganizedByteReade
         int numberOfBlocks = 1 + ((int) (readerIndex - 1 - this.initialNextBlockPosition) / getBlockSize());
 
         return readerIndex - numberOfBlocks;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean canBeMergedWith(ReadableBuffer buffer) {
+        return false;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void mergeWith(ReadableBuffer buffer) {
+        throw new UnsupportedOperationException();
     }
 
     /**
