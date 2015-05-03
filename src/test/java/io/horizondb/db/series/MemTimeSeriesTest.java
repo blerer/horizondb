@@ -14,7 +14,6 @@
 package io.horizondb.db.series;
 
 import io.horizondb.db.Configuration;
-import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.model.core.Field;
 import io.horizondb.model.core.Record;
@@ -41,11 +40,9 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import static io.horizondb.model.schema.FieldType.NANOSECONDS_TIMESTAMP;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 /**
  *
@@ -346,6 +343,112 @@ public class MemTimeSeriesTest {
         }
     }
 
+    @Test
+    public void testUpdateWriteBeforeExistingData() throws Exception {
+
+        Configuration configuration = Configuration.newBuilder().build();
+
+        RecordTypeDefinition recordTypeDefinition = RecordTypeDefinition.newBuilder("exchangeState")
+                                                                        .addField("timestampInMillis",
+                                                                                  FieldType.MILLISECONDS_TIMESTAMP)
+                                                                        .addField("status", FieldType.BYTE)
+                                                                        .build();
+
+        DatabaseDefinition databaseDefinition = new DatabaseDefinition("test");
+
+        TimeSeriesDefinition def = databaseDefinition.newTimeSeriesDefinitionBuilder("test")
+                                                     .timeUnit(TimeUnit.NANOSECONDS)
+                                                     .addRecordType(recordTypeDefinition)
+                                                     .build();
+
+        SlabAllocator allocator = new SlabAllocator(configuration.getMemTimeSeriesSize());
+
+        MemTimeSeries memTimeSeries = new MemTimeSeries(configuration, def);
+
+        List<BinaryTimeSeriesRecord> records = new RecordListBuilder(def).newRecord("exchangeState")
+                                                                         .setTimestampInNanos(0, TIME_IN_NANOS + 12000700)
+                                                                         .setTimestampInMillis(1, TIME_IN_MILLIS + 12)
+                                                                         .setByte(2, 3)
+                                                                         .newRecord("exchangeState")
+                                                                         .setTimestampInNanos(0, TIME_IN_NANOS + 13000900)
+                                                                         .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
+                                                                         .setByte(2, 3)
+                                                                         .newRecord("exchangeState")
+                                                                         .setTimestampInNanos(0, TIME_IN_NANOS + 13004400)
+                                                                         .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
+                                                                         .setByte(2, 1)
+                                                                         .buildBinaryRecords();
+
+        memTimeSeries = memTimeSeries.write(allocator, records, newFuture());
+
+        records = new RecordListBuilder(def).newRecord("exchangeState")
+                                            .setTimestampInNanos(0, TIME_IN_NANOS + 11000800)
+                                            .setTimestampInMillis(1, TIME_IN_MILLIS + 11)
+                                            .setByte(2, 2)
+                                            .newRecord("exchangeState")
+                                            .setTimestampInNanos(0, TIME_IN_NANOS + 12000200)
+                                            .setTimestampInMillis(1, TIME_IN_MILLIS + 12)
+                                            .setByte(2, 4)
+                                            .buildBinaryRecords();
+
+        memTimeSeries = memTimeSeries.write(allocator, records, newFuture());
+
+        assertEquals(TIME_IN_NANOS + 13004400, memTimeSeries.getGreatestTimestamp());
+
+        try (RecordIterator readIterator = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.newInput())) {
+
+            assertTrue(readIterator.hasNext());
+            Record actual = readIterator.next();
+
+            assertFalse(actual.isDelta());
+            assertEquals(TIME_IN_NANOS + 11000800L, actual.getTimestampInNanos(0));
+            assertEquals(TIME_IN_MILLIS + 11, actual.getTimestampInMillis(1));
+            assertEquals(2, actual.getByte(2));
+
+            assertTrue(readIterator.hasNext());
+            actual = readIterator.next();
+
+            assertTrue(actual.isDelta());
+            assertEquals(400, actual.getTimestampInNanos(0));
+            assertEquals(1, actual.getTimestampInMillis(1));
+            assertEquals(2, actual.getByte(2));
+            
+            assertTrue(readIterator.hasNext());
+            actual = readIterator.next();
+
+            assertTrue(actual.isDelta());
+            assertEquals(300, actual.getTimestampInNanos(0));
+            assertEquals(0, actual.getTimestampInMillis(1));
+            assertEquals(-2, actual.getByte(2));
+            
+            assertTrue(readIterator.hasNext());
+            actual = readIterator.next();
+
+            assertTrue(actual.isDelta());
+            assertEquals(1000200, actual.getTimestampInNanos(0));
+            assertEquals(1, actual.getTimestampInMillis(1));
+            assertEquals(0, actual.getByte(2));
+
+            assertTrue(readIterator.hasNext());
+            actual = readIterator.next();
+
+            assertTrue(actual.isDelta());
+            assertEquals(3500, actual.getTimestampInNanos(0));
+            assertEquals(0, actual.getTimestampInMillis(1));
+            assertEquals(-2, actual.getByte(2));
+
+            assertTrue(readIterator.hasNext());
+            actual = readIterator.next();
+
+            assertTrue(actual.isDelta());
+            assertEquals(2000, actual.getTimestampInNanos(0));
+            assertEquals(1, actual.getTimestampInMillis(1));
+            assertEquals(1, actual.getByte(2));
+
+            assertFalse(readIterator.hasNext());
+        }
+    }
+    
     @Test
     public void testWriteWithMultipleBatchsWithDeltasAndMultipleBlocks() throws Exception {
 
@@ -901,61 +1004,6 @@ public class MemTimeSeriesTest {
 
             assertFalse(readIterator.hasNext());
         }
-    }
-
-    @Test
-    public void testWriteWithUpdates() throws Exception {
-
-        Configuration configuration = Configuration.newBuilder().build();
-
-        RecordTypeDefinition recordTypeDefinition = RecordTypeDefinition.newBuilder("exchangeState")
-                                                                        .addField("timestampInMillis",
-                                                                                  FieldType.MILLISECONDS_TIMESTAMP)
-                                                                        .addField("status", FieldType.BYTE)
-                                                                        .build();
-
-        DatabaseDefinition databaseDefinition = new DatabaseDefinition("test");
-
-        TimeSeriesDefinition def = databaseDefinition.newTimeSeriesDefinitionBuilder("test")
-                                                     .timeUnit(TimeUnit.NANOSECONDS)
-                                                     .addRecordType(recordTypeDefinition)
-                                                     .build();
-
-        SlabAllocator allocator = new SlabAllocator(configuration.getMemTimeSeriesSize());
-
-        MemTimeSeries memTimeSeries = new MemTimeSeries(configuration, def);
-
-        List<BinaryTimeSeriesRecord> records = new RecordListBuilder(def).newRecord("exchangeState")
-                                                                         .setTimestampInNanos(0,
-                                                                                              TIME_IN_NANOS + 12000700)
-                                                                         .setTimestampInMillis(1, TIME_IN_MILLIS + 12)
-                                                                         .setByte(2, 3)
-                                                                         .buildBinaryRecords();
-
-        memTimeSeries = memTimeSeries.write(allocator, records, newFuture());
-
-        records = new RecordListBuilder(def).newRecord("exchangeState")
-                                            .setTimestampInNanos(0, TIME_IN_NANOS + 13004400)
-                                            .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
-                                            .setByte(2, 1)
-                                            .buildBinaryRecords();
-
-        memTimeSeries = memTimeSeries.write(allocator, records, newFuture());
-
-        records = new RecordListBuilder(def).newRecord("exchangeState")
-                                            .setTimestampInNanos(0, TIME_IN_NANOS + 13000900)
-                                            .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
-                                            .setByte(2, 3)
-                                            .buildBinaryRecords();
-
-        try {
-            memTimeSeries.write(allocator, records, newFuture());
-            fail();
-
-        } catch (HorizonDBException e) {
-            assertTrue(true);
-        }
-
     }
 
     private static ListenableFuture<ReplayPosition> newFuture() {

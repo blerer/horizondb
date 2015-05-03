@@ -467,7 +467,7 @@ final class MemTimeSeries implements TimeSeriesElement {
         setLastTimestamp(header, record);
         incrementRecordCount(header, record.getType());
 
-        composite.add(buffer);
+        composite.addBytes(buffer);
 
         setCompressedBlockSize(header, getCompressedBlockSize(header) + recordSize);
     }
