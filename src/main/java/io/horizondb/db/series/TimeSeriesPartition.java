@@ -21,7 +21,7 @@ import io.horizondb.io.files.SeekableFileDataInput;
 import io.horizondb.model.core.Field;
 import io.horizondb.model.core.Filter;
 import io.horizondb.model.core.Record;
-import io.horizondb.model.core.RecordIterator;
+import io.horizondb.model.core.ResourceIterator;
 import io.horizondb.model.core.fields.TimestampField;
 import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;
 import io.horizondb.model.core.iterators.FilteringRecordIterator;
@@ -223,9 +223,9 @@ public final class TimeSeriesPartition implements Comparable<TimeSeriesPartition
      * @return a <code>RecordIterator</code> containing the data from the specified time range
      * @throws IOException if an I/O problem occurs while writing the data
      */
-    public RecordIterator read(RangeSet<Field> rangeSet, 
-                               Filter<String> recordTypeFilter, 
-                               Filter<Record> filter) throws IOException {
+    public  ResourceIterator<Record> read(RangeSet<Field> rangeSet, 
+                                                          Filter<String> recordTypeFilter, 
+                                                          Filter<Record> filter) throws IOException {
 
         return new FilteringRecordIterator(this.definition,
                                            new BinaryTimeSeriesRecordIterator(this.definition, 

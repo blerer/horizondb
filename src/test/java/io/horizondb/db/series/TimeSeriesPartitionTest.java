@@ -21,10 +21,11 @@ import io.horizondb.io.files.FileUtils;
 import io.horizondb.model.core.Field;
 import io.horizondb.model.core.Filter;
 import io.horizondb.model.core.Record;
-import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.core.RecordListBuilder;
+import io.horizondb.model.core.ResourceIterator;
 import io.horizondb.model.core.filters.Filters;
 import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;
+import io.horizondb.model.core.records.BinaryTimeSeriesRecord;
 import io.horizondb.model.core.records.TimeSeriesRecord;
 import io.horizondb.model.core.util.TimeUtils;
 import io.horizondb.model.schema.DatabaseDefinition;
@@ -134,9 +135,9 @@ public class TimeSeriesPartitionTest {
         EasyMock.replay(this.manager, this.listener);
 
         Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26 12:00:00.000'", "'2013-11-26 14:00:00.000'");
-        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), 
-                                                      Filters.<String>noop(), 
-                                                      toFilter(range));
+        ResourceIterator<Record> iterator = this.partition.read(ImmutableRangeSet.of(range), 
+                                                                Filters.<String>noop(), 
+                                                                toFilter(range));
 
         Assert.assertFalse(iterator.hasNext());
 
@@ -177,9 +178,9 @@ public class TimeSeriesPartitionTest {
         this.partition.write(records, newFuture(0, 1));
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
 
-        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), 
-                                                      Filters.<String>noop(), 
-                                                      toFilter(range));
+        ResourceIterator<Record> iterator = this.partition.read(ImmutableRangeSet.of(range), 
+                                                                Filters.<String>noop(), 
+                                                                toFilter(range));
 
         assertTrue(iterator.hasNext());
         Record actual = iterator.next();
@@ -248,10 +249,10 @@ public class TimeSeriesPartitionTest {
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
 
         Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26 12:32:12'", "'2013-11-26 12:32:14'");
-        
-        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), 
-                                                      Filters.<String>noop(), 
-                                                      toFilter(range));
+
+        ResourceIterator<Record> iterator = this.partition.read(ImmutableRangeSet.of(range),
+                                                                Filters.<String> noop(),
+                                                                toFilter(range));
 
         assertTrue(iterator.hasNext());
         Record actual = iterator.next();
@@ -338,9 +339,9 @@ public class TimeSeriesPartitionTest {
         assertEquals(2 * MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
         assertEquals(Long.valueOf(0), this.partition.getFirstSegmentContainingNonPersistedData());
 
-        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), 
-                                                      Filters.<String>noop(), 
-                                                      toFilter(range));
+        ResourceIterator<Record> iterator = this.partition.read(ImmutableRangeSet.of(range),
+                                                                Filters.<String> noop(),
+                                                                toFilter(range));
 
         assertTrue(iterator.hasNext());
         Record actual = iterator.next();
@@ -483,9 +484,9 @@ public class TimeSeriesPartitionTest {
         this.partition.flush();
         assertEquals(Long.valueOf(1), this.partition.getFirstSegmentContainingNonPersistedData());
 
-        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), 
-                                                      Filters.<String>noop(), 
-                                                      toFilter(range));
+        ResourceIterator<Record> iterator = this.partition.read(ImmutableRangeSet.of(range),
+                                                                Filters.<String> noop(),
+                                                                toFilter(range));
 
         assertTrue(iterator.hasNext());
         Record actual = iterator.next();
@@ -612,9 +613,9 @@ public class TimeSeriesPartitionTest {
 
         this.partition.flush();
 
-        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), 
-                                                      Filters.<String>noop(), 
-                                                      toFilter(range));
+        ResourceIterator<Record> iterator = this.partition.read(ImmutableRangeSet.of(range),
+                                                                Filters.<String> noop(),
+                                                                toFilter(range));
 
         assertTrue(iterator.hasNext());
         Record actual = iterator.next();
@@ -728,9 +729,9 @@ public class TimeSeriesPartitionTest {
         this.partition.write(records, newFuture(0, 3));
         assertEquals(3 * memTimeSeriesSize, this.partition.getMemoryUsage());
 
-        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), 
-                                                      Filters.<String>noop(), 
-                                                      toFilter(range));
+        ResourceIterator<Record> iterator = this.partition.read(ImmutableRangeSet.of(range),
+                                                                Filters.<String> noop(),
+                                                                toFilter(range));
 
         assertTrue(iterator.hasNext());
         Record actual = iterator.next();
@@ -856,9 +857,9 @@ public class TimeSeriesPartitionTest {
         assertEquals(0, this.partition.getMemoryUsage());
         assertEquals(null, this.partition.getFirstSegmentContainingNonPersistedData());
 
-        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), 
-                                                      Filters.<String>noop(), 
-                                                      toFilter(range));
+        ResourceIterator<Record> iterator = this.partition.read(ImmutableRangeSet.of(range),
+                                                                Filters.<String> noop(),
+                                                                toFilter(range));
 
         assertTrue(iterator.hasNext());
         Record actual = iterator.next();
@@ -946,10 +947,10 @@ public class TimeSeriesPartitionTest {
         assertEquals(Long.valueOf(0), this.partition.getFirstSegmentContainingNonPersistedData());
 
         Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26 12:00:00'", "'2013-11-26 14:00:00'");
-        
-        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), 
-                                                      Filters.<String>noop(), 
-                                                      toFilter(range));
+
+        ResourceIterator<Record> iterator = this.partition.read(ImmutableRangeSet.of(range),
+                                                                Filters.<String> noop(),
+                                                                toFilter(range));
 
         assertTrue(iterator.hasNext());
         Record actual = iterator.next();
@@ -1053,9 +1054,9 @@ public class TimeSeriesPartitionTest {
         assertEquals(Long.valueOf(0), this.partition.getFirstSegmentContainingNonPersistedData());
 
         Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26 12:32:12.000'", "'2013-11-26 12:32:12.200'");
-        
-        RecordIterator iterator = new BinaryTimeSeriesRecordIterator(this.def, 
-                                                                     this.partition.newInput(ImmutableRangeSet.of(range)));
+
+        ResourceIterator<BinaryTimeSeriesRecord> iterator = new BinaryTimeSeriesRecordIterator(this.def, 
+                                                                                               this.partition.newInput(ImmutableRangeSet.of(range)));
 
         assertTrue(iterator.hasNext());
         Record actual = iterator.next();
@@ -1143,9 +1144,9 @@ public class TimeSeriesPartitionTest {
         assertEquals(Long.valueOf(0), this.partition.getFirstSegmentContainingNonPersistedData());
 
         Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26 12:32:12.400'", "'2013-11-26 12:32:20.000'");
-        
-        RecordIterator iterator = new BinaryTimeSeriesRecordIterator(this.def, 
-                                                                     this.partition.newInput(ImmutableRangeSet.of(range)));
+
+        ResourceIterator<BinaryTimeSeriesRecord> iterator = new BinaryTimeSeriesRecordIterator(this.def, 
+                                                                                               this.partition.newInput(ImmutableRangeSet.of(range)));
 
         assertTrue(iterator.hasNext());
         Record actual = iterator.next();
@@ -1232,9 +1233,9 @@ public class TimeSeriesPartitionTest {
 
         Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26 12:32:12.000'", "'2013-11-26 12:32:20.000'");
 
-        RecordIterator iterator = this.partition.read(ImmutableRangeSet.of(range), 
-                                                      Filters.eq("trade", false), 
-                                                      Filters.<Record>noop());
+        ResourceIterator<Record> iterator = this.partition.read(ImmutableRangeSet.of(range),
+                                                                Filters.eq("trade", false),
+                                                                Filters.<Record> noop());
 
         assertTrue(iterator.hasNext());
         Record actual = iterator.next();

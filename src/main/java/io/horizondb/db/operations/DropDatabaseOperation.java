@@ -18,7 +18,6 @@ import io.horizondb.db.Operation;
 import io.horizondb.db.OperationContext;
 import io.horizondb.db.databases.DatabaseManager;
 import io.horizondb.model.protocol.DropDatabasePayload;
-import io.horizondb.model.protocol.DropTimeSeriesPayload;
 import io.horizondb.model.protocol.Msg;
 import io.horizondb.model.protocol.MsgHeader;
 import io.horizondb.model.protocol.Msgs;

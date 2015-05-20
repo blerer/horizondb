@@ -17,8 +17,8 @@ import io.horizondb.db.Configuration;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.model.core.Field;
 import io.horizondb.model.core.Record;
-import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.core.RecordListBuilder;
+import io.horizondb.model.core.ResourceIterator;
 import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;
 import io.horizondb.model.core.records.BinaryTimeSeriesRecord;
 import io.horizondb.model.core.util.TimeUtils;
@@ -101,7 +101,7 @@ public class MemTimeSeriesTest {
         memTimeSeries = memTimeSeries.write(allocator, records, newFuture());
         assertEquals(TIME_IN_NANOS + 13004400, memTimeSeries.getGreatestTimestamp());
 
-        try (RecordIterator readIterator = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.newInput())) {
+        try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.newInput())) {
 
             assertTrue(readIterator.hasNext());
             Record actual = readIterator.next();
@@ -224,7 +224,7 @@ public class MemTimeSeriesTest {
 
         assertEquals(TIME_IN_NANOS + 13004400, memTimeSeries.getGreatestTimestamp());
 
-        try (RecordIterator readIterator = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.newInput())) {
+        try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.newInput())) {
 
             assertTrue(readIterator.hasNext());
             Record actual = readIterator.next();
@@ -305,7 +305,7 @@ public class MemTimeSeriesTest {
 
         assertEquals(TIME_IN_NANOS + 13006400, memTimeSeries.getGreatestTimestamp());
 
-        try (RecordIterator readIterator = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.newInput())) {
+        try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.newInput())) {
 
             assertTrue(readIterator.hasNext());
             Record actual = readIterator.next();
@@ -343,112 +343,6 @@ public class MemTimeSeriesTest {
         }
     }
 
-    @Test
-    public void testUpdateWriteBeforeExistingData() throws Exception {
-
-        Configuration configuration = Configuration.newBuilder().build();
-
-        RecordTypeDefinition recordTypeDefinition = RecordTypeDefinition.newBuilder("exchangeState")
-                                                                        .addField("timestampInMillis",
-                                                                                  FieldType.MILLISECONDS_TIMESTAMP)
-                                                                        .addField("status", FieldType.BYTE)
-                                                                        .build();
-
-        DatabaseDefinition databaseDefinition = new DatabaseDefinition("test");
-
-        TimeSeriesDefinition def = databaseDefinition.newTimeSeriesDefinitionBuilder("test")
-                                                     .timeUnit(TimeUnit.NANOSECONDS)
-                                                     .addRecordType(recordTypeDefinition)
-                                                     .build();
-
-        SlabAllocator allocator = new SlabAllocator(configuration.getMemTimeSeriesSize());
-
-        MemTimeSeries memTimeSeries = new MemTimeSeries(configuration, def);
-
-        List<BinaryTimeSeriesRecord> records = new RecordListBuilder(def).newRecord("exchangeState")
-                                                                         .setTimestampInNanos(0, TIME_IN_NANOS + 12000700)
-                                                                         .setTimestampInMillis(1, TIME_IN_MILLIS + 12)
-                                                                         .setByte(2, 3)
-                                                                         .newRecord("exchangeState")
-                                                                         .setTimestampInNanos(0, TIME_IN_NANOS + 13000900)
-                                                                         .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
-                                                                         .setByte(2, 3)
-                                                                         .newRecord("exchangeState")
-                                                                         .setTimestampInNanos(0, TIME_IN_NANOS + 13004400)
-                                                                         .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
-                                                                         .setByte(2, 1)
-                                                                         .buildBinaryRecords();
-
-        memTimeSeries = memTimeSeries.write(allocator, records, newFuture());
-
-        records = new RecordListBuilder(def).newRecord("exchangeState")
-                                            .setTimestampInNanos(0, TIME_IN_NANOS + 11000800)
-                                            .setTimestampInMillis(1, TIME_IN_MILLIS + 11)
-                                            .setByte(2, 2)
-                                            .newRecord("exchangeState")
-                                            .setTimestampInNanos(0, TIME_IN_NANOS + 12000200)
-                                            .setTimestampInMillis(1, TIME_IN_MILLIS + 12)
-                                            .setByte(2, 4)
-                                            .buildBinaryRecords();
-
-        memTimeSeries = memTimeSeries.write(allocator, records, newFuture());
-
-        assertEquals(TIME_IN_NANOS + 13004400, memTimeSeries.getGreatestTimestamp());
-
-        try (RecordIterator readIterator = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.newInput())) {
-
-            assertTrue(readIterator.hasNext());
-            Record actual = readIterator.next();
-
-            assertFalse(actual.isDelta());
-            assertEquals(TIME_IN_NANOS + 11000800L, actual.getTimestampInNanos(0));
-            assertEquals(TIME_IN_MILLIS + 11, actual.getTimestampInMillis(1));
-            assertEquals(2, actual.getByte(2));
-
-            assertTrue(readIterator.hasNext());
-            actual = readIterator.next();
-
-            assertTrue(actual.isDelta());
-            assertEquals(400, actual.getTimestampInNanos(0));
-            assertEquals(1, actual.getTimestampInMillis(1));
-            assertEquals(2, actual.getByte(2));
-            
-            assertTrue(readIterator.hasNext());
-            actual = readIterator.next();
-
-            assertTrue(actual.isDelta());
-            assertEquals(300, actual.getTimestampInNanos(0));
-            assertEquals(0, actual.getTimestampInMillis(1));
-            assertEquals(-2, actual.getByte(2));
-            
-            assertTrue(readIterator.hasNext());
-            actual = readIterator.next();
-
-            assertTrue(actual.isDelta());
-            assertEquals(1000200, actual.getTimestampInNanos(0));
-            assertEquals(1, actual.getTimestampInMillis(1));
-            assertEquals(0, actual.getByte(2));
-
-            assertTrue(readIterator.hasNext());
-            actual = readIterator.next();
-
-            assertTrue(actual.isDelta());
-            assertEquals(3500, actual.getTimestampInNanos(0));
-            assertEquals(0, actual.getTimestampInMillis(1));
-            assertEquals(-2, actual.getByte(2));
-
-            assertTrue(readIterator.hasNext());
-            actual = readIterator.next();
-
-            assertTrue(actual.isDelta());
-            assertEquals(2000, actual.getTimestampInNanos(0));
-            assertEquals(1, actual.getTimestampInMillis(1));
-            assertEquals(1, actual.getByte(2));
-
-            assertFalse(readIterator.hasNext());
-        }
-    }
-    
     @Test
     public void testWriteWithMultipleBatchsWithDeltasAndMultipleBlocks() throws Exception {
 
@@ -504,7 +398,7 @@ public class MemTimeSeriesTest {
         assertEquals(2, memTimeSeries.getNumberOfBlocks());
         assertEquals(TIME_IN_NANOS + 13006400, memTimeSeries.getGreatestTimestamp());
 
-        try (RecordIterator readIterator = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.newInput())) {
+        try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.newInput())) {
 
             assertTrue(readIterator.hasNext());
             Record actual = readIterator.next();
@@ -602,7 +496,7 @@ public class MemTimeSeriesTest {
 
         RangeSet<Field> rangeSet = ImmutableRangeSet.of(Range.closed(from, to));
 
-        try (RecordIterator readIterator = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.newInput(rangeSet))) {
+        try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.newInput(rangeSet))) {
 
             assertTrue(readIterator.hasNext());
             Record actual = readIterator.next();
@@ -679,7 +573,7 @@ public class MemTimeSeriesTest {
 
         RangeSet<Field> rangeSet = ImmutableRangeSet.of(Range.closed(from, to));
 
-        try (RecordIterator readIterator = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.newInput(rangeSet))) {
+        try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.newInput(rangeSet))) {
 
             assertTrue(readIterator.hasNext());
             Record actual = readIterator.next();
@@ -772,7 +666,7 @@ public class MemTimeSeriesTest {
 
         RangeSet<Field> rangeSet = ImmutableRangeSet.of(Range.closed(from, to));
 
-        try (RecordIterator readIterator = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.newInput(rangeSet))) {
+        try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.newInput(rangeSet))) {
 
             assertFalse(readIterator.hasNext());
         }
@@ -838,8 +732,8 @@ public class MemTimeSeriesTest {
 
         RangeSet<Field> rangeSet = ImmutableRangeSet.of(Range.closed(from, to));
 
-        try (RecordIterator readIterator = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.newInput(rangeSet))) {
-            try (RecordIterator readIterator2 = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.newInput(rangeSet))) {
+        try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.newInput(rangeSet))) {
+            try (ResourceIterator<BinaryTimeSeriesRecord> readIterator2 = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.newInput(rangeSet))) {
 
                 assertTrue(readIterator.hasNext());
                 Record actual = readIterator.next();
@@ -959,11 +853,11 @@ public class MemTimeSeriesTest {
         assertEquals(TIME_IN_NANOS + 13000900, thirdMemTimeSeries.getGreatestTimestamp());
         assertEquals(TIME_IN_NANOS + 13004400, fourthMemTimeSeries.getGreatestTimestamp());
 
-        try (RecordIterator readIterator = new BinaryTimeSeriesRecordIterator(def, firstMemTimeSeries.newInput())) {
+        try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(def, firstMemTimeSeries.newInput())) {
             assertFalse(readIterator.hasNext());
         }
 
-        try (RecordIterator readIterator = new BinaryTimeSeriesRecordIterator(def, secondMemTimeSeries.newInput())) {
+        try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(def, secondMemTimeSeries.newInput())) {
 
             assertTrue(readIterator.hasNext());
             Record actual = readIterator.next();
@@ -976,7 +870,7 @@ public class MemTimeSeriesTest {
             assertFalse(readIterator.hasNext());
         }
 
-        try (RecordIterator readIterator = new BinaryTimeSeriesRecordIterator(def, fourthMemTimeSeries.newInput())) {
+        try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(def, fourthMemTimeSeries.newInput())) {
 
             assertTrue(readIterator.hasNext());
             Record actual = readIterator.next();

@@ -32,8 +32,8 @@ import io.horizondb.io.files.SeekableFileDataOutput;
 import io.horizondb.model.ErrorCodes;
 import io.horizondb.model.core.Field;
 import io.horizondb.model.core.Record;
-import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.core.RecordUtils;
+import io.horizondb.model.core.ResourceIterator;
 import io.horizondb.model.core.fields.TimestampField;
 import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;
 import io.horizondb.model.core.iterators.LoggingRecordIterator;
@@ -252,9 +252,9 @@ final class MemTimeSeries implements TimeSeriesElement {
      */
     public void writePrettyPrint(TimeSeriesDefinition definition, PrintStream stream) throws IOException {
         
-        try (RecordIterator iter = new LoggingRecordIterator(definition,
-                                                             new BinaryTimeSeriesRecordIterator(definition, newInput()),
-                                                             stream)) {
+        try (ResourceIterator<Record> iter = new LoggingRecordIterator(definition,
+                                                                       new BinaryTimeSeriesRecordIterator(definition, newInput()),
+                                                                       stream)) {
             while (iter.hasNext()) {
 
                 iter.next();

@@ -24,7 +24,7 @@ import io.horizondb.model.core.Filter;
 import io.horizondb.model.core.Predicate;
 import io.horizondb.model.core.Projection;
 import io.horizondb.model.core.Record;
-import io.horizondb.model.core.RecordIterator;
+import io.horizondb.model.core.ResourceIterator;
 import io.horizondb.model.schema.DatabaseDefinition;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
@@ -130,7 +130,8 @@ public final class TimeSeries {
      * @throws IOException if an I/O problem occurs
      * @throws HorizonDBException if another problem occurs
      */
-    public RecordIterator read(Projection projection, Predicate predicate) throws IOException, HorizonDBException {
+    public ResourceIterator<? extends Record> read(Projection projection,
+                                                   Predicate predicate) throws IOException, HorizonDBException {
         
         Filter<String> recordTypeFilter = projection.getRecordTypeFilter(this.definition);
         RangeSet<Field> timeRanges = predicate.getTimestampRanges();
@@ -147,9 +148,9 @@ public final class TimeSeries {
      * @throws IOException if an I/O problem occurs
      * @throws HorizonDBException if another problem occurs
      */
-    public RecordIterator read(RangeSet<Field> timeRanges,
-                               Filter<String> recordTypeFilter,
-                               Filter<Record> filter) throws IOException, HorizonDBException {
+    public ResourceIterator<Record> read(RangeSet<Field> timeRanges,
+                                         Filter<String> recordTypeFilter,
+                                         Filter<Record> filter) throws IOException, HorizonDBException {
 
         Range<Field> span = timeRanges.span();
         
@@ -212,7 +213,7 @@ public final class TimeSeries {
     /**
      * <code>RecordIterator</code> used to read records over multiple partitions.
      */
-    private final class PartitionRecordIterator implements RecordIterator {
+    private final class PartitionRecordIterator implements ResourceIterator<Record> {
 
         /**
          * The time ranges for which data has been requested. 
@@ -237,8 +238,8 @@ public final class TimeSeries {
         /**
          * The record iterator for the current partition been read.
          */
-        private RecordIterator recordIterator;
-                        
+        private ResourceIterator<Record> recordIterator;
+
         /**
          * Creates a new <code>PartitionRecordIterator</code> to read records from the specified partitions.
          * 

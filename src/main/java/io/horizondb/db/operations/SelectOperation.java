@@ -20,7 +20,8 @@ import io.horizondb.db.databases.Database;
 import io.horizondb.db.series.TimeSeries;
 import io.horizondb.model.core.Predicate;
 import io.horizondb.model.core.Projection;
-import io.horizondb.model.core.RecordIterator;
+import io.horizondb.model.core.Record;
+import io.horizondb.model.core.ResourceIterator;
 import io.horizondb.model.protocol.Msg;
 import io.horizondb.model.protocol.Msgs;
 import io.horizondb.model.protocol.SelectPayload;
@@ -46,7 +47,7 @@ final class SelectOperation implements Operation {
         
         Projection projection = payload.getProjection();
         Predicate predicate = payload.getPredicate();
-        RecordIterator iterator = series.read(projection, predicate);
+        ResourceIterator<? extends Record> iterator = series.read(projection, predicate);
         
         return new ChunkedRecordSet(request.getHeader(),
                                     projection.getDefinition(series.getDefinition()),

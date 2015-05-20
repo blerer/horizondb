@@ -4,7 +4,8 @@ import io.horizondb.io.Buffer;
 import io.horizondb.io.ByteWriter;
 import io.horizondb.io.buffers.Buffers;
 import io.horizondb.io.encoding.VarInts;
-import io.horizondb.model.core.RecordIterator;
+import io.horizondb.model.core.Record;
+import io.horizondb.model.core.ResourceIterator;
 import io.horizondb.model.core.records.TimeSeriesRecord;
 import io.horizondb.model.protocol.DataChunkPayload;
 import io.horizondb.model.protocol.Msg;
@@ -34,7 +35,7 @@ public class ChunkedRecordStreamTest {
     public void testEmptyStream() throws Exception {
 
         MsgHeader requestHeader = MsgHeader.newRequestHeader(OpCode.HQL_QUERY, 26);
-        RecordIterator iterator = EasyMock.createMock(RecordIterator.class);
+        ResourceIterator<Record> iterator = EasyMock.createMock(ResourceIterator.class);
         EasyMock.expect(iterator.hasNext()).andReturn(false);
 
         ChannelHandlerContext context = EasyMock.createMock(ChannelHandlerContext.class);
@@ -67,7 +68,7 @@ public class ChunkedRecordStreamTest {
     public void testStreamWithOnlyOneRecord() throws Exception {
 
         MsgHeader requestHeader = MsgHeader.newRequestHeader(OpCode.HQL_QUERY, 26);
-        RecordIterator iterator = EasyMock.createMock(RecordIterator.class);
+        ResourceIterator<Record> iterator = EasyMock.createMock(ResourceIterator.class);
 
         TimeSeriesRecord first = new TimeSeriesRecord(0,
                                                       TimeUnit.NANOSECONDS,
@@ -114,7 +115,7 @@ public class ChunkedRecordStreamTest {
     public void testStreamWithTreeRecords() throws Exception {
 
         MsgHeader requestHeader = MsgHeader.newRequestHeader(OpCode.HQL_QUERY, 26);
-        RecordIterator iterator = EasyMock.createMock(RecordIterator.class);
+        ResourceIterator<Record> iterator = EasyMock.createMock(ResourceIterator.class);
 
         TimeSeriesRecord first = new TimeSeriesRecord(0,
                                                       TimeUnit.NANOSECONDS,
@@ -181,7 +182,7 @@ public class ChunkedRecordStreamTest {
     public void testStreamWithTwoChunk() throws Exception {
 
         MsgHeader requestHeader = MsgHeader.newRequestHeader(OpCode.HQL_QUERY, 26);
-        RecordIterator iterator = EasyMock.createMock(RecordIterator.class);
+        ResourceIterator<Record> iterator = EasyMock.createMock(ResourceIterator.class);
 
         TimeSeriesRecord first = new TimeSeriesRecord(0,
                                                       TimeUnit.NANOSECONDS,
@@ -259,7 +260,7 @@ public class ChunkedRecordStreamTest {
     public void testStreamWithOnlyEndOfStreamInSecondChunk() throws Exception {
 
         MsgHeader requestHeader = MsgHeader.newRequestHeader(OpCode.HQL_QUERY, 26);
-        RecordIterator iterator = EasyMock.createMock(RecordIterator.class);
+        ResourceIterator<Record> iterator = EasyMock.createMock(ResourceIterator.class);
 
         TimeSeriesRecord first = new TimeSeriesRecord(0,
                                                       TimeUnit.NANOSECONDS,

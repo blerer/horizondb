@@ -1,6 +1,4 @@
 /**
- * Copyright 2013 Benjamin Lerer
- * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,7 +17,7 @@ import io.horizondb.io.Buffer;
 import io.horizondb.io.buffers.Buffers;
 import io.horizondb.io.encoding.VarInts;
 import io.horizondb.model.core.Record;
-import io.horizondb.model.core.RecordIterator;
+import io.horizondb.model.core.ResourceIterator;
 import io.horizondb.model.protocol.DataChunkPayload;
 import io.horizondb.model.protocol.Msg;
 import io.horizondb.model.protocol.MsgHeader;
@@ -33,9 +31,6 @@ import static io.horizondb.io.files.FileUtils.ONE_KB;
 
 /**
  * <code>ChunkedInput</code> that translate into message the records returned by the time series iterator.
- * 
- * @author Benjamin
- * 
  */
 public final class ChunkedRecordStream implements ChunkedInput<Msg<DataChunkPayload>> {
 
@@ -52,7 +47,7 @@ public final class ChunkedRecordStream implements ChunkedInput<Msg<DataChunkPayl
     /**
      * The record iterator.
      */
-    private final RecordIterator iterator;
+    private final ResourceIterator<? extends Record> iterator;
 
     /**
      * The buffer used to writes the records.
@@ -77,7 +72,8 @@ public final class ChunkedRecordStream implements ChunkedInput<Msg<DataChunkPayl
      * @param iterator the time series iterator
      * @throws IOException if an I/O problems occurs.
      */
-    public ChunkedRecordStream(MsgHeader requestHeader, RecordIterator iterator) throws IOException {
+    public ChunkedRecordStream(MsgHeader requestHeader,
+                               ResourceIterator<? extends Record> iterator) throws IOException {
 
         this(requestHeader, iterator, DEFAULT_BUFFER_SIZE);
     }
@@ -91,7 +87,9 @@ public final class ChunkedRecordStream implements ChunkedInput<Msg<DataChunkPayl
      * @param bufferSize the buffer size
      * @throws IOException if an I/O problems occurs.
      */
-    public ChunkedRecordStream(MsgHeader requestHeader, RecordIterator iterator, int bufferSize) throws IOException {
+    public ChunkedRecordStream(MsgHeader requestHeader,
+                               ResourceIterator<? extends Record> iterator,
+                               int bufferSize) throws IOException {
 
         this.requestHeader = requestHeader;
         this.iterator = iterator;

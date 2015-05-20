@@ -25,10 +25,11 @@ import io.horizondb.io.files.FileUtils;
 import io.horizondb.io.files.SeekableFileDataInput;
 import io.horizondb.model.core.Field;
 import io.horizondb.model.core.Record;
-import io.horizondb.model.core.RecordIterator;
 import io.horizondb.model.core.RecordListBuilder;
 import io.horizondb.model.core.RecordUtils;
+import io.horizondb.model.core.ResourceIterator;
 import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;
+import io.horizondb.model.core.records.BinaryTimeSeriesRecord;
 import io.horizondb.model.core.records.BlockHeaderBuilder;
 import io.horizondb.model.core.records.TimeSeriesRecord;
 import io.horizondb.model.core.util.TimeUtils;
@@ -395,7 +396,7 @@ public class TimeSeriesFileTest {
             assertEquals(expectedBlockPositions, newFile.getBlockPositions());
             AssertFiles.assertFileContains(expectedFileContent, file.getPath());
             
-            try (RecordIterator readIterator = new BinaryTimeSeriesRecordIterator(this.definition, 
+            try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(this.definition, 
                                                                                   newFile.newInput())) {
 
                 assertTrue(readIterator.hasNext());
@@ -500,8 +501,8 @@ public class TimeSeriesFileTest {
             assertEquals(expectedBlockPositions, newFile.getBlockPositions());
             AssertFiles.assertFileContains(expectedFileContent, file.getPath());
             
-            try (RecordIterator readIterator = new BinaryTimeSeriesRecordIterator(this.definition, 
-                                                                                  newFile.newInput())) {
+            try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(this.definition, 
+                                                                                                            newFile.newInput())) {
                 
                 assertTrue(readIterator.hasNext());
                 Record actual = readIterator.next();
@@ -607,8 +608,8 @@ public class TimeSeriesFileTest {
             
             RangeSet<Field> rangeSet = ImmutableRangeSet.of(newTimestampRange(TIME_IN_NANOS + 13000000, TIME_IN_NANOS + 13006000));
             
-            try (RecordIterator readIterator = new BinaryTimeSeriesRecordIterator(this.definition, 
-                                                                                  newFile.newInput(rangeSet))) {
+            try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(this.definition, 
+                                                                                                            newFile.newInput(rangeSet))) {
                 
                 assertTrue(readIterator.hasNext());
                 Record actual = readIterator.next();
@@ -706,8 +707,8 @@ public class TimeSeriesFileTest {
             
             RangeSet<Field> rangeSet = ImmutableRangeSet.of(newTimestampRange(TIME_IN_NANOS + 13006000, TIME_IN_NANOS + 14000000));
             
-            try (RecordIterator readIterator = new BinaryTimeSeriesRecordIterator(this.definition, 
-                                                                                  newFile.newInput(rangeSet))) {
+            try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(this.definition, 
+                                                                                                            newFile.newInput(rangeSet))) {
                 
                 assertTrue(readIterator.hasNext());
                 Record actual = readIterator.next();
