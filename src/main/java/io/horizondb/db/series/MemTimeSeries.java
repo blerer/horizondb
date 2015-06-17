@@ -18,10 +18,8 @@ import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.db.util.concurrent.FutureUtils;
 import io.horizondb.io.Buffer;
-import io.horizondb.io.BufferAllocator;
 import io.horizondb.io.ReadableBuffer;
 import io.horizondb.io.buffers.Buffers;
-import io.horizondb.io.buffers.CompositeBuffer;
 import io.horizondb.io.compression.CompressionType;
 import io.horizondb.io.compression.Compressor;
 import io.horizondb.io.encoding.VarInts;
@@ -29,11 +27,12 @@ import io.horizondb.io.files.CompositeSeekableFileDataInput;
 import io.horizondb.io.files.SeekableFileDataInput;
 import io.horizondb.io.files.SeekableFileDataInputs;
 import io.horizondb.io.files.SeekableFileDataOutput;
-import io.horizondb.model.ErrorCodes;
+import io.horizondb.model.core.DataBlock;
 import io.horizondb.model.core.Field;
 import io.horizondb.model.core.Record;
 import io.horizondb.model.core.RecordUtils;
 import io.horizondb.model.core.ResourceIterator;
+import io.horizondb.model.core.blocks.RecordAppender;
 import io.horizondb.model.core.fields.TimestampField;
 import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;
 import io.horizondb.model.core.iterators.LoggingRecordIterator;
@@ -55,16 +54,8 @@ import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 import com.google.common.util.concurrent.ListenableFuture;
 
-import static io.horizondb.io.encoding.VarInts.computeUnsignedIntSize;
-import static io.horizondb.io.encoding.VarInts.writeByte;
-import static io.horizondb.io.encoding.VarInts.writeUnsignedInt;
-import static io.horizondb.model.core.records.BlockHeaderUtils.getCompressedBlockSize;
-import static io.horizondb.model.core.records.BlockHeaderUtils.getRecordCount;
-import static io.horizondb.model.core.records.BlockHeaderUtils.incrementRecordCount;
 import static io.horizondb.model.core.records.BlockHeaderUtils.setCompressedBlockSize;
 import static io.horizondb.model.core.records.BlockHeaderUtils.setCompressionType;
-import static io.horizondb.model.core.records.BlockHeaderUtils.setFirstTimestamp;
-import static io.horizondb.model.core.records.BlockHeaderUtils.setLastTimestamp;
 import static io.horizondb.model.core.records.BlockHeaderUtils.setUncompressedBlockSize;
 
 /**
@@ -86,19 +77,14 @@ final class MemTimeSeries implements TimeSeriesElement {
     private final TimeSeriesDefinition definition;
 
     /**
-     * The block headers
+     * The data blocks
      */
-    private final List<TimeSeriesRecord> headers;
+    private final List<DataBlock> blocks;
 
     /**
      * The last records for each type.
      */
     private final TimeSeriesRecord[] lastRecords;
-
-    /**
-     * The composite buffer used to store the in memory data.
-     */
-    private final CompositeBuffer compositeBuffer;
 
     /**
      * The future associated to the first write.
@@ -122,9 +108,8 @@ final class MemTimeSeries implements TimeSeriesElement {
 
         this(configuration,
              definition,
-             Collections.<TimeSeriesRecord>emptyList(),
+             Collections.<DataBlock>emptyList(),
              new TimeSeriesRecord[definition.getNumberOfRecordTypes()],
-             new CompositeBuffer(),
              null,
              null,
              null);
@@ -154,22 +139,41 @@ final class MemTimeSeries implements TimeSeriesElement {
                                 ListenableFuture<ReplayPosition> future)
                                        throws IOException, HorizonDBException {
 
-        TimeSeriesRecord[] copy = TimeSeriesRecord.deepCopy(this.lastRecords);
-        List<TimeSeriesRecord> newHeaders = new ArrayList<>(this.headers.size());
-        for (int i = 0, m = this.headers.size(); i < m; i++) {
-            newHeaders.add(this.headers.get(i).newInstance());
+        List<DataBlock> newBlocks = new ArrayList<>(this.blocks);
+        TimeSeriesRecord[] previousRecords = TimeSeriesRecord.deepCopy(this.lastRecords);
+
+        RecordAppender appender;
+        
+        if (newBlocks.isEmpty()) {
+
+            appender = new RecordAppender(this.definition,
+                                                    allocator,
+                                                    previousRecords);
+        } else {
+
+            DataBlock lastBlock = newBlocks.remove(newBlocks.size() - 1);
+            appender = new RecordAppender(this.definition,
+                                                    allocator,
+                                                    previousRecords,
+                                                    lastBlock);
         }
-        CompositeBuffer buffer = this.compositeBuffer.duplicate();
 
         for (int i = 0, m = records.size(); i < m; i++) {
-            write(allocator, copy, newHeaders, buffer, records.get(i));
+
+            while (!appender.append(records.get(i))) {
+
+                newBlocks.add(appender.getDataBlock());
+                appender = new RecordAppender(this.definition,
+                                                        allocator,
+                                                        this.lastRecords);
+            }
         }
+        newBlocks.add(appender.getDataBlock());
 
         return new MemTimeSeries(this.configuration,
                                  this.definition,
-                                 newHeaders,
-                                 copy,
-                                 buffer,
+                                 newBlocks,
+                                 previousRecords,
                                  getFirstFuture(future),
                                  future,
                                  getNewRegionRange(allocator));
@@ -199,27 +203,24 @@ final class MemTimeSeries implements TimeSeriesElement {
     @Override
     public SeekableFileDataInput newInput(RangeSet<Field> rangeSet) throws IOException {
 
-        if (this.headers.isEmpty()) {
+        if (this.blocks.isEmpty()) {
             return SeekableFileDataInputs.empty();
         }
 
         CompositeSeekableFileDataInput composite = new CompositeSeekableFileDataInput();
-        CompositeBuffer dataBuffer = this.compositeBuffer.duplicate().readerIndex(0);
-        int offset = 0;
-        for (TimeSeriesRecord header : this.headers) {
+        for (int i = 0, m = this.blocks.size(); i < m; i++) {
+            DataBlock block = this.blocks.get(i);
 
+            Record header = block.getHeader();
             Range<Field> range = BlockHeaderUtils.getRange(header);
-            int size = BlockHeaderUtils.getCompressedBlockSize(header);
-
             if (!rangeSet.subRangeSet(range).isEmpty()) {
-
-                ReadableBuffer blockBuffer = Buffers.composite(toBuffer(header),
-                                                               dataBuffer.slice(offset, size).duplicate());
-                composite.add(SeekableFileDataInputs.toSeekableFileDataInput(blockBuffer));
+                ReadableBuffer buffer = toBuffer(header);
+                ReadableBuffer blockBuffer = Buffers.composite(buffer,
+                                                               block.getData());
+                SeekableFileDataInput seekableFileDataInput = SeekableFileDataInputs.toSeekableFileDataInput(blockBuffer);
+                composite.add(seekableFileDataInput);
             }
-            offset += size;
         }
-
         return composite;
     }
 
@@ -268,7 +269,7 @@ final class MemTimeSeries implements TimeSeriesElement {
      * @return the number of data blocks that contains this <code>MemTimeSeries</code>.  
      */
     public int getNumberOfBlocks() {
-        return this.headers.size();
+        return this.blocks.size();
     }
     
     /**
@@ -284,13 +285,13 @@ final class MemTimeSeries implements TimeSeriesElement {
          Compressor compressor = compressionType.newCompressor();
 
          long position = output.getPosition();
-         CompositeBuffer dataBuffer = this.compositeBuffer.duplicate();
-         int offset = 0;
-         for (TimeSeriesRecord header : this.headers) {
+         for (int i = 0, m = this.blocks.size(); i < m; i++) {
+             DataBlock block = this.blocks.get(i);
 
+             TimeSeriesRecord header = block.getHeader().toTimeSeriesRecord();
              int blockSize = BlockHeaderUtils.getCompressedBlockSize(header);
 
-             ReadableBuffer compressedData = compressor.compress(dataBuffer.slice(offset, blockSize));
+             ReadableBuffer compressedData = compressor.compress(block.getData());
 
              TimeSeriesRecord newHeader = header.newInstance();
              setCompressionType(newHeader, compressor.getType());
@@ -305,8 +306,6 @@ final class MemTimeSeries implements TimeSeriesElement {
              BlockPosition blockPosition = new BlockPosition(position, length);
              blockPositions.put(BlockHeaderUtils.getRange(header), blockPosition);
              position = output.getPosition();
-
-             offset += blockSize;
          }
     }
     
@@ -335,163 +334,6 @@ final class MemTimeSeries implements TimeSeriesElement {
         }
         
         return this.firstFuture;
-    }
-
-    /**
-     * Writes the specified record data to the specified buffer.
-     *
-     * @param allocator the slab allocator used to reduce heap fragmentation
-     * @param previousRecords the previous value of the records
-     * @param headers the block headers
-     * @param composite the composite buffer to which the records binaries must be added
-     * @param record the record to be written
-     * @throws IOException if an I/O problem occurs
-     * @throws HorizonDBException if the record is not valid
-     */
-    private void write(BufferAllocator allocator,
-                       TimeSeriesRecord[] previousRecords,
-                       List<TimeSeriesRecord> headers,
-                       CompositeBuffer composite,
-                       Record record) throws IOException, HorizonDBException {
-
-        int type = record.getType();
-
-        if (previousRecords[type] == null) {
-
-            if (record.isDelta()) {
-
-                throw new HorizonDBException(ErrorCodes.INVALID_RECORD_SET, "The first record of the record set "
-                        + "is a delta and should be a full state.");
-            }
-
-            previousRecords[type] = record.toTimeSeriesRecord();
-
-            TimeSeriesRecord header = getHeaderForWrite(headers, record.computeSerializedSize());
-            performWrite(allocator, header, composite, record);
-
-        } else {
-
-            if (record.isDelta()) {
-
-                previousRecords[type].add(record);
-
-                TimeSeriesRecord header = getHeaderForWrite(headers, record.computeSerializedSize());
-
-                if (getRecordCount(header, record.getType()) == 0) {
-
-                    header = getHeaderForWrite(headers, previousRecords[type].computeSerializedSize());
-                    performWrite(allocator, header, composite, previousRecords[type]);
-
-                } else {
-
-                    performWrite(allocator, header, composite, record);
-                }
-
-            } else {
-
-                if (record.getTimestampInNanos(0) < getGreatestTimestamp(previousRecords)) {
-
-                    throw new HorizonDBException(ErrorCodes.INVALID_RECORD_SET,
-                                                 "The first record of the record set as a timestamp earliest than"
-                                                         + " the last record written."
-                                                         + " Updates are not yet supported.");
-                }
-
-                TimeSeriesRecord delta = toDelta(previousRecords[type], record);
-                previousRecords[type].add(delta);
-
-                TimeSeriesRecord header = getHeaderForWrite(headers, delta.computeSerializedSize());
-                if (getRecordCount(header, record.getType()) == 0) {
-
-                    header = getHeaderForWrite(headers, previousRecords[type].computeSerializedSize());
-                    performWrite(allocator, header, composite, previousRecords[type]);
-
-                } else {
-
-                    performWrite(allocator, header, composite, delta);
-                }
-            }
-        }
-    }
-
-    private TimeSeriesRecord getHeaderForWrite(List<TimeSeriesRecord> headers, int dataSize) throws IOException {
-
-        if (!headers.isEmpty()) {
-            TimeSeriesRecord header = headers.get(headers.size() - 1);
-            if (getCompressedBlockSize(header) + dataSize <= this.definition.getBlockSizeInBytes()) {
-                return header;
-            }
-        }
-
-        TimeSeriesRecord header = this.definition.newBlockHeader();
-        headers.add(header);
-        return header;
-    }
-
-    /**
-     * Computes the delta between the two specified records.
-     *
-     * @param first the first record
-     * @param second the second record
-     * @return the delta between the two specified records.
-     * @throws IOException if an I/O problem occurs while computing the delta
-     */
-    private static TimeSeriesRecord toDelta(TimeSeriesRecord first, Record second) throws IOException {
-
-        TimeSeriesRecord delta = second.toTimeSeriesRecord();
-        delta.subtract(first);
-        return delta;
-    }
-
-    /**
-     * Adds the specified record to the specified composite.
-     *
-     * @param allocator the slab allocator
-     * @param header the block header
-     * @param composite the composite buffer to which the record must bee added
-     * @param record the record to add
-     * @throws IOException if an I/O problem occurs
-     */
-    private static void performWrite(BufferAllocator allocator,
-                                     TimeSeriesRecord header,
-                                     CompositeBuffer composite,
-                                     Record record) throws IOException {
-
-        Buffer buffer = serializeRecord(allocator, record);
-        int recordSize = buffer.readableBytes();
-
-        if (BlockHeaderUtils.getFirstTimestampInNanos(header) == 0) {
-            setFirstTimestamp(header, record);
-        }
-
-        setLastTimestamp(header, record);
-        incrementRecordCount(header, record.getType());
-
-        composite.addBytes(buffer);
-
-        setCompressedBlockSize(header, getCompressedBlockSize(header) + recordSize);
-    }
-
-    /**
-     * Serializes the specified record.
-     * 
-     * @param allocator the buffer allocator used to allocate the returned <code>Buffer</code>
-     * @param record the record to serialize
-     * @return a buffer containing the serialized record
-     * @throws IOException if an I/O problem occurs
-     */
-    private static Buffer serializeRecord(BufferAllocator allocator, Record record) throws IOException {
-
-        int recordSize = record.computeSerializedSize();
-        int totalSize = 1 + computeUnsignedIntSize(recordSize) + recordSize;
-
-        Buffer buffer = allocator.allocate(totalSize);
-
-        writeByte(buffer, record.getType());
-        writeUnsignedInt(buffer, recordSize);
-        record.writeTo(buffer);
-
-        return buffer;
     }
 
     /**
@@ -528,8 +370,8 @@ final class MemTimeSeries implements TimeSeriesElement {
      */
     private int getRecordsSize() throws IOException {
         int size = 0;
-        for (int i = 0, m = this.headers.size(); i < m; i++) {
-            TimeSeriesRecord header = this.headers.get(i);
+        for (int i = 0, m = this.blocks.size(); i < m; i++) {
+            Record header = this.blocks.get(i).getHeader();
             size += BlockHeaderUtils.getUncompressedBlockSize(header);
         }
         return size;
@@ -585,18 +427,16 @@ final class MemTimeSeries implements TimeSeriesElement {
 	 */
     private MemTimeSeries(Configuration configuration,
                            TimeSeriesDefinition definition,
-                           List<TimeSeriesRecord> headers,
+                           List<DataBlock> blocks,
                            TimeSeriesRecord[] lastRecords,
-                           CompositeBuffer compositeBuffer,
                            ListenableFuture<ReplayPosition> firstFuture,
                            ListenableFuture<ReplayPosition> lastFuture,
                            Range<Integer> regionRange) {
 
         this.configuration = configuration;
         this.definition = definition;
-        this.headers = headers;
+        this.blocks = blocks;
         this.lastRecords = lastRecords;
-        this.compositeBuffer = compositeBuffer;
         this.firstFuture = firstFuture;
         this.lastFuture = lastFuture;
         this.regionRange = regionRange;
