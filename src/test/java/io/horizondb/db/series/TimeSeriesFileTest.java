@@ -383,7 +383,7 @@ public class TimeSeriesFileTest {
 
         replayPosition = new ReplayPosition(1, RecordUtils.computeSerializedSize(records)
                                             + RecordUtils.computeSerializedSize(records2));
-        
+
         memTimeSeries = memTimeSeries.write(allocator, records2, Futures.immediateFuture(replayPosition));
 
         try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, 
@@ -392,7 +392,6 @@ public class TimeSeriesFileTest {
                                                        this.metadata)) {
 
             TimeSeriesFile newFile = file.append(Arrays.<TimeSeriesElement> asList(memTimeSeries));
-
             assertEquals(expectedBlockPositions, newFile.getBlockPositions());
             AssertFiles.assertFileContains(expectedFileContent, file.getPath());
             
@@ -806,16 +805,16 @@ public class TimeSeriesFileTest {
         LinkedHashMap<Range<Field>, BlockPosition> map = new LinkedHashMap<>();         
         
         for (List<TimeSeriesRecord> records : recordBlocks) {
-            
+
             TimeSeriesRecord header = getBlockHeader(records);
-            
+
             Range<Field> range = newTimestampRange(getFirstTimestampInNanos(header),
                                                    getLastTimestampInNanos(header));
-            
+
             int length = RecordUtils.computeSerializedSize(header) + getCompressedBlockSize(header);
-            
+
             map.put(range, new BlockPosition(position, length));
-            position += length; 
+            position += length;
         }
         
         return map;
