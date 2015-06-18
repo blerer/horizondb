@@ -16,12 +16,16 @@ package io.horizondb.db.series;
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBFiles;
 import io.horizondb.db.commitlog.ReplayPosition;
+import io.horizondb.io.compression.CompressionType;
 import io.horizondb.io.files.RandomAccessDataFile;
 import io.horizondb.io.files.SeekableFileDataInput;
 import io.horizondb.io.files.SeekableFileDataInputs;
 import io.horizondb.io.files.SeekableFileDataOutput;
+import io.horizondb.model.core.DataBlock;
 import io.horizondb.model.core.Field;
+import io.horizondb.model.core.ResourceIterator;
 import io.horizondb.model.core.fields.TimestampField;
+import io.horizondb.model.core.iterators.CompressingIterator;
 import io.horizondb.model.schema.BlockPosition;
 import io.horizondb.model.schema.DatabaseDefinition;
 import io.horizondb.model.schema.TimeSeriesDefinition;
@@ -42,6 +46,8 @@ import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+
+import static io.horizondb.model.core.records.BlockHeaderUtils.getRange;
 
 /**
  * File containing the time series data.
@@ -78,6 +84,11 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
      * The future returning the replay position of the data on disk.
      */
     private final ListenableFuture<ReplayPosition> future;
+
+    /**
+     * The type of compression used to compress the blocks.
+     */
+    private final CompressionType compressionType;
 
     /**
      * Opens the time series file.
@@ -117,6 +128,7 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
                                   partitionMetadata.getBlockPositions(),
                                   file,
                                   partitionMetadata.getFileSize(),
+                                  definition.getCompressionType(),
                                   Futures.immediateFuture(partitionMetadata.getReplayPosition()));
     }
 
@@ -199,15 +211,50 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
 
                 TimeSeriesElement memTimeSeries = memTimeSeriesList.get(i);
 
-                ((MemTimeSeries) memTimeSeries).writeTo(newBlockPositions, output);
-                
+                append((MemTimeSeries) memTimeSeries, newBlockPositions, output);
+
                 newFuture = memTimeSeries.getFuture();
             }
 
             output.flush();
         }
 
-        return new TimeSeriesFile(this.metadata, newBlockPositions, this.file, this.file.size(), newFuture);
+        return new TimeSeriesFile(this.metadata,
+                                  newBlockPositions,
+                                  this.file,
+                                  this.file.size(),
+                                  this.compressionType,
+                                  newFuture);
+    }
+
+    /**
+     * Appends the content of the specified <code>MemTimeSeries</code> to the specified output.
+     *
+     * @param memTimeSeries the memTimeSeries
+     * @param blockPositions the collecting parameter for the block positions
+     * @param output the output to write to
+     * @throws IOException if an I/O problem occurs
+     */
+    private void append(MemTimeSeries memTimeSeries,
+                        LinkedHashMap<Range<Field>, BlockPosition> newBlockPositions,
+                        SeekableFileDataOutput output) throws IOException {
+
+        try (ResourceIterator<DataBlock> iterator = new CompressingIterator(this.compressionType, memTimeSeries.iterator())) {
+
+            long position = output.getPosition();
+            while (iterator.hasNext()) {
+
+                DataBlock block = iterator.next();
+
+                block.writeTo(output);
+
+                long newPosition = output.getPosition();
+                int length = (int) (newPosition - position);
+                BlockPosition blockPosition = new BlockPosition(position, length);
+                newBlockPositions.put(getRange(block.getHeader()), blockPosition);
+                position = output.getPosition();
+            }
+        }
     }
 
     /**
@@ -256,13 +303,15 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
      * @param blockPositions the position of the blocks
      * @param file the underlying file.
      * @param size the expected size of the file.
+     * @param compressionType the type of compression used to compress the blocks
      * @param future the future returning the replay position of the last record written to the disk.
      * @throws IOException if an I/O problem occurs.
      */
     private TimeSeriesFile(FileMetaData metadata, 
                            LinkedHashMap<Range<Field>, BlockPosition> blockPositions,
                            RandomAccessDataFile file, 
-                           long size, 
+                           long size,
+                           CompressionType compressionType,
                            ListenableFuture<ReplayPosition> future) 
                                    throws IOException {
 
@@ -270,6 +319,7 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
         this.blockPositions = blockPositions;
         this.file = file;
         this.fileSize = size;
+        this.compressionType = compressionType;
         this.future = future;
     }
 

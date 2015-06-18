@@ -20,25 +20,20 @@ import io.horizondb.db.util.concurrent.FutureUtils;
 import io.horizondb.io.Buffer;
 import io.horizondb.io.ReadableBuffer;
 import io.horizondb.io.buffers.Buffers;
-import io.horizondb.io.compression.CompressionType;
-import io.horizondb.io.compression.Compressor;
 import io.horizondb.io.encoding.VarInts;
 import io.horizondb.io.files.CompositeSeekableFileDataInput;
 import io.horizondb.io.files.SeekableFileDataInput;
 import io.horizondb.io.files.SeekableFileDataInputs;
-import io.horizondb.io.files.SeekableFileDataOutput;
 import io.horizondb.model.core.DataBlock;
 import io.horizondb.model.core.Field;
 import io.horizondb.model.core.Record;
-import io.horizondb.model.core.RecordUtils;
 import io.horizondb.model.core.ResourceIterator;
 import io.horizondb.model.core.blocks.RecordAppender;
 import io.horizondb.model.core.fields.TimestampField;
 import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;
+import io.horizondb.model.core.iterators.DefaultDataBlockIterator;
 import io.horizondb.model.core.iterators.LoggingRecordIterator;
-import io.horizondb.model.core.records.BlockHeaderUtils;
 import io.horizondb.model.core.records.TimeSeriesRecord;
-import io.horizondb.model.schema.BlockPosition;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
@@ -46,7 +41,6 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import javax.annotation.concurrent.Immutable;
 
@@ -54,9 +48,7 @@ import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 import com.google.common.util.concurrent.ListenableFuture;
 
-import static io.horizondb.model.core.records.BlockHeaderUtils.setCompressedBlockSize;
-import static io.horizondb.model.core.records.BlockHeaderUtils.setCompressionType;
-import static io.horizondb.model.core.records.BlockHeaderUtils.setUncompressedBlockSize;
+import static io.horizondb.model.core.records.BlockHeaderUtils.*;
 
 /**
  * In-memory part of a time series used to store the writes until they are
@@ -212,7 +204,7 @@ final class MemTimeSeries implements TimeSeriesElement {
             DataBlock block = this.blocks.get(i);
 
             Record header = block.getHeader();
-            Range<Field> range = BlockHeaderUtils.getRange(header);
+            Range<Field> range = getRange(header);
             if (!rangeSet.subRangeSet(range).isEmpty()) {
                 ReadableBuffer buffer = toBuffer(header);
                 ReadableBuffer blockBuffer = Buffers.composite(buffer,
@@ -271,44 +263,15 @@ final class MemTimeSeries implements TimeSeriesElement {
     public int getNumberOfBlocks() {
         return this.blocks.size();
     }
-    
+
     /**
-     * Writes the content of this <code>MemTimeSeries</code> to the specified output.
-     * 
-     * @param blockPositions the collecting parameter for the block positions
-     * @param output the output to write to
-     * @throws IOException if an I/O problem occurs
+     * Returns an iterator over the <code>DataBlock</code>s of this <code>MemTimeSeries</code>.
+     * @return an iterator over the <code>DataBlock</code>s of this <code>MemTimeSeries</code>.
      */
-     void writeTo(Map<Range<Field>, BlockPosition> blockPositions, SeekableFileDataOutput output) throws IOException {
-
-         CompressionType compressionType = this.definition.getCompressionType();
-         Compressor compressor = compressionType.newCompressor();
-
-         long position = output.getPosition();
-         for (int i = 0, m = this.blocks.size(); i < m; i++) {
-             DataBlock block = this.blocks.get(i);
-
-             TimeSeriesRecord header = block.getHeader().toTimeSeriesRecord();
-             int blockSize = BlockHeaderUtils.getCompressedBlockSize(header);
-
-             ReadableBuffer compressedData = compressor.compress(block.getData());
-
-             TimeSeriesRecord newHeader = header.newInstance();
-             setCompressionType(newHeader, compressor.getType());
-             setCompressedBlockSize(newHeader, compressedData.readableBytes());
-             setUncompressedBlockSize(newHeader, blockSize);
-
-             RecordUtils.writeRecord(output, newHeader);
-             output.transfer(compressedData);
-
-             long newPosition = output.getPosition();
-             int length = (int) (newPosition - position);
-             BlockPosition blockPosition = new BlockPosition(position, length);
-             blockPositions.put(BlockHeaderUtils.getRange(header), blockPosition);
-             position = output.getPosition();
-         }
+    public ResourceIterator<DataBlock> iterator() {
+        return new DefaultDataBlockIterator(this.blocks);
     }
-    
+
     /**
      * Returns the greatest timestamp of this time series element.
      * 
@@ -372,7 +335,7 @@ final class MemTimeSeries implements TimeSeriesElement {
         int size = 0;
         for (int i = 0, m = this.blocks.size(); i < m; i++) {
             Record header = this.blocks.get(i).getHeader();
-            size += BlockHeaderUtils.getUncompressedBlockSize(header);
+            size += getUncompressedBlockSize(header);
         }
         return size;
     }
