@@ -16,7 +16,6 @@ package io.horizondb.db.series;
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBFiles;
 import io.horizondb.db.commitlog.ReplayPosition;
-import io.horizondb.io.compression.CompressionType;
 import io.horizondb.io.files.RandomAccessDataFile;
 import io.horizondb.io.files.SeekableFileDataInput;
 import io.horizondb.io.files.SeekableFileDataInputs;
@@ -25,6 +24,7 @@ import io.horizondb.model.core.DataBlock;
 import io.horizondb.model.core.Field;
 import io.horizondb.model.core.ResourceIterator;
 import io.horizondb.model.core.fields.TimestampField;
+import io.horizondb.model.core.iterators.BlockIterators;
 import io.horizondb.model.core.iterators.CompressingIterator;
 import io.horizondb.model.schema.BlockPosition;
 import io.horizondb.model.schema.DatabaseDefinition;
@@ -64,7 +64,12 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
      * The file meta data.
      */
     private final FileMetaData metadata;
-    
+
+    /**
+     * The time series definition
+     */
+    private final TimeSeriesDefinition definition;
+
     /**
      * The block positions
      */
@@ -84,11 +89,6 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
      * The future returning the replay position of the data on disk.
      */
     private final ListenableFuture<ReplayPosition> future;
-
-    /**
-     * The type of compression used to compress the blocks.
-     */
-    private final CompressionType compressionType;
 
     /**
      * Opens the time series file.
@@ -125,10 +125,10 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
         }
 
         return new TimeSeriesFile(fileMetaData,
+                                  definition,
                                   partitionMetadata.getBlockPositions(),
                                   file,
                                   partitionMetadata.getFileSize(),
-                                  definition.getCompressionType(),
                                   Futures.immediateFuture(partitionMetadata.getReplayPosition()));
     }
 
@@ -140,6 +140,22 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
     public long size() {
 
         return this.fileSize;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public ResourceIterator<DataBlock> iterator() throws IOException {
+        return BlockIterators.iterator(this.definition, newInput());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public ResourceIterator<DataBlock> iterator(RangeSet<Field> rangeSet) throws IOException {
+        return BlockIterators.iterator(this.definition, newInput(rangeSet));
     }
 
     /**
@@ -220,10 +236,10 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
         }
 
         return new TimeSeriesFile(this.metadata,
+                                  this.definition,
                                   newBlockPositions,
                                   this.file,
                                   this.file.size(),
-                                  this.compressionType,
                                   newFuture);
     }
 
@@ -239,7 +255,8 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
                         LinkedHashMap<Range<Field>, BlockPosition> newBlockPositions,
                         SeekableFileDataOutput output) throws IOException {
 
-        try (ResourceIterator<DataBlock> iterator = new CompressingIterator(this.compressionType, memTimeSeries.iterator())) {
+        try (ResourceIterator<DataBlock> iterator = new CompressingIterator(this.definition.getCompressionType(),
+                                                                            memTimeSeries.iterator())) {
 
             long position = output.getPosition();
             while (iterator.hasNext()) {
@@ -308,18 +325,18 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
      * @throws IOException if an I/O problem occurs.
      */
     private TimeSeriesFile(FileMetaData metadata, 
+                           TimeSeriesDefinition definition,
                            LinkedHashMap<Range<Field>, BlockPosition> blockPositions,
                            RandomAccessDataFile file, 
                            long size,
-                           CompressionType compressionType,
                            ListenableFuture<ReplayPosition> future) 
                                    throws IOException {
 
         this.metadata = metadata;
+        this.definition = definition;
         this.blockPositions = blockPositions;
         this.file = file;
         this.fileSize = size;
-        this.compressionType = compressionType;
         this.future = future;
     }
 

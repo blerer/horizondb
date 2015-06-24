@@ -18,6 +18,7 @@ import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.commitlog.CommitLog;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.files.SeekableFileDataInput;
+import io.horizondb.model.core.DataBlock;
 import io.horizondb.model.core.Field;
 import io.horizondb.model.core.Filter;
 import io.horizondb.model.core.Record;
@@ -51,8 +52,6 @@ import static org.apache.commons.lang.Validate.notNull;
 
 /**
  * A partition of a given time series.
- * 
- * @author Benjamin
  * 
  */
 @ThreadSafe
@@ -359,7 +358,25 @@ public final class TimeSeriesPartition implements Comparable<TimeSeriesPartition
 
         return newInput(TimestampField.ALL);
     }
-    
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public ResourceIterator<DataBlock> iterator() throws IOException {
+        TimeSeriesElements elementList = this.elements.get();
+        return elementList.iterator();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public ResourceIterator<DataBlock> iterator(RangeSet<Field> rangeSet) throws IOException {
+        TimeSeriesElements elementList = this.elements.get();
+        return elementList.iterator(rangeSet);
+    }
+
     /**
      * {@inheritDoc}
      */

@@ -31,7 +31,7 @@ import io.horizondb.model.core.ResourceIterator;
 import io.horizondb.model.core.blocks.RecordAppender;
 import io.horizondb.model.core.fields.TimestampField;
 import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;
-import io.horizondb.model.core.iterators.DefaultDataBlockIterator;
+import io.horizondb.model.core.iterators.BlockIterators;
 import io.horizondb.model.core.iterators.LoggingRecordIterator;
 import io.horizondb.model.core.records.TimeSeriesRecord;
 import io.horizondb.model.schema.TimeSeriesDefinition;
@@ -265,11 +265,19 @@ final class MemTimeSeries implements TimeSeriesElement {
     }
 
     /**
-     * Returns an iterator over the <code>DataBlock</code>s of this <code>MemTimeSeries</code>.
-     * @return an iterator over the <code>DataBlock</code>s of this <code>MemTimeSeries</code>.
+     * {@inheritDoc}
      */
+    @Override
     public ResourceIterator<DataBlock> iterator() {
-        return new DefaultDataBlockIterator(this.blocks);
+        return BlockIterators.iterator(this.blocks);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public ResourceIterator<DataBlock> iterator(RangeSet<Field> rangeSet) throws IOException {
+        return BlockIterators.filter(rangeSet, iterator());
     }
 
     /**

@@ -20,8 +20,11 @@ import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.files.CompositeSeekableFileDataInput;
 import io.horizondb.io.files.SeekableFileDataInput;
+import io.horizondb.model.core.DataBlock;
 import io.horizondb.model.core.Field;
 import io.horizondb.model.core.Record;
+import io.horizondb.model.core.ResourceIterator;
+import io.horizondb.model.core.iterators.BlockIterators;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
@@ -157,6 +160,42 @@ final class TimeSeriesElements {
         return composite;
     }
 
+    /**
+     * Returns a new iterator over all the blocks of those elements.
+     * 
+     * @param rangeSet the time range for which the blocks must be returned
+     * @return a new iterator that can be used to read all the data of those elements.
+     * @throws IOException if an I/O problem occurs.
+     */
+    public ResourceIterator<DataBlock> iterator() throws IOException {
+
+        List<ResourceIterator<DataBlock>> iterators = new ArrayList<>();
+
+        for (int i = 0, m = this.elements.size(); i < m; i++) {
+            TimeSeriesElement element = this.elements.get(i);
+            iterators.add(element.iterator());
+        }
+        return BlockIterators.concat(iterators);
+    }
+
+    /**
+     * Returns a new iterator over the blocks of those element containing the specified time range.
+     * 
+     * @param rangeSet the time range for which the blocks must be returned
+     * @return a new iterator that can be used to read the data of those elements.
+     * @throws IOException if an I/O problem occurs.
+     */
+    public ResourceIterator<DataBlock> iterator(RangeSet<Field> rangeSet) throws IOException {
+
+        List<ResourceIterator<DataBlock>> iterators = new ArrayList<>();
+
+        for (int i = 0, m = this.elements.size(); i < m; i++) {
+            TimeSeriesElement element = this.elements.get(i);
+            iterators.add(element.iterator(rangeSet));
+        }
+        return BlockIterators.concat(iterators);
+    }
+    
     public TimeSeriesElements write(SlabAllocator allocator, 
                                     List<? extends Record> records, 
                                     ListenableFuture<ReplayPosition> future) throws IOException,                                                                                                                     HorizonDBException {
