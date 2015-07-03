@@ -25,7 +25,6 @@ import io.horizondb.model.core.Field;
 import io.horizondb.model.core.ResourceIterator;
 import io.horizondb.model.core.fields.TimestampField;
 import io.horizondb.model.core.iterators.BlockIterators;
-import io.horizondb.model.core.iterators.CompressingIterator;
 import io.horizondb.model.schema.BlockPosition;
 import io.horizondb.model.schema.DatabaseDefinition;
 import io.horizondb.model.schema.TimeSeriesDefinition;
@@ -47,6 +46,7 @@ import com.google.common.collect.RangeSet;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
+import static io.horizondb.model.core.iterators.BlockIterators.compress;
 import static io.horizondb.model.core.records.BlockHeaderUtils.getRange;
 
 /**
@@ -255,8 +255,8 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
                         LinkedHashMap<Range<Field>, BlockPosition> newBlockPositions,
                         SeekableFileDataOutput output) throws IOException {
 
-        try (ResourceIterator<DataBlock> iterator = new CompressingIterator(this.definition.getCompressionType(),
-                                                                            memTimeSeries.iterator())) {
+        try (ResourceIterator<DataBlock> iterator = compress(this.definition.getCompressionType(),
+                                                             memTimeSeries.iterator())) {
 
             long position = output.getPosition();
             while (iterator.hasNext()) {
