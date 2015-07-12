@@ -62,8 +62,8 @@ import com.google.common.util.concurrent.Futures;
 import static io.horizondb.db.series.FileMetaData.METADATA_LENGTH;
 import static io.horizondb.model.core.Record.TIMESTAMP_FIELD_INDEX;
 import static io.horizondb.model.core.records.BlockHeaderUtils.getCompressedBlockSize;
-import static io.horizondb.model.core.records.BlockHeaderUtils.getFirstTimestampInNanos;
-import static io.horizondb.model.core.records.BlockHeaderUtils.getLastTimestampInNanos;
+import static io.horizondb.model.core.records.BlockHeaderUtils.getFirstTimestamp;
+import static io.horizondb.model.core.records.BlockHeaderUtils.getLastTimestamp;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -396,7 +396,7 @@ public class TimeSeriesFileTest {
             AssertFiles.assertFileContains(expectedFileContent, file.getPath());
             
             try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(this.definition, 
-                                                                                  newFile.newInput())) {
+                                                                                  newFile.iterator())) {
 
                 assertTrue(readIterator.hasNext());
                 Record actual = readIterator.next();
@@ -501,7 +501,7 @@ public class TimeSeriesFileTest {
             AssertFiles.assertFileContains(expectedFileContent, file.getPath());
             
             try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(this.definition, 
-                                                                                                            newFile.newInput())) {
+                                                                                                            newFile.iterator())) {
                 
                 assertTrue(readIterator.hasNext());
                 Record actual = readIterator.next();
@@ -608,7 +608,7 @@ public class TimeSeriesFileTest {
             RangeSet<Field> rangeSet = ImmutableRangeSet.of(newTimestampRange(TIME_IN_NANOS + 13000000, TIME_IN_NANOS + 13006000));
             
             try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(this.definition, 
-                                                                                                            newFile.newInput(rangeSet))) {
+                                                                                                            newFile.iterator(rangeSet))) {
                 
                 assertTrue(readIterator.hasNext());
                 Record actual = readIterator.next();
@@ -707,7 +707,7 @@ public class TimeSeriesFileTest {
             RangeSet<Field> rangeSet = ImmutableRangeSet.of(newTimestampRange(TIME_IN_NANOS + 13006000, TIME_IN_NANOS + 14000000));
             
             try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(this.definition, 
-                                                                                                            newFile.newInput(rangeSet))) {
+                                                                                                            newFile.iterator(rangeSet))) {
                 
                 assertTrue(readIterator.hasNext());
                 Record actual = readIterator.next();
@@ -808,8 +808,8 @@ public class TimeSeriesFileTest {
 
             TimeSeriesRecord header = getBlockHeader(records);
 
-            Range<Field> range = newTimestampRange(getFirstTimestampInNanos(header),
-                                                   getLastTimestampInNanos(header));
+            Range<Field> range = newTimestampRange(getFirstTimestamp(header),
+                                                   getLastTimestamp(header));
 
             int length = RecordUtils.computeSerializedSize(header) + getCompressedBlockSize(header);
 
@@ -862,14 +862,14 @@ public class TimeSeriesFileTest {
         
         Range<Field> blockRange = getTimestampRange(records);
         
-        return new BlockHeaderBuilder(this.definition).firstTimestampInNanos(blockRange.lowerEndpoint().getTimestampInNanos())
-                                                            .lastTimestampInNanos(blockRange.upperEndpoint().getTimestampInNanos())
-                                                            .compressionType(this.definition.getCompressionType())
-                                                            .compressedBlockSize(compressedRecords.readableBytes())
-                                                            .uncompressedBlockSize(uncompressedRecords.readerIndex(0)
-                                                                                                      .readableBytes())
-                                                            .recordCount(0, records.size())
-                                                            .build();
+        return new BlockHeaderBuilder(this.definition).firstTimestamp(blockRange.lowerEndpoint().getTimestampInNanos())
+                                                      .lastTimestamp(blockRange.upperEndpoint().getTimestampInNanos())
+                                                      .compressionType(this.definition.getCompressionType())
+                                                      .compressedBlockSize(compressedRecords.readableBytes())
+                                                      .uncompressedBlockSize(uncompressedRecords.readerIndex(0)
+                                                                                                .readableBytes())
+                                                      .recordCount(0, records.size())
+                                                      .build();
     }
 
     /**

@@ -17,19 +17,11 @@ import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.db.util.concurrent.FutureUtils;
-import io.horizondb.io.Buffer;
-import io.horizondb.io.ReadableBuffer;
-import io.horizondb.io.buffers.Buffers;
-import io.horizondb.io.encoding.VarInts;
-import io.horizondb.io.files.CompositeSeekableFileDataInput;
-import io.horizondb.io.files.SeekableFileDataInput;
-import io.horizondb.io.files.SeekableFileDataInputs;
 import io.horizondb.model.core.DataBlock;
 import io.horizondb.model.core.Field;
 import io.horizondb.model.core.Record;
 import io.horizondb.model.core.ResourceIterator;
 import io.horizondb.model.core.blocks.RecordAppender;
-import io.horizondb.model.core.fields.TimestampField;
 import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;
 import io.horizondb.model.core.iterators.BlockIterators;
 import io.horizondb.model.core.iterators.LoggingRecordIterator;
@@ -48,7 +40,7 @@ import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 import com.google.common.util.concurrent.ListenableFuture;
 
-import static io.horizondb.model.core.records.BlockHeaderUtils.*;
+import static io.horizondb.model.core.records.BlockHeaderUtils.getUncompressedBlockSize;
 
 /**
  * In-memory part of a time series used to store the writes until they are
@@ -180,41 +172,6 @@ final class MemTimeSeries implements TimeSeriesElement {
     public boolean isFull() throws IOException {
         return this.getRecordsSize() >= this.configuration.getMemTimeSeriesSize();
     }
-    
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public SeekableFileDataInput newInput() throws IOException {
-        return newInput(TimestampField.ALL);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public SeekableFileDataInput newInput(RangeSet<Field> rangeSet) throws IOException {
-
-        if (this.blocks.isEmpty()) {
-            return SeekableFileDataInputs.empty();
-        }
-
-        CompositeSeekableFileDataInput composite = new CompositeSeekableFileDataInput();
-        for (int i = 0, m = this.blocks.size(); i < m; i++) {
-            DataBlock block = this.blocks.get(i);
-
-            Record header = block.getHeader();
-            Range<Field> range = getRange(header);
-            if (!rangeSet.subRangeSet(range).isEmpty()) {
-                ReadableBuffer buffer = toBuffer(header);
-                ReadableBuffer blockBuffer = Buffers.composite(buffer,
-                                                               block.getData());
-                SeekableFileDataInput seekableFileDataInput = SeekableFileDataInputs.toSeekableFileDataInput(blockBuffer);
-                composite.add(seekableFileDataInput);
-            }
-        }
-        return composite;
-    }
 
     /**
      * Returns the range of regions used by this <code>MemTimeSeries</code>.
@@ -246,7 +203,7 @@ final class MemTimeSeries implements TimeSeriesElement {
     public void writePrettyPrint(TimeSeriesDefinition definition, PrintStream stream) throws IOException {
         
         try (ResourceIterator<Record> iter = new LoggingRecordIterator(definition,
-                                                                       new BinaryTimeSeriesRecordIterator(definition, newInput()),
+                                                                       new BinaryTimeSeriesRecordIterator(definition, iterator()),
                                                                        stream)) {
             while (iter.hasNext()) {
 
@@ -369,28 +326,6 @@ final class MemTimeSeries implements TimeSeriesElement {
         }
 
         return Range.closed(this.regionRange.lowerEndpoint(), regionCount);
-    }
-
-    /**
-     * Serializes the specified block header.
-     *
-     * @param header the header to serialize
-     * @return the buffer containing the serialized header
-     * @throws IOException if an I/O problem occurs
-     */
-    private static ReadableBuffer toBuffer(Record header) throws IOException {
-
-        int headerSize = header.computeSerializedSize();
-
-        int size = 1 + VarInts.computeUnsignedIntSize(headerSize) + headerSize;
-
-        Buffer buffer = Buffers.allocate(size);
-
-        buffer.writeByte(Record.BLOCK_HEADER_TYPE);
-        VarInts.writeUnsignedInt(buffer, headerSize);
-        header.writeTo(buffer);
-
-        return buffer;
     }
 
     /**

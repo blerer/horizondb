@@ -158,19 +158,25 @@ final class TimeSeriesFile implements Closeable, TimeSeriesElement {
         return BlockIterators.iterator(this.definition, newInput(rangeSet));
     }
 
+    
     /**
-     * {@inheritDoc}
+     * Returns a new input that can be used to read all data of this file.
+     * 
+     * @return a new input that can be used to read the data of this file.
+     * @throws IOException if an I/O problem occurs.
      */
-    @Override
     public SeekableFileDataInput newInput() throws IOException {
 
         return newInput(TimestampField.ALL);
     }
 
-    /**    
-     * {@inheritDoc}
+    /**
+     * Returns a new input that can be used to read the data of this file.
+     * 
+     * @param rangeSet the time range for which the data must be returned
+     * @return a new input that can be used to read the data of this file.
+     * @throws IOException if an I/O problem occurs.
      */
-    @Override
     public SeekableFileDataInput newInput(RangeSet<Field> rangeSet) throws IOException {
         
         if (this.fileSize == 0) {

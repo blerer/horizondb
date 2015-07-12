@@ -101,7 +101,7 @@ public class MemTimeSeriesTest {
         memTimeSeries = memTimeSeries.write(allocator, records, newFuture());
         assertEquals(TIME_IN_NANOS + 13004400, memTimeSeries.getGreatestTimestamp());
 
-        try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.newInput())) {
+        try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.iterator())) {
 
             assertTrue(readIterator.hasNext());
             Record actual = readIterator.next();
@@ -224,7 +224,7 @@ public class MemTimeSeriesTest {
 
         assertEquals(TIME_IN_NANOS + 13004400, memTimeSeries.getGreatestTimestamp());
 
-        try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.newInput())) {
+        try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.iterator())) {
 
             assertTrue(readIterator.hasNext());
             Record actual = readIterator.next();
@@ -305,7 +305,7 @@ public class MemTimeSeriesTest {
 
         assertEquals(TIME_IN_NANOS + 13006400, memTimeSeries.getGreatestTimestamp());
 
-        try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.newInput())) {
+        try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.iterator())) {
 
             assertTrue(readIterator.hasNext());
             Record actual = readIterator.next();
@@ -398,7 +398,7 @@ public class MemTimeSeriesTest {
         assertEquals(2, memTimeSeries.getNumberOfBlocks());
         assertEquals(TIME_IN_NANOS + 13006400, memTimeSeries.getGreatestTimestamp());
 
-        try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.newInput())) {
+        try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.iterator())) {
 
             assertTrue(readIterator.hasNext());
             Record actual = readIterator.next();
@@ -496,7 +496,7 @@ public class MemTimeSeriesTest {
 
         RangeSet<Field> rangeSet = ImmutableRangeSet.of(Range.closed(from, to));
 
-        try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.newInput(rangeSet))) {
+        try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.iterator(rangeSet))) {
 
             assertTrue(readIterator.hasNext());
             Record actual = readIterator.next();
@@ -573,7 +573,7 @@ public class MemTimeSeriesTest {
 
         RangeSet<Field> rangeSet = ImmutableRangeSet.of(Range.closed(from, to));
 
-        try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.newInput(rangeSet))) {
+        try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.iterator(rangeSet))) {
 
             assertTrue(readIterator.hasNext());
             Record actual = readIterator.next();
@@ -666,7 +666,7 @@ public class MemTimeSeriesTest {
 
         RangeSet<Field> rangeSet = ImmutableRangeSet.of(Range.closed(from, to));
 
-        try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.newInput(rangeSet))) {
+        try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.iterator(rangeSet))) {
 
             assertFalse(readIterator.hasNext());
         }
@@ -732,8 +732,8 @@ public class MemTimeSeriesTest {
 
         RangeSet<Field> rangeSet = ImmutableRangeSet.of(Range.closed(from, to));
 
-        try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.newInput(rangeSet))) {
-            try (ResourceIterator<BinaryTimeSeriesRecord> readIterator2 = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.newInput(rangeSet))) {
+        try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.iterator(rangeSet))) {
+            try (ResourceIterator<BinaryTimeSeriesRecord> readIterator2 = new BinaryTimeSeriesRecordIterator(def, memTimeSeries.iterator(rangeSet))) {
 
                 assertTrue(readIterator.hasNext());
                 Record actual = readIterator.next();
@@ -853,11 +853,11 @@ public class MemTimeSeriesTest {
         assertEquals(TIME_IN_NANOS + 13000900, thirdMemTimeSeries.getGreatestTimestamp());
         assertEquals(TIME_IN_NANOS + 13004400, fourthMemTimeSeries.getGreatestTimestamp());
 
-        try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(def, firstMemTimeSeries.newInput())) {
+        try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(def, firstMemTimeSeries.iterator())) {
             assertFalse(readIterator.hasNext());
         }
 
-        try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(def, secondMemTimeSeries.newInput())) {
+        try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(def, secondMemTimeSeries.iterator())) {
 
             assertTrue(readIterator.hasNext());
             Record actual = readIterator.next();
@@ -870,7 +870,7 @@ public class MemTimeSeriesTest {
             assertFalse(readIterator.hasNext());
         }
 
-        try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(def, fourthMemTimeSeries.newInput())) {
+        try (ResourceIterator<BinaryTimeSeriesRecord> readIterator = new BinaryTimeSeriesRecordIterator(def, fourthMemTimeSeries.iterator())) {
 
             assertTrue(readIterator.hasNext());
             Record actual = readIterator.next();

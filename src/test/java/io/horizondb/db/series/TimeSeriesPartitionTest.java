@@ -1056,7 +1056,7 @@ public class TimeSeriesPartitionTest {
         Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26 12:32:12.000'", "'2013-11-26 12:32:12.200'");
 
         ResourceIterator<BinaryTimeSeriesRecord> iterator = new BinaryTimeSeriesRecordIterator(this.def, 
-                                                                                               this.partition.newInput(ImmutableRangeSet.of(range)));
+                                                                                               this.partition.iterator(ImmutableRangeSet.of(range)));
 
         assertTrue(iterator.hasNext());
         Record actual = iterator.next();
@@ -1146,7 +1146,7 @@ public class TimeSeriesPartitionTest {
         Range<Field> range = MILLISECONDS_TIMESTAMP.range("'2013-11-26 12:32:12.400'", "'2013-11-26 12:32:20.000'");
 
         ResourceIterator<BinaryTimeSeriesRecord> iterator = new BinaryTimeSeriesRecordIterator(this.def, 
-                                                                                               this.partition.newInput(ImmutableRangeSet.of(range)));
+                                                                                               this.partition.iterator(ImmutableRangeSet.of(range)));
 
         assertTrue(iterator.hasNext());
         Record actual = iterator.next();

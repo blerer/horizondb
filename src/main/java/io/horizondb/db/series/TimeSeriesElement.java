@@ -14,7 +14,6 @@
 package io.horizondb.db.series;
 
 import io.horizondb.db.commitlog.ReplayPosition;
-import io.horizondb.io.files.SeekableFileDataInput;
 import io.horizondb.model.core.DataBlock;
 import io.horizondb.model.core.Field;
 import io.horizondb.model.core.ResourceIterator;
@@ -38,23 +37,6 @@ interface TimeSeriesElement {
      * @return the commit log future returning the replay position associated to the last record of this element.
      */
     ListenableFuture<ReplayPosition> getFuture();
-    
-    /**
-     * Returns a new input that can be used to read all data of this element.
-     * 
-     * @return a new input that can be used to read the data of this element.
-     * @throws IOException if an I/O problem occurs.
-     */
-    SeekableFileDataInput newInput() throws IOException;
-
-    /**
-     * Returns a new input that can be used to read the data of this element.
-     * 
-     * @param rangeSet the time range for which the data must be returned
-     * @return a new input that can be used to read the data of this element.
-     * @throws IOException if an I/O problem occurs.
-     */
-    SeekableFileDataInput newInput(RangeSet<Field> rangeSet) throws IOException;
 
     /**
      * Returns a new iterator over all the blocks of this element.

@@ -18,8 +18,6 @@ package io.horizondb.db.series;
 import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.commitlog.ReplayPosition;
-import io.horizondb.io.files.CompositeSeekableFileDataInput;
-import io.horizondb.io.files.SeekableFileDataInput;
 import io.horizondb.model.core.DataBlock;
 import io.horizondb.model.core.Field;
 import io.horizondb.model.core.Record;
@@ -140,24 +138,6 @@ final class TimeSeriesElements {
         }
 
         return null;
-    }
-
-    /**
-     * Returns an input to read the content of the elements.
-     * 
-     * @param rangeSet the time range for which the data must be returned
-     * @return an input to read the content of the elements.
-     * @throws IOException if an I/O problem occurs.
-     */
-    public SeekableFileDataInput newInput(RangeSet<Field> rangeSet) throws IOException {
-
-        CompositeSeekableFileDataInput composite = new CompositeSeekableFileDataInput();
-
-        for (int i = 0, m = this.elements.size(); i < m; i++) {
-            composite.add(this.elements.get(i).newInput(rangeSet));
-        }
-
-        return composite;
     }
 
     /**

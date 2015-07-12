@@ -17,13 +17,11 @@ import io.horizondb.db.Configuration;
 import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.commitlog.CommitLog;
 import io.horizondb.db.commitlog.ReplayPosition;
-import io.horizondb.io.files.SeekableFileDataInput;
 import io.horizondb.model.core.DataBlock;
 import io.horizondb.model.core.Field;
 import io.horizondb.model.core.Filter;
 import io.horizondb.model.core.Record;
 import io.horizondb.model.core.ResourceIterator;
-import io.horizondb.model.core.fields.TimestampField;
 import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;
 import io.horizondb.model.core.iterators.FilteringRecordIterator;
 import io.horizondb.model.schema.DatabaseDefinition;
@@ -228,8 +226,7 @@ public final class TimeSeriesPartition implements Comparable<TimeSeriesPartition
 
         return new FilteringRecordIterator(this.definition,
                                            new BinaryTimeSeriesRecordIterator(this.definition, 
-                                                                              newInput(rangeSet), 
-                                                                              rangeSet,
+                                                                              iterator(rangeSet), 
                                                                               recordTypeFilter),
                                            filter);
     }
@@ -354,15 +351,6 @@ public final class TimeSeriesPartition implements Comparable<TimeSeriesPartition
      * {@inheritDoc}
      */
     @Override
-    public SeekableFileDataInput newInput() throws IOException {
-
-        return newInput(TimestampField.ALL);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public ResourceIterator<DataBlock> iterator() throws IOException {
         TimeSeriesElements elementList = this.elements.get();
         return elementList.iterator();
@@ -377,15 +365,6 @@ public final class TimeSeriesPartition implements Comparable<TimeSeriesPartition
         return elementList.iterator(rangeSet);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public SeekableFileDataInput newInput(RangeSet<Field> rangeSet) throws IOException {
-
-        return this.elements.get().newInput(rangeSet);
-    }
-    
     /**
      * {@inheritDoc}
      */
