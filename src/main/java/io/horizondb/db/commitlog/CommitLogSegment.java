@@ -316,8 +316,7 @@ final class CommitLogSegment implements Closeable, Comparable<CommitLogSegment>,
 
             ChecksumByteReader crcInput = ChecksumByteReader.wrap(input);
 
-            while (input.getPosition() < this.file.size()) {
-
+            while (input.readableBytes() >= 4) {
                 crcInput.resetChecksum();
 
                 int length = crcInput.readInt();

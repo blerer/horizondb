@@ -1,6 +1,4 @@
 /**
- * Copyright 2013 Benjamin Lerer
- * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,6 +17,7 @@ import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.btree.KeyValueIterator;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.db.util.concurrent.FutureUtils;
+import io.horizondb.model.core.DataBlock;
 import io.horizondb.model.core.Field;
 import io.horizondb.model.core.Filter;
 import io.horizondb.model.core.Predicate;
@@ -29,11 +28,11 @@ import io.horizondb.model.schema.DatabaseDefinition;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 
 import com.google.common.collect.Range;
+import com.google.common.collect.RangeMap;
 import com.google.common.collect.RangeSet;
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -82,43 +81,14 @@ public final class TimeSeries {
         return this.definition;
     }
 
-    public void write(List<? extends Record> records, ListenableFuture<ReplayPosition> future, boolean replay) throws IOException, 
-                                                                                                  HorizonDBException {
-        Range<Field> range = null;
-        
-        List<Record> batch = new ArrayList<>();
-                
-        Field timestamp = this.definition.newField(Record.TIMESTAMP_FIELD_NAME);
-        
-        for (int i = 0, m = records.size(); i < m; i++) {
-            
-            Record record = records.get(i);
-            
-            if (record.isDelta()) {
-                
-                timestamp.add(record.getField(0));
-                
-            } else {
-                
-                record.getField(0).copyTo(timestamp);
-            }
-            
-            if (range == null) {
-                
-                range = this.definition.getPartitionTimeRange(timestamp);
-            }
-            
-            if (!range.contains(timestamp)) {
-                
-                writeToPartition(toPartitionId(range), batch, future, replay);
-                range = this.definition.getPartitionTimeRange(timestamp);
-            }
-         
-            batch.add(record);
-        }
-        
-        if (range != null) {            
-            writeToPartition(toPartitionId(range), batch, future, replay);
+    public void write(DataBlock block,
+                      ListenableFuture<ReplayPosition> future,
+                      boolean replay) throws IOException, HorizonDBException {
+
+        RangeMap<Field, DataBlock> blocks = block.split(this.definition);
+
+        for (Entry<Range<Field>, DataBlock> entry : blocks.asMapOfRanges().entrySet()) {  
+            writeToPartition(toPartitionId(entry.getKey()), entry.getValue(), future, replay);
         }
     }
 
@@ -162,7 +132,7 @@ public final class TimeSeries {
         } else {
             to = this.definition.getPartitionTimeRange(span.upperEndpoint());
         }
-        
+
         KeyValueIterator<PartitionId, TimeSeriesPartition> rangeForRead = 
                 this.partitionManager.getRangeForRead(toPartitionId(from), toPartitionId(to), this.definition);
         
@@ -183,31 +153,31 @@ public final class TimeSeries {
      * Writes the specified set of records to the specified partition.
      * 
      * @param partitionId the partition ID
-     * @param records the records to write to the partition
+     * @param block the block containing the records to write
      * @param future the commit log future
      * @param replay <code>true</code> if this is a commit log replay
      * @throws IOException if an I/O problem occurs
      * @throws HorizonDBException if a problem occurs
      */
     private void writeToPartition(PartitionId partitionId,
-                                  List<Record> records,
+                                  DataBlock block,
                                   ListenableFuture<ReplayPosition> future,
                                   boolean replay) throws IOException, HorizonDBException {
-        
+
         TimeSeriesPartition partition = this.partitionManager.getPartitionForWrite(partitionId, this.definition);
-        
+
         if (replay) {
-            
+
             final ReplayPosition currentReplayPosition = FutureUtils.safeGet(future);
             final ReplayPosition partitionReplayPosition = FutureUtils.safeGet(partition.getFuture());
-            
+
             if (!currentReplayPosition.isAfter(partitionReplayPosition)) {
-                
+
                 return;
             }
         }
-        
-        partition.write(records, future);
+
+        partition.write(block, future);
     }
     
     /**

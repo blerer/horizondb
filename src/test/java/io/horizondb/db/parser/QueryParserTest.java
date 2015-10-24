@@ -23,6 +23,7 @@ import io.horizondb.db.series.InMemoryTimeSeriesPartitionManager;
 import io.horizondb.db.series.TimeSeriesManager;
 import io.horizondb.db.series.TimeSeriesPartitionManager;
 import io.horizondb.io.ReadableBuffer;
+import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;
 import io.horizondb.model.core.records.BinaryTimeSeriesRecord;
 import io.horizondb.model.protocol.CreateDatabasePayload;
 import io.horizondb.model.protocol.CreateTimeSeriesPayload;
@@ -51,6 +52,7 @@ import static io.horizondb.model.core.util.TimeUtils.EUROPE_BERLIN_TIMEZONE;
 import static io.horizondb.model.core.util.TimeUtils.parseDateTime;
 import static io.horizondb.test.AssertExceptions.assertErrorMessageContains;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -314,14 +316,17 @@ public class QueryParserTest {
         InsertPayload payload = msg.getPayload();
         assertEquals("Dax", payload.getSeries());
         assertEquals(1, payload.getRecordType());
-        
+
         TimeSeriesDefinition definition = getTimeSeriesDefinition();
         ReadableBuffer buffer = payload.getBuffer(); 
-        BinaryTimeSeriesRecord binaryRecord = definition.newBinaryRecord(payload.getRecordType());
-        binaryRecord.fill(buffer);
-        assertEquals(parseDateTime(EUROPE_BERLIN_TIMEZONE, "2014-05-23 09:44:30"), binaryRecord.getTimestampInMillis(0));
-        assertEquals(12.5, binaryRecord.getDouble(1), 0.0);
-        assertEquals(10L, binaryRecord.getLong(2));
+
+        try (BinaryTimeSeriesRecordIterator iterator = new BinaryTimeSeriesRecordIterator(definition, buffer)) {
+            assertTrue(iterator.hasNext());
+            BinaryTimeSeriesRecord binaryRecord = iterator.next();
+            assertEquals(parseDateTime(EUROPE_BERLIN_TIMEZONE, "2014-05-23 09:44:30"), binaryRecord.getTimestampInMillis(0));
+            assertEquals(10L, binaryRecord.getLong(2));
+            assertFalse(iterator.hasNext());
+        }
     }
     
     @Test
@@ -339,33 +344,42 @@ public class QueryParserTest {
         
         TimeSeriesDefinition definition = getTimeSeriesDefinition();
         ReadableBuffer buffer = payload.getBuffer(); 
-        BinaryTimeSeriesRecord binaryRecord = definition.newBinaryRecord(payload.getRecordType());
-        binaryRecord.fill(buffer);
-        assertEquals(parseDateTime(EUROPE_BERLIN_TIMEZONE, "2014-05-23 09:44:30"), binaryRecord.getTimestampInMillis(0));
-        assertEquals(12.5, binaryRecord.getDouble(1), 0.0);
-        assertEquals(10L, binaryRecord.getLong(2));
+        try (BinaryTimeSeriesRecordIterator iterator = new BinaryTimeSeriesRecordIterator(definition, buffer)) {
+            assertTrue(iterator.hasNext());
+            BinaryTimeSeriesRecord binaryRecord = iterator.next();
+            assertEquals(parseDateTime(EUROPE_BERLIN_TIMEZONE, "2014-05-23 09:44:30"),
+                         binaryRecord.getTimestampInMillis(0));
+            assertEquals(12.5, binaryRecord.getDouble(1), 0.0);
+            assertEquals(10L, binaryRecord.getLong(2));
+            assertFalse(iterator.hasNext());
+        }
     }
-    
+
     @Test
     public void testParseInsertWithoutFieldNames() throws HorizonDBException, IOException  {
-        
+
         createDatabaseAndTimeSeries();
-        
+
         Msg<InsertPayload> msg = QueryParser.parse(this.configuration,
                                                    this.databaseManager,
                                                    newMsg("test", "INSERT INTO Dax.Trade VALUES ('2014-05-23 09:44:30', 125E-1, 10);"));
-        
+
         InsertPayload payload = msg.getPayload();
         assertEquals("Dax", payload.getSeries());
         assertEquals(1, payload.getRecordType());
-        
+
         TimeSeriesDefinition definition = getTimeSeriesDefinition();
         ReadableBuffer buffer = payload.getBuffer(); 
-        BinaryTimeSeriesRecord binaryRecord = definition.newBinaryRecord(payload.getRecordType());
-        binaryRecord.fill(buffer);
-        assertEquals(parseDateTime(EUROPE_BERLIN_TIMEZONE, "2014-05-23 09:44:30"), binaryRecord.getTimestampInMillis(0));
-        assertEquals(12.5, binaryRecord.getDouble(1), 0.0);
-        assertEquals(10L, binaryRecord.getLong(2));
+
+        try (BinaryTimeSeriesRecordIterator iterator = new BinaryTimeSeriesRecordIterator(definition, buffer)) {
+            assertTrue(iterator.hasNext());
+            BinaryTimeSeriesRecord binaryRecord = iterator.next();
+            assertEquals(parseDateTime(EUROPE_BERLIN_TIMEZONE, "2014-05-23 09:44:30"),
+                         binaryRecord.getTimestampInMillis(0));
+            assertEquals(12.5, binaryRecord.getDouble(1), 0.0);
+            assertEquals(10L, binaryRecord.getLong(2));
+            assertFalse(iterator.hasNext());
+        }
     }
     
     @Test

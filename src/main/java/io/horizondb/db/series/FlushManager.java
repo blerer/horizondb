@@ -150,7 +150,8 @@ final class FlushManager extends AbstractComponent {
             @Override
             public void doFlush(TimeSeriesPartition partition) throws InterruptedException, IOException, ExecutionException {
 
-                if (Long.valueOf(segment).compareTo(partition.getFirstSegmentContainingNonPersistedData()) >= 0) {
+                Long firstSegment = partition.getFirstSegmentContainingNonPersistedData();
+                if (firstSegment != null && Long.valueOf(segment).compareTo(firstSegment) >= 0) {
                     partition.forceFlush();
                 }    
             }

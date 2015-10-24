@@ -20,18 +20,18 @@ import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.Buffer;
 import io.horizondb.io.ReadableBuffer;
 import io.horizondb.io.buffers.Buffers;
-import io.horizondb.io.compression.Compressor;
+import io.horizondb.io.buffers.CompositeBuffer;
 import io.horizondb.io.files.FileUtils;
 import io.horizondb.io.files.SeekableFileDataInput;
+import io.horizondb.model.core.DataBlock;
 import io.horizondb.model.core.Field;
 import io.horizondb.model.core.Record;
-import io.horizondb.model.core.RecordListBuilder;
 import io.horizondb.model.core.RecordUtils;
 import io.horizondb.model.core.ResourceIterator;
+import io.horizondb.model.core.ResourceIteratorUtils;
+import io.horizondb.model.core.blocks.DataBlockBuilder;
 import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;
 import io.horizondb.model.core.records.BinaryTimeSeriesRecord;
-import io.horizondb.model.core.records.BlockHeaderBuilder;
-import io.horizondb.model.core.records.TimeSeriesRecord;
 import io.horizondb.model.core.util.TimeUtils;
 import io.horizondb.model.schema.BlockPosition;
 import io.horizondb.model.schema.DatabaseDefinition;
@@ -60,7 +60,8 @@ import com.google.common.collect.RangeSet;
 import com.google.common.util.concurrent.Futures;
 
 import static io.horizondb.db.series.FileMetaData.METADATA_LENGTH;
-import static io.horizondb.model.core.Record.TIMESTAMP_FIELD_INDEX;
+import static io.horizondb.model.core.iterators.BlockIterators.compress;
+import static io.horizondb.model.core.iterators.BlockIterators.iterator;
 import static io.horizondb.model.core.records.BlockHeaderUtils.getCompressedBlockSize;
 import static io.horizondb.model.core.records.BlockHeaderUtils.getFirstTimestamp;
 import static io.horizondb.model.core.records.BlockHeaderUtils.getLastTimestamp;
@@ -144,25 +145,24 @@ public class TimeSeriesFileTest {
 
         MemTimeSeries memTimeSeries = new MemTimeSeries(this.configuration, this.definition);
 
-        List<TimeSeriesRecord> records = new RecordListBuilder(this.definition)
-                                                                    .newRecord("exchangeState")
-                                                                    .setTimestampInNanos(0, TIME_IN_NANOS + 12000700)
-                                                                    .setTimestampInMillis(1, TIME_IN_MILLIS + 12)
-                                                                    .setByte(2, 3)
-                                                                    .newRecord("exchangeState")
-                                                                    .setTimestampInNanos(0, TIME_IN_NANOS + 13000900)
-                                                                    .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
-                                                                    .setByte(2, 3)
-                                                                    .newRecord("exchangeState")
-                                                                    .setTimestampInNanos(0,  TIME_IN_NANOS + 13004400)
-                                                                    .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
-                                                                    .setByte(2, 1)
-                                                                    .build();
+        DataBlock block = new DataBlockBuilder(this.definition).newRecord("exchangeState")
+                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 12000700)
+                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 12)
+                                                               .setByte(2, 3)
+                                                               .newRecord("exchangeState")
+                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13000900)
+                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
+                                                               .setByte(2, 3)
+                                                               .newRecord("exchangeState")
+                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13004400)
+                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
+                                                               .setByte(2, 1)
+                                                               .build();
 
-        byte[] expectedFileContent = expectedFileContent(records);
-        LinkedHashMap<Range<Field>, BlockPosition> expectedBlockPositions = expectedBlockPositions(records);
+        byte[] expectedFileContent = expectedFileContent(block);
+        LinkedHashMap<Range<Field>, BlockPosition> expectedBlockPositions = expectedBlockPositions(block);
         
-        memTimeSeries = memTimeSeries.write(allocator, records, Futures.immediateFuture(new ReplayPosition(1, 0)));
+        memTimeSeries = memTimeSeries.write(allocator, block, Futures.immediateFuture(new ReplayPosition(1, 0)));
 
         try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, 
                                                        this.databaseDefinition, 
@@ -172,7 +172,7 @@ public class TimeSeriesFileTest {
             TimeSeriesFile newFile = file.append(asList((TimeSeriesElement) memTimeSeries));
 
             assertEquals(expectedBlockPositions, newFile.getBlockPositions());
-            AssertFiles.assertFileContains(expectedFileContent, file.getPath());
+            AssertFiles.assertFileContains(expectedFileContent, newFile.getPath());
         }
     }
 
@@ -185,23 +185,23 @@ public class TimeSeriesFileTest {
 
         MemTimeSeries memTimeSeries = new MemTimeSeries(this.configuration, this.definition);
 
-        List<TimeSeriesRecord> records = new RecordListBuilder(this.definition).newRecord("exchangeState")
-                                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 12000700)
-                                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 12)
-                                                                               .setByte(2, 3)
-                                                                               .newRecord("exchangeState")
-                                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13000900)
-                                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
-                                                                               .setByte(2, 3)
-                                                                               .newRecord("exchangeState")
-                                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13004400)
-                                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
-                                                                               .setByte(2, 1)
-                                                                               .build();
+        DataBlock block = new DataBlockBuilder(this.definition).newRecord("exchangeState")
+                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 12000700)
+                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 12)
+                                                               .setByte(2, 3)
+                                                               .newRecord("exchangeState")
+                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13000900)
+                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
+                                                               .setByte(2, 3)
+                                                               .newRecord("exchangeState")
+                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13004400)
+                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
+                                                               .setByte(2, 1)
+                                                               .build();
 
-        byte[] expectedFileContent = expectedFileContent(records);
+        byte[] expectedFileContent = expectedFileContent(block);
         
-        memTimeSeries = memTimeSeries.write(allocator, records, Futures.immediateFuture(new ReplayPosition(1, 0)));
+        memTimeSeries = memTimeSeries.write(allocator, block, Futures.immediateFuture(new ReplayPosition(1, 0)));
 
         try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, 
                                                        this.databaseDefinition, 
@@ -224,40 +224,40 @@ public class TimeSeriesFileTest {
 
         MemTimeSeries memTimeSeries2 = new MemTimeSeries(this.configuration, this.definition);
 
-        List<TimeSeriesRecord> records = new RecordListBuilder(this.definition).newRecord("exchangeState")
-                                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 12000700)
-                                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 12)
-                                                                               .setByte(2, 3)
-                                                                               .newRecord("exchangeState")
-                                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13000900)
-                                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
-                                                                               .setByte(2, 3)
-                                                                               .newRecord("exchangeState")
-                                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13004400)
-                                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
-                                                                               .setByte(2, 1)
-                                                                               .build();
+        DataBlock block = new DataBlockBuilder(this.definition).newRecord("exchangeState")
+                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 12000700)
+                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 12)
+                                                               .setByte(2, 3)
+                                                               .newRecord("exchangeState")
+                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13000900)
+                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
+                                                               .setByte(2, 3)
+                                                               .newRecord("exchangeState")
+                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13004400)
+                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
+                                                               .setByte(2, 1)
+                                                               .build();
 
-        List<TimeSeriesRecord> records2 = new RecordListBuilder(this.definition).newRecord("exchangeState")
-                                                                                .setTimestampInNanos(0, TIME_IN_NANOS + 13014400)
-                                                                                .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
-                                                                                .setByte(2, 2)
-                                                                                .newRecord("exchangeState")
-                                                                                .setTimestampInNanos(0, TIME_IN_NANOS + 14000900)
-                                                                                .setTimestampInMillis(1, TIME_IN_MILLIS + 14)
-                                                                                .setByte(2, 3)
-                                                                                .build();
+        DataBlock block2 = new DataBlockBuilder(this.definition).newRecord("exchangeState")
+                                                                .setTimestampInNanos(0, TIME_IN_NANOS + 13014400)
+                                                                .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
+                                                                .setByte(2, 2)
+                                                                .newRecord("exchangeState")
+                                                                .setTimestampInNanos(0, TIME_IN_NANOS + 14000900)
+                                                                .setTimestampInMillis(1, TIME_IN_MILLIS + 14)
+                                                                .setByte(2, 3)
+                                                                .build();
 
-        byte[] expectedFileContent = expectedFileContent(records, records2);
-        LinkedHashMap<Range<Field>, BlockPosition> expectedBlockPositions = expectedBlockPositions(records, records2);
+        byte[] expectedFileContent = expectedFileContent(block, block2);
+        LinkedHashMap<Range<Field>, BlockPosition> expectedBlockPositions = expectedBlockPositions(block, block2);
         
-        ReplayPosition replayPosition = new ReplayPosition(1, RecordUtils.computeSerializedSize(records));
+        ReplayPosition replayPosition = new ReplayPosition(1, block.computeSerializedSize());
         
-        memTimeSeries = memTimeSeries.write(allocator, records, Futures.immediateFuture(replayPosition));
+        memTimeSeries = memTimeSeries.write(allocator, block, Futures.immediateFuture(replayPosition));
 
-        replayPosition = new ReplayPosition(1, RecordUtils.computeSerializedSize(records) + RecordUtils.computeSerializedSize(records2));
+        replayPosition = new ReplayPosition(1, block.computeSerializedSize() + block2.computeSerializedSize());
 
-        memTimeSeries2 = memTimeSeries2.write(allocator, records2, Futures.immediateFuture(replayPosition));
+        memTimeSeries2 = memTimeSeries2.write(allocator, block2, Futures.immediateFuture(replayPosition));
 
         try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, 
                                                        this.databaseDefinition, 
@@ -280,41 +280,41 @@ public class TimeSeriesFileTest {
 
         MemTimeSeries memTimeSeries2 = new MemTimeSeries(this.configuration, this.definition);
 
-        List<TimeSeriesRecord> records = new RecordListBuilder(this.definition).newRecord("exchangeState")
-                                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 12000700)
-                                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 12)
-                                                                               .setByte(2, 3)
-                                                                               .newRecord("exchangeState")
-                                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13000900)
-                                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
-                                                                               .setByte(2, 3)
-                                                                               .newRecord("exchangeState")
-                                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13004400)
-                                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
-                                                                               .setByte(2, 1)
-                                                                               .build();
+        DataBlock block = new DataBlockBuilder(this.definition).newRecord("exchangeState")
+                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 12000700)
+                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 12)
+                                                               .setByte(2, 3)
+                                                               .newRecord("exchangeState")
+                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13000900)
+                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
+                                                               .setByte(2, 3)
+                                                               .newRecord("exchangeState")
+                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13004400)
+                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
+                                                               .setByte(2, 1)
+                                                               .build();
 
-        List<TimeSeriesRecord> records2 = new RecordListBuilder(this.definition).newRecord("exchangeState")
-                                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13014400)
-                                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
-                                                                               .setByte(2, 2)
-                                                                               .newRecord("exchangeState")
-                                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 14000900)
-                                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 14)
-                                                                               .setByte(2, 3)
-                                                                               .build();
+        DataBlock block2 = new DataBlockBuilder(this.definition).newRecord("exchangeState")
+                                                                .setTimestampInNanos(0, TIME_IN_NANOS + 13014400)
+                                                                .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
+                                                                .setByte(2, 2)
+                                                                .newRecord("exchangeState")
+                                                                .setTimestampInNanos(0, TIME_IN_NANOS + 14000900)
+                                                                .setTimestampInMillis(1, TIME_IN_MILLIS + 14)
+                                                                .setByte(2, 3)
+                                                                .build();
 
-        byte[] expectedFileContent = expectedFileContent(records, records2);
-        LinkedHashMap<Range<Field>, BlockPosition> expectedBlockPositions = expectedBlockPositions(records, records2);
+        byte[] expectedFileContent = expectedFileContent(block, block2);
+        LinkedHashMap<Range<Field>, BlockPosition> expectedBlockPositions = expectedBlockPositions(block, block2);
 
-        ReplayPosition replayPosition = new ReplayPosition(1, RecordUtils.computeSerializedSize(records));
+        ReplayPosition replayPosition = new ReplayPosition(1, block.computeSerializedSize());
 
-        memTimeSeries = memTimeSeries.write(allocator, records, Futures.immediateFuture(replayPosition));
+        memTimeSeries = memTimeSeries.write(allocator, block, Futures.immediateFuture(replayPosition));
 
-        replayPosition = new ReplayPosition(1, RecordUtils.computeSerializedSize(records)
-                                            + RecordUtils.computeSerializedSize(records2));
+        replayPosition = new ReplayPosition(1, block.computeSerializedSize()
+                                            + block2.computeSerializedSize());
         
-        memTimeSeries2 = memTimeSeries2.write(allocator, records2, Futures.immediateFuture(replayPosition));
+        memTimeSeries2 = memTimeSeries2.write(allocator, block2, Futures.immediateFuture(replayPosition));
 
         try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, 
                                                        this.databaseDefinition, 
@@ -354,37 +354,37 @@ public class TimeSeriesFileTest {
 
         MemTimeSeries memTimeSeries = new MemTimeSeries(this.configuration, this.definition);
 
-        List<TimeSeriesRecord> records = new RecordListBuilder(this.definition).newRecord("exchangeState")
-                                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 12000700)
-                                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 12)
-                                                                               .setByte(2, 3)
-                                                                               .newRecord("exchangeState")
-                                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13000900)
-                                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
-                                                                               .setByte(2, 3)
-                                                                               .newRecord("exchangeState")
-                                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13004400)
-                                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
-                                                                               .setByte(2, 1)
-                                                                               .build();
+        DataBlock block = new DataBlockBuilder(this.definition).newRecord("exchangeState")
+                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 12000700)
+                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 12)
+                                                               .setByte(2, 3)
+                                                               .newRecord("exchangeState")
+                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13000900)
+                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
+                                                               .setByte(2, 3)
+                                                               .newRecord("exchangeState")
+                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13004400)
+                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
+                                                               .setByte(2, 1)
+                                                               .build();
 
-        List<TimeSeriesRecord> records2 = new RecordListBuilder(this.definition).newRecord("exchangeState")
-                                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13014400)
-                                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
-                                                                               .setByte(2, 1)
-                                                                               .build();
+        DataBlock block2 = new DataBlockBuilder(this.definition).newRecord("exchangeState")
+                                                                .setTimestampInNanos(0, TIME_IN_NANOS + 13014400)
+                                                                .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
+                                                                .setByte(2, 1)
+                                                                .build();
 
-        byte[] expectedFileContent = expectedFileContent(records, records2);
-        LinkedHashMap<Range<Field>, BlockPosition> expectedBlockPositions = expectedBlockPositions(records, records2);
+        byte[] expectedFileContent = expectedFileContent(block, block2);
+        LinkedHashMap<Range<Field>, BlockPosition> expectedBlockPositions = expectedBlockPositions(block, block2);
 
-        ReplayPosition replayPosition = new ReplayPosition(1, RecordUtils.computeSerializedSize(records));
+        ReplayPosition replayPosition = new ReplayPosition(1, block.computeSerializedSize());
 
-        memTimeSeries = memTimeSeries.write(allocator, records, Futures.immediateFuture(replayPosition));
+        memTimeSeries = memTimeSeries.write(allocator, block, Futures.immediateFuture(replayPosition));
 
-        replayPosition = new ReplayPosition(1, RecordUtils.computeSerializedSize(records)
-                                            + RecordUtils.computeSerializedSize(records2));
+        replayPosition = new ReplayPosition(1, block.computeSerializedSize()
+                                            + block2.computeSerializedSize());
 
-        memTimeSeries = memTimeSeries.write(allocator, records2, Futures.immediateFuture(replayPosition));
+        memTimeSeries = memTimeSeries.write(allocator, block2, Futures.immediateFuture(replayPosition));
 
         try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, 
                                                        this.databaseDefinition, 
@@ -458,37 +458,37 @@ public class TimeSeriesFileTest {
 
         MemTimeSeries memTimeSeries = new MemTimeSeries(this.configuration, this.definition);
 
-        List<TimeSeriesRecord> records = new RecordListBuilder(this.definition).newRecord("exchangeState")
-                                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 12000700)
-                                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 12)
-                                                                               .setByte(2, 3)
-                                                                               .newRecord("exchangeState")
-                                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13000900)
-                                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
-                                                                               .setByte(2, 3)
-                                                                               .newRecord("exchangeState")
-                                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13004400)
-                                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
-                                                                               .setByte(2, 1)
-                                                                               .build();
+        DataBlock block = new DataBlockBuilder(this.definition).newRecord("exchangeState")
+                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 12000700)
+                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 12)
+                                                               .setByte(2, 3)
+                                                               .newRecord("exchangeState")
+                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13000900)
+                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
+                                                               .setByte(2, 3)
+                                                               .newRecord("exchangeState")
+                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13004400)
+                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
+                                                               .setByte(2, 1)
+                                                               .build();
 
-        List<TimeSeriesRecord> records2 = new RecordListBuilder(this.definition).newRecord("exchangeState")
-                                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13004400)
-                                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
-                                                                               .setByte(2, 1)
-                                                                               .build();
+        DataBlock block2 = new DataBlockBuilder(this.definition).newRecord("exchangeState")
+                                                                .setTimestampInNanos(0, TIME_IN_NANOS + 13004400)
+                                                                .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
+                                                                .setByte(2, 1)
+                                                                .build();
 
-        byte[] expectedFileContent = expectedFileContent(records, records2);
-        LinkedHashMap<Range<Field>, BlockPosition> expectedBlockPositions = expectedBlockPositions(records, records2);
+        byte[] expectedFileContent = expectedFileContent(block, block2);
+        LinkedHashMap<Range<Field>, BlockPosition> expectedBlockPositions = expectedBlockPositions(block, block2);
 
-        ReplayPosition replayPosition = new ReplayPosition(1, RecordUtils.computeSerializedSize(records));
+        ReplayPosition replayPosition = new ReplayPosition(1, block.computeSerializedSize());
 
-        memTimeSeries = memTimeSeries.write(allocator, records, Futures.immediateFuture(replayPosition));
+        memTimeSeries = memTimeSeries.write(allocator, block, Futures.immediateFuture(replayPosition));
 
-        replayPosition = new ReplayPosition(1, RecordUtils.computeSerializedSize(records)
-                                            + RecordUtils.computeSerializedSize(records2));
+        replayPosition = new ReplayPosition(1, block.computeSerializedSize()
+                                            + block2.computeSerializedSize());
         
-        memTimeSeries = memTimeSeries.write(allocator, records2, Futures.immediateFuture(replayPosition));
+        memTimeSeries = memTimeSeries.write(allocator, block2, Futures.immediateFuture(replayPosition));
 
         try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, 
                                                        this.databaseDefinition, 
@@ -563,37 +563,37 @@ public class TimeSeriesFileTest {
 
         MemTimeSeries memTimeSeries = new MemTimeSeries(this.configuration, this.definition);
 
-        List<TimeSeriesRecord> records = new RecordListBuilder(this.definition).newRecord("exchangeState")
-                                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 12000700)
-                                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 12)
-                                                                               .setByte(2, 3)
-                                                                               .newRecord("exchangeState")
-                                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13000900)
-                                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
-                                                                               .setByte(2, 3)
-                                                                               .newRecord("exchangeState")
-                                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13004400)
-                                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
-                                                                               .setByte(2, 1)
-                                                                               .build();
+        DataBlock block = new DataBlockBuilder(this.definition).newRecord("exchangeState")
+                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 12000700)
+                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 12)
+                                                               .setByte(2, 3)
+                                                               .newRecord("exchangeState")
+                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13000900)
+                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
+                                                               .setByte(2, 3)
+                                                               .newRecord("exchangeState")
+                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13004400)
+                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
+                                                               .setByte(2, 1)
+                                                               .build();
 
-        List<TimeSeriesRecord> records2 = new RecordListBuilder(this.definition).newRecord("exchangeState")
-                                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13014400)
-                                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
-                                                                               .setByte(2, 1)
-                                                                               .build();
+        DataBlock block2 = new DataBlockBuilder(this.definition).newRecord("exchangeState")
+                                                                .setTimestampInNanos(0, TIME_IN_NANOS + 13014400)
+                                                                .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
+                                                                .setByte(2, 1)
+                                                                .build();
 
-        byte[] expectedFileContent = expectedFileContent(records, records2);
-        LinkedHashMap<Range<Field>, BlockPosition> expectedBlockPositions = expectedBlockPositions(records, records2);
+        byte[] expectedFileContent = expectedFileContent(block, block2);
+        LinkedHashMap<Range<Field>, BlockPosition> expectedBlockPositions = expectedBlockPositions(block, block2);
 
-        ReplayPosition replayPosition = new ReplayPosition(1, RecordUtils.computeSerializedSize(records));
+        ReplayPosition replayPosition = new ReplayPosition(1, block.computeSerializedSize());
 
-        memTimeSeries = memTimeSeries.write(allocator, records, Futures.immediateFuture(replayPosition));
+        memTimeSeries = memTimeSeries.write(allocator, block, Futures.immediateFuture(replayPosition));
 
-        replayPosition = new ReplayPosition(1, RecordUtils.computeSerializedSize(records)
-                                            + RecordUtils.computeSerializedSize(records2));
+        replayPosition = new ReplayPosition(1, block.computeSerializedSize()
+                                            + block2.computeSerializedSize());
         
-        memTimeSeries = memTimeSeries.write(allocator, records2, Futures.immediateFuture(replayPosition));
+        memTimeSeries = memTimeSeries.write(allocator, block2, Futures.immediateFuture(replayPosition));
 
         try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, 
                                                        this.databaseDefinition, 
@@ -662,37 +662,37 @@ public class TimeSeriesFileTest {
 
         MemTimeSeries memTimeSeries = new MemTimeSeries(this.configuration, this.definition);
 
-        List<TimeSeriesRecord> records = new RecordListBuilder(this.definition).newRecord("exchangeState")
-                                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 12000700)
-                                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 12)
-                                                                               .setByte(2, 3)
-                                                                               .newRecord("exchangeState")
-                                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13000900)
-                                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
-                                                                               .setByte(2, 3)
-                                                                               .newRecord("exchangeState")
-                                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13004400)
-                                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
-                                                                               .setByte(2, 1)
-                                                                               .build();
+        DataBlock block = new DataBlockBuilder(this.definition).newRecord("exchangeState")
+                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 12000700)
+                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 12)
+                                                               .setByte(2, 3)
+                                                               .newRecord("exchangeState")
+                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13000900)
+                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
+                                                               .setByte(2, 3)
+                                                               .newRecord("exchangeState")
+                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13004400)
+                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
+                                                               .setByte(2, 1)
+                                                               .build();
 
-        List<TimeSeriesRecord> records2 = new RecordListBuilder(this.definition).newRecord("exchangeState")
-                                                                               .setTimestampInNanos(0, TIME_IN_NANOS + 13014400)
-                                                                               .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
-                                                                               .setByte(2, 1)
-                                                                               .build();
+        DataBlock block2 = new DataBlockBuilder(this.definition).newRecord("exchangeState")
+                                                                .setTimestampInNanos(0, TIME_IN_NANOS + 13014400)
+                                                                .setTimestampInMillis(1, TIME_IN_MILLIS + 13)
+                                                                .setByte(2, 1)
+                                                                .build();
 
-        byte[] expectedFileContent = expectedFileContent(records, records2);
-        LinkedHashMap<Range<Field>, BlockPosition> expectedBlockPositions = expectedBlockPositions(records, records2);
+        byte[] expectedFileContent = expectedFileContent(block, block2);
+        LinkedHashMap<Range<Field>, BlockPosition> expectedBlockPositions = expectedBlockPositions(block, block2);
 
-        ReplayPosition replayPosition = new ReplayPosition(1, RecordUtils.computeSerializedSize(records));
+        ReplayPosition replayPosition = new ReplayPosition(1, block.computeSerializedSize());
 
-        memTimeSeries = memTimeSeries.write(allocator, records, Futures.immediateFuture(replayPosition));
+        memTimeSeries = memTimeSeries.write(allocator, block, Futures.immediateFuture(replayPosition));
 
-        replayPosition = new ReplayPosition(1, RecordUtils.computeSerializedSize(records)
-                                            + RecordUtils.computeSerializedSize(records2));
+        replayPosition = new ReplayPosition(1, block.computeSerializedSize()
+                                            + block2.computeSerializedSize());
         
-        memTimeSeries = memTimeSeries.write(allocator, records2, Futures.immediateFuture(replayPosition));
+        memTimeSeries = memTimeSeries.write(allocator, block2, Futures.immediateFuture(replayPosition));
 
         try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, 
                                                        this.databaseDefinition, 
@@ -729,7 +729,7 @@ public class TimeSeriesFileTest {
 
         MemTimeSeries memTimeSeries = new MemTimeSeries(this.configuration, this.definition);
 
-        List<TimeSeriesRecord> records = new RecordListBuilder(this.definition).newRecord("exchangeState")
+        DataBlock block = new DataBlockBuilder(this.definition).newRecord("exchangeState")
                                                                                .setTimestampInNanos(0, TIME_IN_NANOS + 12000700)
                                                                                .setTimestampInMillis(1, TIME_IN_MILLIS + 12)
                                                                                .setByte(2, 3)
@@ -743,9 +743,9 @@ public class TimeSeriesFileTest {
                                                                                .setByte(2, 1)
                                                                                .build();
 
-        byte[] expectedFileContent = expectedFileContent(records);
+        byte[] expectedFileContent = expectedFileContent(block);
 
-        memTimeSeries = memTimeSeries.write(allocator, records, Futures.immediateFuture(new ReplayPosition(1, 0)));
+        memTimeSeries = memTimeSeries.write(allocator, block, Futures.immediateFuture(new ReplayPosition(1, 0)));
 
         try (TimeSeriesFile file = TimeSeriesFile.open(this.configuration, 
                                                        this.databaseDefinition,
@@ -794,29 +794,31 @@ public class TimeSeriesFileTest {
     /**
      * Returns the expected block positions for the blocks containing the specified records.
      * 
-     * @param recordBlocks the blocks of records
+     * @param blocks the blocks of records
      * @return the expected block positions for the blocks containing the specified records.
      * @throws IOException if an I/O problem occurs
      */
     @SafeVarargs
-    private final LinkedHashMap<Range<Field>, BlockPosition> expectedBlockPositions(List<TimeSeriesRecord>... recordBlocks) throws IOException {
+    private final LinkedHashMap<Range<Field>, BlockPosition> expectedBlockPositions(DataBlock... blocks) throws IOException {
         
         int position = FileMetaData.METADATA_LENGTH;
-        LinkedHashMap<Range<Field>, BlockPosition> map = new LinkedHashMap<>();         
-        
-        for (List<TimeSeriesRecord> records : recordBlocks) {
+        LinkedHashMap<Range<Field>, BlockPosition> map = new LinkedHashMap<>();
 
-            TimeSeriesRecord header = getBlockHeader(records);
+        try (ResourceIterator<DataBlock> iterator = compress(this.definition.getCompressionType(), iterator(blocks))) {
+            while (iterator.hasNext()) {
 
-            Range<Field> range = newTimestampRange(getFirstTimestamp(header),
-                                                   getLastTimestamp(header));
+                DataBlock block = iterator.next();
+                Record header = block.getHeader();
 
-            int length = RecordUtils.computeSerializedSize(header) + getCompressedBlockSize(header);
+                Range<Field> range = newTimestampRange(getFirstTimestamp(header), getLastTimestamp(header));
 
-            map.put(range, new BlockPosition(position, length));
-            position += length;
+                int length = RecordUtils.computeSerializedSize(header) + getCompressedBlockSize(header);
+
+                map.put(range, new BlockPosition(position, length));
+                position += length;
+            }
         }
-        
+
         return map;
     }
     
@@ -828,175 +830,28 @@ public class TimeSeriesFileTest {
      * @throws IOException if an I/O problem occurs
      */
     @SafeVarargs
-    private final byte[] expectedFileContent(List<TimeSeriesRecord>... recordBlocks) throws IOException {
-        
-        TimeSeriesRecord[] headers = new TimeSeriesRecord[recordBlocks.length];
-        ReadableBuffer[] compressedBlocks = new ReadableBuffer[recordBlocks.length];
-
-        for (int i = 0; i < recordBlocks.length; i++) {
-            
-            List<TimeSeriesRecord> records = recordBlocks[i];
-
-            headers[i] = getBlockHeader(records);
-            compressedBlocks[i] = getBlockData(records);
-        }
+    private final byte[] expectedFileContent(DataBlock... blocks) throws IOException {
 
         FileMetaData fileMetaData = new FileMetaData(this.databaseDefinition.getName(),
                                                      this.definition.getName(),
                                                      this.metadata.getRange());
 
-        return toFileContent(fileMetaData, headers, compressedBlocks);
+        return toFileContent(fileMetaData, Arrays.asList(blocks));
     }
 
-    /**
-     * Returns the block header for the specified block of records.
-     * 
-     * @param records the records of the block
-     * @return the block header for the specified block of records
-     * @throws IOException if an I/O problem occurs
-     */
-    private TimeSeriesRecord getBlockHeader(List<TimeSeriesRecord> records) throws IOException {
-        
-        ReadableBuffer uncompressedRecords = serializeRecords(records);    
-        ReadableBuffer compressedRecords = compress(uncompressedRecords);
-        
-        Range<Field> blockRange = getTimestampRange(records);
-        
-        return new BlockHeaderBuilder(this.definition).firstTimestamp(blockRange.lowerEndpoint().getTimestampInNanos())
-                                                      .lastTimestamp(blockRange.upperEndpoint().getTimestampInNanos())
-                                                      .compressionType(this.definition.getCompressionType())
-                                                      .compressedBlockSize(compressedRecords.readableBytes())
-                                                      .uncompressedBlockSize(uncompressedRecords.readerIndex(0)
-                                                                                                .readableBytes())
-                                                      .recordCount(0, records.size())
-                                                      .build();
-    }
+    private byte[] toFileContent(FileMetaData fileMetaData,
+                                 List<DataBlock> blocks) throws IOException {
 
-    /**
-     * Returns the readable buffer containing the specified records. 
-     * 
-     * @param records the records of the block
-     * @return the readable buffer containing the specified records
-     * @throws IOException if an I/O problem occurs
-     */
-    private ReadableBuffer getBlockData(List<TimeSeriesRecord> records) throws IOException {
-        
-        return compress(serializeRecords(records));
-    }
-    
-    /**
-     * Serializes the specified records.
-     * 
-     * @param records the records to serialize 
-     * @return the buffer containing the serialized records 
-     * @throws IOException if an I/O problem occurs
-     */
-    private static Buffer serializeRecords(List<TimeSeriesRecord> records) throws IOException {
-        
-        int size = RecordUtils.computeSerializedSize(records);
-                
-        Buffer buffer = Buffers.allocate(size);
-        RecordUtils.writeRecords(buffer, records);
-        return buffer;
-    }
-    
-    /**
-     * Returns the range of timestamp of this block of records
-     * 
-     * @param records the records composing the block
-     * @return 
-     */
-    private static Range<Field> getTimestampRange(List<TimeSeriesRecord> records) {
-        
-        Field firstTimestamp = records.get(0).getField(TIMESTAMP_FIELD_INDEX);
-        Field lastTimestamp = firstTimestamp.newInstance();
-                
-        for (int j = 1, m = records.size(); j < m; j++) {
-            TimeSeriesRecord record = records.get(j);
-            
-            if (record.isDelta()) {
-                lastTimestamp.add(record.getField(TIMESTAMP_FIELD_INDEX));
-            } else {
-                record.getField(TIMESTAMP_FIELD_INDEX).copyTo(lastTimestamp);
-            }
+        CompositeBuffer buffer = new CompositeBuffer();
+
+        Buffer metadata = Buffers.allocate(fileMetaData.computeSerializedSize());
+        fileMetaData.writeTo(metadata);
+        buffer.addBytes(metadata);
+
+        try (ResourceIterator<DataBlock> iterator = compress(this.definition.getCompressionType(), iterator(blocks))) {
+            ReadableBuffer data = ResourceIteratorUtils.toBytes(iterator);
+            buffer.addBytes(data);
         }
-        
-        return Range.closed(firstTimestamp, lastTimestamp);
-    }
-
-    /**
-     * Serializes 
-     * 
-     * @param fileMetaData
-     * @param headers
-     * @param compressedBlocks
-     * @return
-     * @throws IOException
-     */
-    private static byte[] toFileContent(FileMetaData fileMetaData,
-                                        TimeSeriesRecord[] headers,
-                                        ReadableBuffer[] compressedBlocks) throws IOException {
-        
-        int bufferSize = computeFileSize(fileMetaData, headers, compressedBlocks);
-        
-        Buffer buffer = Buffers.allocate(bufferSize);
-        
-        writeFileContent(buffer, fileMetaData, headers, compressedBlocks);
-        
-        return buffer.array();
-    }
-
-    /**
-     * Computes the size of the file based on its content
-     * 
-     * @param fileMetaData the file meta data
-     * @param headers the block headers
-     * @param compressedBlocks the blocks data
-     * @return the size of the file
-     * @throws IOException if an I/O problem occurs
-     */
-    private static int computeFileSize(FileMetaData fileMetaData,
-                                       TimeSeriesRecord[] headers,
-                                       ReadableBuffer[] compressedBlocks) throws IOException {
-        int bufferSize = fileMetaData.computeSerializedSize();
-        
-        for (int i = 0; i < headers.length; i++) {
-            bufferSize += RecordUtils.computeSerializedSize(headers[i]) + compressedBlocks[i].readableBytes();
-        }
-        return bufferSize;
-    }
-
-    /**
-     * Writes to the content of the file to the specified buffer.
-     * 
-     * @param buffer the buffer to write to
-     * @param fileMetaData the file meta data
-     * @param headers the block headers
-     * @param compressedBlocks the blocks data
-     * @throws IOException if an I/O problem occurs
-     */
-    private static void writeFileContent(Buffer buffer,
-                                         FileMetaData fileMetaData,
-                                         TimeSeriesRecord[] headers,
-                                         ReadableBuffer[] compressedBlocks) throws IOException {
-        buffer.writeObject(fileMetaData);
-        
-        for (int i = 0; i < headers.length; i++) {
-            
-            RecordUtils.writeRecord(buffer, headers[i]);      
-            buffer.transfer(compressedBlocks[i]);
-        }
-    }
-
-    /**
-     * Compress the specified data.
-     * 
-     * @param buffer the data to compress
-     * @throws IOException if an I/O problem occurs
-     */
-    private ReadableBuffer compress(ReadableBuffer buffer) throws IOException {
-        
-        Compressor compressor = this.definition.getCompressionType().newCompressor();
-        return compressor.compress(buffer);
+        return Buffers.toArray(buffer);
     }
 }

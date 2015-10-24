@@ -63,7 +63,6 @@ public class CommitLogAllocatorTest {
     public void setUp() throws Exception {
 
         this.testDirectory = Files.createTempDirectory("test");
-        System.out.println(this.testDirectory);
         this.configuration = Configuration.newBuilder()
                                           .commitLogDirectory(this.testDirectory)
                                           .commitLogSegmentSize(8 * ONE_KB)

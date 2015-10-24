@@ -159,21 +159,19 @@ public final class TimeSeriesPartition implements Comparable<TimeSeriesPartition
     /**
      * Writes the specified records in this partition.
      * 
-     * @param records the records to write.
+     * @param block the block containing the records to write
      * @param future the commit log future
      * @throws IOException if an I/O problem occurs.
      * @throws HorizonDBException if the record set is invalid.
      * @throws InterruptedException if the commit log thread was interrupted
      */
-    public synchronized void write(List<? extends Record> records, 
-                                   ListenableFuture<ReplayPosition> future) 
-                                           throws IOException, 
-                                                  HorizonDBException {
+    public synchronized void write(DataBlock block,
+                                   ListenableFuture<ReplayPosition> future)throws IOException, HorizonDBException {
 
-        this.logger.debug("writing {} records to partition {}", Integer.valueOf(records.size()), getId());
+        this.logger.debug("writing records to partition {}", getId());
 
         TimeSeriesElements oldElements = this.elements.get();
-        TimeSeriesElements newElements = oldElements.write(this.allocator, records, future);
+        TimeSeriesElements newElements = oldElements.write(this.allocator, block, future);
  
         CommitLog.waitForCommitLogWriteIfNeeded(this.configuration, future);
         
@@ -451,7 +449,6 @@ public final class TimeSeriesPartition implements Comparable<TimeSeriesPartition
      * @throws InterruptedException if the thread was interrupted
      */
     private TimeSeriesPartitionMetaData getMetaData(TimeSeriesFile file) throws InterruptedException, ExecutionException {
-        System.out.println(file.getFuture());
         return TimeSeriesPartitionMetaData.newBuilder(this.timeRange)
                                           .fileSize(file.size())
                                           .blockPositions(file.getBlockPositions())

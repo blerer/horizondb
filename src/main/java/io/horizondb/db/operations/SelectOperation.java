@@ -47,10 +47,10 @@ final class SelectOperation implements Operation {
         
         Projection projection = payload.getProjection();
         Predicate predicate = payload.getPredicate();
-        ResourceIterator<? extends Record> iterator = series.read(projection, predicate);
-        
-        return new ChunkedRecordSet(request.getHeader(),
-                                    projection.getDefinition(series.getDefinition()),
-                                    new ChunkedRecordStream(request.getHeader(), iterator));
+        try (ResourceIterator<? extends Record> iterator = series.read(projection, predicate)) {
+            return new ChunkedRecordSet(request.getHeader(),
+                                        projection.getDefinition(series.getDefinition()),
+                                        new ChunkedRecordStream(request.getHeader(), iterator));
+        }
     }
 }

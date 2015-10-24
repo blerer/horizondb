@@ -1,6 +1,4 @@
 /**
- * Copyright 2013 Benjamin Lerer
- * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,9 +19,9 @@ import io.horizondb.db.HorizonDBFiles;
 import io.horizondb.db.btree.KeyValueIterator;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.files.FileUtils;
+import io.horizondb.model.core.DataBlock;
 import io.horizondb.model.core.Field;
-import io.horizondb.model.core.RecordListBuilder;
-import io.horizondb.model.core.records.TimeSeriesRecord;
+import io.horizondb.model.core.blocks.DataBlockBuilder;
 import io.horizondb.model.core.util.TimeUtils;
 import io.horizondb.model.schema.DatabaseDefinition;
 import io.horizondb.model.schema.FieldType;
@@ -33,7 +31,6 @@ import io.horizondb.model.schema.TimeSeriesDefinition;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -146,20 +143,19 @@ public class DefaultTimeSeriesPartitionManagerTest {
 
             long timestamp = TimeUtils.parseDateTime("2013-11-26 12:32:12.000");
 
-            List<TimeSeriesRecord> records = new RecordListBuilder(definition)
-                                                                 .newRecord("exchangeState")
-                                                                 .setTimestampInMillis(0, timestamp)
-                                                                 .setTimestampInMillis(1, timestamp)
-                                                                 .setByte(2, 10)
-                                                                 .newRecord("exchangeState")
-                                                                 .setTimestampInMillis(0, timestamp + 100)
-                                                                 .setTimestampInMillis(1, timestamp + 100)
-                                                                 .setByte(2, 5)
-                                                                 .newRecord("exchangeState")
-                                                                 .setTimestampInMillis(0, timestamp + 350)
-                                                                 .setTimestampInMillis(1, timestamp + 350)
-                                                                 .setByte(2, 10)
-                                                                 .build();
+            DataBlock records = new DataBlockBuilder(definition).newRecord("exchangeState")
+                                                                .setTimestampInMillis(0, timestamp)
+                                                                .setTimestampInMillis(1, timestamp)
+                                                                .setByte(2, 10)
+                                                                .newRecord("exchangeState")
+                                                                .setTimestampInMillis(0, timestamp + 100)
+                                                                .setTimestampInMillis(1, timestamp + 100)
+                                                                .setByte(2, 5)
+                                                                .newRecord("exchangeState")
+                                                                .setTimestampInMillis(0, timestamp + 350)
+                                                                .setTimestampInMillis(1, timestamp + 350)
+                                                                .setByte(2, 10)
+                                                                .build();
             
             partition.write(records, Futures.immediateFuture(new ReplayPosition(1, 2)));
             partition.forceFlush();

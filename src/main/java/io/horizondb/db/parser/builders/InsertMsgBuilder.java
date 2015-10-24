@@ -24,6 +24,8 @@ import io.horizondb.db.parser.MsgBuilder;
 import io.horizondb.db.series.TimeSeries;
 import io.horizondb.io.Buffer;
 import io.horizondb.io.buffers.Buffers;
+import io.horizondb.model.core.RecordUtils;
+import io.horizondb.model.core.records.BlockHeaderUtils;
 import io.horizondb.model.core.records.TimeSeriesRecord;
 import io.horizondb.model.protocol.InsertPayload;
 import io.horizondb.model.protocol.Msg;
@@ -141,14 +143,24 @@ final class InsertMsgBuilder extends HqlBaseListener implements MsgBuilder {
      */
     @Override
     public Msg<?> build() throws IOException, HorizonDBException {
-        
+
         Database database = this.databaseManager.getDatabase(this.databaseName);
         TimeSeries timeSeries = database.getTimeSeries(this.series);
         TimeSeriesDefinition definition = timeSeries.getDefinition();
+
         int recordTypeIndex = definition.getRecordTypeIndex(this.recordType);
         TimeSeriesRecord record = newRecord(definition, recordTypeIndex);
-        Buffer buffer = Buffers.allocate(record.computeSerializedSize());
-        record.writeTo(buffer);
+        int size = RecordUtils.computeSerializedSize(record);
+
+        TimeSeriesRecord header = definition.newBlockHeader();
+        BlockHeaderUtils.setFirstTimestamp(header, record);
+        BlockHeaderUtils.setLastTimestamp(header, record);
+        BlockHeaderUtils.setCompressedBlockSize(header, size);
+        BlockHeaderUtils.setRecordCount(header, recordTypeIndex, 1);
+
+        Buffer buffer = Buffers.allocate(RecordUtils.computeSerializedSize(header) + size);
+        RecordUtils.writeRecord(buffer, header);
+        RecordUtils.writeRecord(buffer, record);
 
         Payload payload = new InsertPayload(this.databaseName,
                                             this.series,

@@ -117,7 +117,6 @@ public class DefaultDatabaseEngine extends AbstractComponent implements Database
                 ReadableBuffer bytes;
                 
                 if (buffer == null) {
-                    
                     bytes = Buffers.allocateDirect(request.computeSerializedSize());
                     request.writeTo((Buffer) bytes);
                 

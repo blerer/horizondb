@@ -25,6 +25,7 @@ import io.horizondb.model.core.blocks.RecordAppender;
 import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;
 import io.horizondb.model.core.iterators.BlockIterators;
 import io.horizondb.model.core.iterators.LoggingRecordIterator;
+import io.horizondb.model.core.records.BinaryTimeSeriesRecord;
 import io.horizondb.model.core.records.TimeSeriesRecord;
 import io.horizondb.model.schema.TimeSeriesDefinition;
 
@@ -39,6 +40,8 @@ import javax.annotation.concurrent.Immutable;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 import com.google.common.util.concurrent.ListenableFuture;
+
+import static io.horizondb.model.core.iterators.BlockIterators.singleton;
 
 import static io.horizondb.model.core.records.BlockHeaderUtils.getUncompressedBlockSize;
 
@@ -112,16 +115,15 @@ final class MemTimeSeries implements TimeSeriesElement {
      * Writes the specified records.
      * 
      * @param allocator the slab allocator used to reduce heap fragmentation
-     * @param records the records to write
+     * @param block the block containing the records to write
      * @param future the future returning the <code>ReplayPosition</code> for this write.
      * @return the number of records written.
      * @throws IOException if an I/O problem occurs while writing the records.
      * @throws HorizonDBException if the one of the records is invalid
      */
     public MemTimeSeries write(SlabAllocator allocator,
-                                List<? extends Record> records,
-                                ListenableFuture<ReplayPosition> future)
-                                       throws IOException, HorizonDBException {
+                               DataBlock block,
+                               ListenableFuture<ReplayPosition> future) throws IOException, HorizonDBException {
 
         List<DataBlock> newBlocks = new ArrayList<>(this.blocks);
         TimeSeriesRecord[] previousRecords = TimeSeriesRecord.deepCopy(this.lastRecords);
@@ -142,18 +144,21 @@ final class MemTimeSeries implements TimeSeriesElement {
                                                     lastBlock);
         }
 
-        for (int i = 0, m = records.size(); i < m; i++) {
+        try (BinaryTimeSeriesRecordIterator iterator = new BinaryTimeSeriesRecordIterator(this.definition,
+                                                                                          singleton(block))) {
+            while (iterator.hasNext()) {
 
-            while (!appender.append(records.get(i))) {
+                BinaryTimeSeriesRecord next = iterator.next();
+                if (!appender.append(next)) {
 
-                newBlocks.add(appender.getDataBlock());
-                appender = new RecordAppender(this.definition,
-                                                        allocator,
-                                                        this.lastRecords);
+                    newBlocks.add(appender.getDataBlock());
+                    appender = new RecordAppender(this.definition, allocator, this.lastRecords);
+                    appender.append(next);
+                }
             }
-        }
-        newBlocks.add(appender.getDataBlock());
+            newBlocks.add(appender.getDataBlock());
 
+        }
         return new MemTimeSeries(this.configuration,
                                  this.definition,
                                  newBlocks,

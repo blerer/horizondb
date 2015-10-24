@@ -18,15 +18,15 @@ import io.horizondb.db.HorizonDBException;
 import io.horizondb.db.HorizonDBFiles;
 import io.horizondb.db.commitlog.ReplayPosition;
 import io.horizondb.io.files.FileUtils;
+import io.horizondb.model.core.DataBlock;
 import io.horizondb.model.core.Field;
 import io.horizondb.model.core.Filter;
 import io.horizondb.model.core.Record;
-import io.horizondb.model.core.RecordListBuilder;
 import io.horizondb.model.core.ResourceIterator;
+import io.horizondb.model.core.blocks.DataBlockBuilder;
 import io.horizondb.model.core.filters.Filters;
 import io.horizondb.model.core.iterators.BinaryTimeSeriesRecordIterator;
 import io.horizondb.model.core.records.BinaryTimeSeriesRecord;
-import io.horizondb.model.core.records.TimeSeriesRecord;
 import io.horizondb.model.core.util.TimeUtils;
 import io.horizondb.model.schema.DatabaseDefinition;
 import io.horizondb.model.schema.RecordTypeDefinition;
@@ -35,7 +35,6 @@ import io.horizondb.model.schema.TimeSeriesDefinition;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.easymock.EasyMock;
@@ -161,19 +160,19 @@ public class TimeSeriesPartitionTest {
 
         long timestamp = TimeUtils.parseDateTime("2013-11-26 12:32:12.000");
 
-        List<TimeSeriesRecord> records = new RecordListBuilder(this.def).newRecord("exchangeState")
-                                                                        .setTimestampInMillis(0, timestamp)
-                                                                        .setTimestampInMillis(1, timestamp)
-                                                                        .setByte(2, 10)
-                                                                        .newRecord("exchangeState")
-                                                                        .setTimestampInMillis(0, timestamp + 100)
-                                                                        .setTimestampInMillis(1, timestamp + 100)
-                                                                        .setByte(2, 5)
-                                                                        .newRecord("exchangeState")
-                                                                        .setTimestampInMillis(0, timestamp + 350)
-                                                                        .setTimestampInMillis(1, timestamp + 350)
-                                                                        .setByte(2, 10)
-                                                                        .build();
+        DataBlock records = new DataBlockBuilder(this.def).newRecord("exchangeState")
+                                                          .setTimestampInMillis(0, timestamp)
+                                                          .setTimestampInMillis(1, timestamp)
+                                                          .setByte(2, 10)
+                                                          .newRecord("exchangeState")
+                                                          .setTimestampInMillis(0, timestamp + 100)
+                                                          .setTimestampInMillis(1, timestamp + 100)
+                                                          .setByte(2, 5)
+                                                          .newRecord("exchangeState")
+                                                          .setTimestampInMillis(0, timestamp + 350)
+                                                          .setTimestampInMillis(1, timestamp + 350)
+                                                          .setByte(2, 10)
+                                                          .build();
 
         this.partition.write(records, newFuture(0, 1));
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
@@ -226,24 +225,24 @@ public class TimeSeriesPartitionTest {
 
         long timestamp = TimeUtils.parseDateTime("2013-11-26 12:32:12");
 
-        List<TimeSeriesRecord> records = new RecordListBuilder(this.def).newRecord("exchangeState")
-                                                                        .setTimestampInMillis(0, timestamp)
-                                                                        .setTimestampInMillis(1, timestamp)
-                                                                        .setByte(2, 10)
-                                                                        .newRecord("exchangeState")
-                                                                        .setTimestampInMillis(0, timestamp + 100)
-                                                                        .setTimestampInMillis(1, timestamp + 100)
-                                                                        .setByte(2, 5)
-                                                                        .build();
+        DataBlock records = new DataBlockBuilder(this.def).newRecord("exchangeState")
+                                                          .setTimestampInMillis(0, timestamp)
+                                                          .setTimestampInMillis(1, timestamp)
+                                                          .setByte(2, 10)
+                                                          .newRecord("exchangeState")
+                                                          .setTimestampInMillis(0, timestamp + 100)
+                                                          .setTimestampInMillis(1, timestamp + 100)
+                                                          .setByte(2, 5)
+                                                          .build();
 
         this.partition.write(records, newFuture(0, 1));
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
-        
-        records = new RecordListBuilder(this.def).newRecord("exchangeState")
-                                                 .setTimestampInMillis(0, timestamp + 350)
-                                                 .setTimestampInMillis(1, timestamp + 350)
-                                                 .setByte(2, 10)
-                                                 .build();
+
+        records = new DataBlockBuilder(this.def).newRecord("exchangeState")
+                                                .setTimestampInMillis(0, timestamp + 350)
+                                                .setTimestampInMillis(1, timestamp + 350)
+                                                .setByte(2, 10)
+                                                .build();
 
         this.partition.write(records, newFuture(0, 2000));
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
@@ -303,37 +302,37 @@ public class TimeSeriesPartitionTest {
 
         long timestamp = TimeUtils.parseDateTime("2013-11-26 12:32:12.000");
 
-        List<TimeSeriesRecord> records = new RecordListBuilder(this.def).newRecord("exchangeState")
-                                                                        .setTimestampInMillis(0, timestamp)
-                                                                        .setTimestampInMillis(1, timestamp)
-                                                                        .setByte(2, 10)
-                                                                        .newRecord("exchangeState")
-                                                                        .setTimestampInMillis(0, timestamp + 100)
-                                                                        .setTimestampInMillis(1, timestamp + 100)
-                                                                        .setByte(2, 5)
-                                                                        .newRecord("exchangeState")
-                                                                        .setTimestampInMillis(0, timestamp + 350)
-                                                                        .setTimestampInMillis(1, timestamp + 350)
-                                                                        .setByte(2, 10)
-                                                                        .newRecord("exchangeState")
-                                                                        .setTimestampInMillis(0, timestamp + 450)
-                                                                        .setTimestampInMillis(1, timestamp + 450)
-                                                                        .setByte(2, 6)
-                                                                        .build();
+        DataBlock records = new DataBlockBuilder(this.def).newRecord("exchangeState")
+                                                          .setTimestampInMillis(0, timestamp)
+                                                          .setTimestampInMillis(1, timestamp)
+                                                          .setByte(2, 10)
+                                                          .newRecord("exchangeState")
+                                                          .setTimestampInMillis(0, timestamp + 100)
+                                                          .setTimestampInMillis(1, timestamp + 100)
+                                                          .setByte(2, 5)
+                                                          .newRecord("exchangeState")
+                                                          .setTimestampInMillis(0, timestamp + 350)
+                                                          .setTimestampInMillis(1, timestamp + 350)
+                                                          .setByte(2, 10)
+                                                          .newRecord("exchangeState")
+                                                          .setTimestampInMillis(0, timestamp + 450)
+                                                          .setTimestampInMillis(1, timestamp + 450)
+                                                          .setByte(2, 6)
+                                                          .build();
 
         this.partition.write(records, newFuture(0, 1));
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
         assertEquals(Long.valueOf(0), this.partition.getFirstSegmentContainingNonPersistedData());
 
-        records = new RecordListBuilder(this.def).newRecord("exchangeState")
-                                                 .setTimestampInMillis(0, timestamp + 600)
-                                                 .setTimestampInMillis(1, timestamp + 600)
-                                                 .setByte(2, 6)
-                                                 .newRecord("exchangeState")
-                                                 .setTimestampInMillis(0, timestamp + 700)
-                                                 .setTimestampInMillis(1, timestamp + 700)
-                                                 .setByte(2, 5)
-                                                 .build();
+        records = new DataBlockBuilder(this.def).newRecord("exchangeState")
+                                                .setTimestampInMillis(0, timestamp + 600)
+                                                .setTimestampInMillis(1, timestamp + 600)
+                                                .setByte(2, 6)
+                                                .newRecord("exchangeState")
+                                                .setTimestampInMillis(0, timestamp + 700)
+                                                .setTimestampInMillis(1, timestamp + 700)
+                                                .setByte(2, 5)
+                                                .build();
 
         this.partition.write(records, newFuture(0, 2));
         assertEquals(2 * MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
@@ -426,56 +425,55 @@ public class TimeSeriesPartitionTest {
 
         long timestamp = TimeUtils.parseDateTime("2013-11-26 12:32:12.000");
 
-        List<TimeSeriesRecord> records = new RecordListBuilder(this.def)
-                                                             .newRecord("exchangeState")
-                                                             .setTimestampInMillis(0, timestamp)
-                                                             .setTimestampInMillis(1, timestamp)
-                                                             .setByte(2, 10)
-                                                             .newRecord("exchangeState")
-                                                             .setTimestampInMillis(0, timestamp + 100)
-                                                             .setTimestampInMillis(1, timestamp + 100)
-                                                             .setByte(2, 5)
-                                                             .newRecord("exchangeState")
-                                                             .setTimestampInMillis(0, timestamp + 350)
-                                                             .setTimestampInMillis(1, timestamp + 350)
-                                                             .setByte(2, 10)
-                                                             .newRecord("exchangeState")
-                                                             .setTimestampInMillis(0, timestamp + 450)
-                                                             .setTimestampInMillis(1, timestamp + 450)
-                                                             .setByte(2, 6)
-                                                             .build();
+        DataBlock records = new DataBlockBuilder(this.def).newRecord("exchangeState")
+                                                          .setTimestampInMillis(0, timestamp)
+                                                          .setTimestampInMillis(1, timestamp)
+                                                          .setByte(2, 10)
+                                                          .newRecord("exchangeState")
+                                                          .setTimestampInMillis(0, timestamp + 100)
+                                                          .setTimestampInMillis(1, timestamp + 100)
+                                                          .setByte(2, 5)
+                                                          .newRecord("exchangeState")
+                                                          .setTimestampInMillis(0, timestamp + 350)
+                                                          .setTimestampInMillis(1, timestamp + 350)
+                                                          .setByte(2, 10)
+                                                          .newRecord("exchangeState")
+                                                          .setTimestampInMillis(0, timestamp + 450)
+                                                          .setTimestampInMillis(1, timestamp + 450)
+                                                          .setByte(2, 6)
+                                                          .build();
 
         this.partition.write(records, newFuture(0, 1)); 
         assertEquals(memTimeSeriesSize, this.partition.getMemoryUsage());
         assertEquals(Long.valueOf(0), this.partition.getFirstSegmentContainingNonPersistedData());
 
-        records = new RecordListBuilder(this.def).newRecord("exchangeState")
-                                                 .setTimestampInMillis(0, timestamp + 600)
-                                                 .setTimestampInMillis(1, timestamp + 600)
-                                                 .setByte(2, 6)
-                                                 .newRecord("exchangeState")
-                                                 .setTimestampInMillis(0, timestamp + 700)
-                                                 .setTimestampInMillis(1, timestamp + 700)
-                                                 .setByte(2, 5)
-                                                 .newRecord("exchangeState")
-                                                 .setTimestampInMillis(0, timestamp + 1000)
-                                                 .setTimestampInMillis(1, timestamp + 1000)
-                                                 .setByte(2, 6)
-                                                 .newRecord("exchangeState")
-                                                 .setTimestampInMillis(0, timestamp + 1200)
-                                                 .setTimestampInMillis(1, timestamp + 1200)
-                                                 .setByte(2, 5)
-                                                 .build();
+        records = new DataBlockBuilder(this.def).newRecord("exchangeState")
+                                                .setTimestampInMillis(0, timestamp + 600)
+                                                .setTimestampInMillis(1, timestamp + 600)
+                                                .setByte(2, 6)
+                                                .newRecord("exchangeState")
+                                                .setTimestampInMillis(0, timestamp + 700)
+                                                .setTimestampInMillis(1, timestamp + 700)
+                                                .setByte(2, 5)
+                                                .newRecord("exchangeState")
+                                                .setTimestampInMillis(0, timestamp + 1000)
+                                                .setTimestampInMillis(1, timestamp + 1000)
+                                                .setByte(2, 6)
+                                                .newRecord("exchangeState")
+                                                .setTimestampInMillis(0, timestamp + 1200)
+                                                .setTimestampInMillis(1, timestamp + 1200)
+                                                .setByte(2, 5)
+                                                .build();
 
         this.partition.write(records, newFuture(0, 2));
         assertEquals(3 * memTimeSeriesSize, this.partition.getMemoryUsage());
         assertEquals(Long.valueOf(0), this.partition.getFirstSegmentContainingNonPersistedData());
 
-        records = new RecordListBuilder(this.def).newRecord("exchangeState")
-                                                 .setTimestampInMillis(0, timestamp + 1400)
-                                                 .setTimestampInMillis(1, timestamp + 1400)
-                                                 .setByte(2, 6)
-                                                 .build();
+        records = new DataBlockBuilder(this.def).newRecord("exchangeState")
+                                                .setTimestampInMillis(0, timestamp + 1400)
+                                                .setTimestampInMillis(1, timestamp + 1400)
+                                                .setByte(2, 6)
+                                                .build();
 
         this.partition.write(records, newFuture(1, 1));
         assertEquals(3 * memTimeSeriesSize, this.partition.getMemoryUsage());
@@ -589,24 +587,23 @@ public class TimeSeriesPartitionTest {
 
         long timestamp = TimeUtils.parseDateTime("2013-11-26 12:32:12.000");
 
-        List<TimeSeriesRecord> records = new RecordListBuilder(this.def)
-                                                             .newRecord("exchangeState")
-                                                             .setTimestampInMillis(0, timestamp)
-                                                             .setTimestampInMillis(1, timestamp)
-                                                             .setByte(2, 10)
-                                                             .newRecord("exchangeState")
-                                                             .setTimestampInMillis(0, timestamp + 100)
-                                                             .setTimestampInMillis(1, timestamp + 100)
-                                                             .setByte(2, 5)
-                                                             .newRecord("exchangeState")
-                                                             .setTimestampInMillis(0, timestamp + 350)
-                                                             .setTimestampInMillis(1, timestamp + 350)
-                                                             .setByte(2, 10)
-                                                             .newRecord("exchangeState")
-                                                             .setTimestampInMillis(0, timestamp + 450)
-                                                             .setTimestampInMillis(1, timestamp + 450)
-                                                             .setByte(2, 6)
-                                                             .build();
+        DataBlock records = new DataBlockBuilder(this.def).newRecord("exchangeState")
+                                                          .setTimestampInMillis(0, timestamp)
+                                                          .setTimestampInMillis(1, timestamp)
+                                                          .setByte(2, 10)
+                                                          .newRecord("exchangeState")
+                                                          .setTimestampInMillis(0, timestamp + 100)
+                                                          .setTimestampInMillis(1, timestamp + 100)
+                                                          .setByte(2, 5)
+                                                          .newRecord("exchangeState")
+                                                          .setTimestampInMillis(0, timestamp + 350)
+                                                          .setTimestampInMillis(1, timestamp + 350)
+                                                          .setByte(2, 10)
+                                                          .newRecord("exchangeState")
+                                                          .setTimestampInMillis(0, timestamp + 450)
+                                                          .setTimestampInMillis(1, timestamp + 450)
+                                                          .setByte(2, 6)
+                                                          .build();
 
         this.partition.write(records, newFuture(0, 1));
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
@@ -677,54 +674,53 @@ public class TimeSeriesPartitionTest {
 
         long timestamp = TimeUtils.parseDateTime("2013-11-26 12:32:12.000");
 
-        List<TimeSeriesRecord> records = new RecordListBuilder(this.def)
-                                                             .newRecord("exchangeState")
-                                                             .setTimestampInMillis(0, timestamp)
-                                                             .setTimestampInMillis(1, timestamp)
-                                                             .setByte(2, 10)
-                                                             .newRecord("exchangeState")
-                                                             .setTimestampInMillis(0, timestamp + 100)
-                                                             .setTimestampInMillis(1, timestamp + 100)
-                                                             .setByte(2, 5)
-                                                             .newRecord("exchangeState")
-                                                             .setTimestampInMillis(0, timestamp + 350)
-                                                             .setTimestampInMillis(1, timestamp + 350)
-                                                             .setByte(2, 10)
-                                                             .newRecord("exchangeState")
-                                                             .setTimestampInMillis(0, timestamp + 450)
-                                                             .setTimestampInMillis(1, timestamp + 450)
-                                                             .setByte(2, 6)
-                                                             .build();
+        DataBlock records = new DataBlockBuilder(this.def).newRecord("exchangeState")
+                                                          .setTimestampInMillis(0, timestamp)
+                                                          .setTimestampInMillis(1, timestamp)
+                                                          .setByte(2, 10)
+                                                          .newRecord("exchangeState")
+                                                          .setTimestampInMillis(0, timestamp + 100)
+                                                          .setTimestampInMillis(1, timestamp + 100)
+                                                          .setByte(2, 5)
+                                                          .newRecord("exchangeState")
+                                                          .setTimestampInMillis(0, timestamp + 350)
+                                                          .setTimestampInMillis(1, timestamp + 350)
+                                                          .setByte(2, 10)
+                                                          .newRecord("exchangeState")
+                                                          .setTimestampInMillis(0, timestamp + 450)
+                                                          .setTimestampInMillis(1, timestamp + 450)
+                                                          .setByte(2, 6)
+                                                          .build();
 
         this.partition.write(records, newFuture(0, 1));
         assertEquals(memTimeSeriesSize, this.partition.getMemoryUsage());
 
-        records = new RecordListBuilder(this.def).newRecord("exchangeState")
-                                                 .setTimestampInMillis(0, timestamp + 600)
-                                                 .setTimestampInMillis(1, timestamp + 600)
-                                                 .setByte(2, 6)
-                                                 .newRecord("exchangeState")
-                                                 .setTimestampInMillis(0, timestamp + 700)
-                                                 .setTimestampInMillis(1, timestamp + 700)
-                                                 .setByte(2, 5)
-                                                 .newRecord("exchangeState")
-                                                 .setTimestampInMillis(0, timestamp + 1000)
-                                                 .setTimestampInMillis(1, timestamp + 1000)
-                                                 .setByte(2, 6)
-                                                 .newRecord("exchangeState")
-                                                 .setTimestampInMillis(0, timestamp + 1200)
-                                                 .setTimestampInMillis(1, timestamp + 1200)
-                                                 .setByte(2, 5)
-                                                 .build();
+        records = new DataBlockBuilder(this.def).newRecord("exchangeState")
+                                                .setTimestampInMillis(0, timestamp + 600)
+                                                .setTimestampInMillis(1, timestamp + 600)
+                                                .setByte(2, 6)
+                                                .newRecord("exchangeState")
+                                                .setTimestampInMillis(0, timestamp + 700)
+                                                .setTimestampInMillis(1, timestamp + 700)
+                                                .setByte(2, 5)
+                                                .newRecord("exchangeState")
+                                                .setTimestampInMillis(0, timestamp + 1000)
+                                                .setTimestampInMillis(1, timestamp + 1000)
+                                                .setByte(2, 6)
+                                                .newRecord("exchangeState")
+                                                .setTimestampInMillis(0, timestamp + 1200)
+                                                .setTimestampInMillis(1, timestamp + 1200)
+                                                .setByte(2, 5)
+                                                .build();
 
         this.partition.write(records, newFuture(0, 2));
         assertEquals(3 * memTimeSeriesSize, this.partition.getMemoryUsage());
 
-        records = new RecordListBuilder(this.def).newRecord("exchangeState")
-                                                 .setTimestampInMillis(0, timestamp + 1400)
-                                                 .setTimestampInMillis(1, timestamp + 1400)
-                                                 .setByte(2, 6)
-                                                 .build();
+        records = new DataBlockBuilder(this.def).newRecord("exchangeState")
+                                                .setTimestampInMillis(0, timestamp + 1400)
+                                                .setTimestampInMillis(1, timestamp + 1400)
+                                                .setByte(2, 6)
+                                                .build();
 
         this.partition.write(records, newFuture(0, 3));
         assertEquals(3 * memTimeSeriesSize, this.partition.getMemoryUsage());
@@ -832,20 +828,19 @@ public class TimeSeriesPartitionTest {
 
         long timestamp = TimeUtils.parseDateTime("2013-11-26 12:32:12.000");
 
-        List<TimeSeriesRecord> records = new RecordListBuilder(this.def)
-                                                             .newRecord("exchangeState")
-                                                             .setTimestampInMillis(0, timestamp)
-                                                             .setTimestampInMillis(1, timestamp)
-                                                             .setByte(2, 10)
-                                                             .newRecord("exchangeState")
-                                                             .setTimestampInMillis(0, timestamp + 100)
-                                                             .setTimestampInMillis(1, timestamp + 100)
-                                                             .setByte(2, 5)
-                                                             .newRecord("exchangeState")
-                                                             .setTimestampInMillis(0, timestamp + 350)
-                                                             .setTimestampInMillis(1, timestamp + 350)
-                                                             .setByte(2, 10)
-                                                             .build();
+        DataBlock records = new DataBlockBuilder(this.def).newRecord("exchangeState")
+                                                          .setTimestampInMillis(0, timestamp)
+                                                          .setTimestampInMillis(1, timestamp)
+                                                          .setByte(2, 10)
+                                                          .newRecord("exchangeState")
+                                                          .setTimestampInMillis(0, timestamp + 100)
+                                                          .setTimestampInMillis(1, timestamp + 100)
+                                                          .setByte(2, 5)
+                                                          .newRecord("exchangeState")
+                                                          .setTimestampInMillis(0, timestamp + 350)
+                                                          .setTimestampInMillis(1, timestamp + 350)
+                                                          .setByte(2, 10)
+                                                          .build();
 
         this.partition.write(records, newFuture(0, 1));
 
@@ -910,19 +905,19 @@ public class TimeSeriesPartitionTest {
 
         long timestamp = TimeUtils.parseDateTime("2013-11-26 12:32:12.000");
 
-        List<TimeSeriesRecord> records = new RecordListBuilder(this.def).newRecord("exchangeState")
-                                                                        .setTimestampInMillis(0, timestamp)
-                                                                        .setTimestampInMillis(1, timestamp)
-                                                                        .setByte(2, 10)
-                                                                        .newRecord("exchangeState")
-                                                                        .setTimestampInMillis(0, timestamp + 100)
-                                                                        .setTimestampInMillis(1, timestamp + 100)
-                                                                        .setByte(2, 5)
-                                                                        .newRecord("exchangeState")
-                                                                        .setTimestampInMillis(0, timestamp + 350)
-                                                                        .setTimestampInMillis(1, timestamp + 350)
-                                                                        .setByte(2, 10)
-                                                                        .build();
+        DataBlock records = new DataBlockBuilder(this.def).newRecord("exchangeState")
+                                                          .setTimestampInMillis(0, timestamp)
+                                                          .setTimestampInMillis(1, timestamp)
+                                                          .setByte(2, 10)
+                                                          .newRecord("exchangeState")
+                                                          .setTimestampInMillis(0, timestamp + 100)
+                                                          .setTimestampInMillis(1, timestamp + 100)
+                                                          .setByte(2, 5)
+                                                          .newRecord("exchangeState")
+                                                          .setTimestampInMillis(0, timestamp + 350)
+                                                          .setTimestampInMillis(1, timestamp + 350)
+                                                          .setByte(2, 10)
+                                                          .build();
 
         this.partition.write(records, newFuture(0, 1));
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
@@ -932,15 +927,15 @@ public class TimeSeriesPartitionTest {
         assertEquals(0, this.partition.getMemoryUsage());
         assertEquals(null, this.partition.getFirstSegmentContainingNonPersistedData());
 
-        records = new RecordListBuilder(this.def).newRecord("exchangeState")
-                                                 .setTimestampInMillis(0, timestamp + 400)
-                                                 .setTimestampInMillis(1, timestamp + 400)
-                                                 .setByte(2, 0)
-                                                 .newRecord("exchangeState")
-                                                 .setTimestampInMillis(0, timestamp + 1200)
-                                                 .setTimestampInMillis(1, timestamp + 1200)
-                                                 .setByte(2, 0)
-                                                 .build();
+        records = new DataBlockBuilder(this.def).newRecord("exchangeState")
+                                                .setTimestampInMillis(0, timestamp + 400)
+                                                .setTimestampInMillis(1, timestamp + 400)
+                                                .setByte(2, 0)
+                                                .newRecord("exchangeState")
+                                                .setTimestampInMillis(0, timestamp + 1200)
+                                                .setTimestampInMillis(1, timestamp + 1200)
+                                                .setByte(2, 0)
+                                                .build();
 
         this.partition.write(records, newFuture(0, 2));
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
@@ -1017,19 +1012,19 @@ public class TimeSeriesPartitionTest {
 
         long timestamp = TimeUtils.parseDateTime("2013-11-26 12:32:12.000");
 
-        List<TimeSeriesRecord> records = new RecordListBuilder(this.def).newRecord("exchangeState")
-                                                                        .setTimestampInMillis(0, timestamp)
-                                                                        .setTimestampInMillis(1, timestamp)
-                                                                        .setByte(2, 10)
-                                                                        .newRecord("exchangeState")
-                                                                        .setTimestampInMillis(0, timestamp + 100)
-                                                                        .setTimestampInMillis(1, timestamp + 100)
-                                                                        .setByte(2, 5)
-                                                                        .newRecord("exchangeState")
-                                                                        .setTimestampInMillis(0, timestamp + 350)
-                                                                        .setTimestampInMillis(1, timestamp + 350)
-                                                                        .setByte(2, 10)
-                                                                        .build();
+        DataBlock records = new DataBlockBuilder(this.def).newRecord("exchangeState")
+                                                          .setTimestampInMillis(0, timestamp)
+                                                          .setTimestampInMillis(1, timestamp)
+                                                          .setByte(2, 10)
+                                                          .newRecord("exchangeState")
+                                                          .setTimestampInMillis(0, timestamp + 100)
+                                                          .setTimestampInMillis(1, timestamp + 100)
+                                                          .setByte(2, 5)
+                                                          .newRecord("exchangeState")
+                                                          .setTimestampInMillis(0, timestamp + 350)
+                                                          .setTimestampInMillis(1, timestamp + 350)
+                                                          .setByte(2, 10)
+                                                          .build();
 
         this.partition.write(records, newFuture(0, 1));
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
@@ -1039,15 +1034,15 @@ public class TimeSeriesPartitionTest {
         assertEquals(0, this.partition.getMemoryUsage());
         assertEquals(null, this.partition.getFirstSegmentContainingNonPersistedData());
 
-        records = new RecordListBuilder(this.def).newRecord("exchangeState")
-                                                 .setTimestampInMillis(0, timestamp + 400)
-                                                 .setTimestampInMillis(1, timestamp + 400)
-                                                 .setByte(2, 0)
-                                                 .newRecord("exchangeState")
-                                                 .setTimestampInMillis(0, timestamp + 1200)
-                                                 .setTimestampInMillis(1, timestamp + 1200)
-                                                 .setByte(2, 0)
-                                                 .build();
+        records = new DataBlockBuilder(this.def).newRecord("exchangeState")
+                                                .setTimestampInMillis(0, timestamp + 400)
+                                                .setTimestampInMillis(1, timestamp + 400)
+                                                .setByte(2, 0)
+                                                .newRecord("exchangeState")
+                                                .setTimestampInMillis(0, timestamp + 1200)
+                                                .setTimestampInMillis(1, timestamp + 1200)
+                                                .setByte(2, 0)
+                                                .build();
 
         this.partition.write(records, newFuture(0, 2));
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
@@ -1107,19 +1102,19 @@ public class TimeSeriesPartitionTest {
 
         long timestamp = TimeUtils.parseDateTime("2013-11-26 12:32:12.000");
 
-        List<TimeSeriesRecord> records = new RecordListBuilder(this.def).newRecord("exchangeState")
-                                                                        .setTimestampInMillis(0, timestamp)
-                                                                        .setTimestampInMillis(1, timestamp)
-                                                                        .setByte(2, 10)
-                                                                        .newRecord("exchangeState")
-                                                                        .setTimestampInMillis(0, timestamp + 100)
-                                                                        .setTimestampInMillis(1, timestamp + 100)
-                                                                        .setByte(2, 5)
-                                                                        .newRecord("exchangeState")
-                                                                        .setTimestampInMillis(0, timestamp + 350)
-                                                                        .setTimestampInMillis(1, timestamp + 350)
-                                                                        .setByte(2, 10)
-                                                                        .build();
+        DataBlock records = new DataBlockBuilder(this.def).newRecord("exchangeState")
+                                                          .setTimestampInMillis(0, timestamp)
+                                                          .setTimestampInMillis(1, timestamp)
+                                                          .setByte(2, 10)
+                                                          .newRecord("exchangeState")
+                                                          .setTimestampInMillis(0, timestamp + 100)
+                                                          .setTimestampInMillis(1, timestamp + 100)
+                                                          .setByte(2, 5)
+                                                          .newRecord("exchangeState")
+                                                          .setTimestampInMillis(0, timestamp + 350)
+                                                          .setTimestampInMillis(1, timestamp + 350)
+                                                          .setByte(2, 10)
+                                                          .build();
 
         this.partition.write(records, newFuture(0, 1));
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
@@ -1129,15 +1124,15 @@ public class TimeSeriesPartitionTest {
         assertEquals(0, this.partition.getMemoryUsage());
         assertEquals(null, this.partition.getFirstSegmentContainingNonPersistedData());
 
-        records = new RecordListBuilder(this.def).newRecord("exchangeState")
-                                                 .setTimestampInMillis(0, timestamp + 400)
-                                                 .setTimestampInMillis(1, timestamp + 400)
-                                                 .setByte(2, 0)
-                                                 .newRecord("exchangeState")
-                                                 .setTimestampInMillis(0, timestamp + 1200)
-                                                 .setTimestampInMillis(1, timestamp + 1200)
-                                                 .setByte(2, 0)
-                                                 .build();
+        records = new DataBlockBuilder(this.def).newRecord("exchangeState")
+                                                .setTimestampInMillis(0, timestamp + 400)
+                                                .setTimestampInMillis(1, timestamp + 400)
+                                                .setByte(2, 0)
+                                                .newRecord("exchangeState")
+                                                .setTimestampInMillis(0, timestamp + 1200)
+                                                .setTimestampInMillis(1, timestamp + 1200)
+                                                .setByte(2, 0)
+                                                .build();
 
         this.partition.write(records, newFuture(0, 2));
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
@@ -1191,23 +1186,23 @@ public class TimeSeriesPartitionTest {
 
         long timestamp = TimeUtils.parseDateTime("2013-11-26 12:32:12.000");
 
-        List<TimeSeriesRecord> records = new RecordListBuilder(this.def).newRecord("exchangeState")
-                                                                        .setTimestampInMillis(0, timestamp)
-                                                                        .setTimestampInMillis(1, timestamp)
-                                                                        .setByte(2, 10)
-                                                                        .newRecord("exchangeState")
-                                                                        .setTimestampInMillis(0, timestamp + 100)
-                                                                        .setTimestampInMillis(1, timestamp + 100)
-                                                                        .setByte(2, 5)
-                                                                        .newRecord("exchangeState")
-                                                                        .setTimestampInMillis(0, timestamp + 350)
-                                                                        .setTimestampInMillis(1, timestamp + 350)
-                                                                        .setByte(2, 10)
-                                                                        .newRecord("trade")
-                                                                        .setTimestampInMillis(0, timestamp + 380)
-                                                                        .setTimestampInMillis(1, timestamp + 380)
-                                                                        .setDouble(2, 12)
-                                                                        .build();
+        DataBlock records = new DataBlockBuilder(this.def).newRecord("exchangeState")
+                                                          .setTimestampInMillis(0, timestamp)
+                                                          .setTimestampInMillis(1, timestamp)
+                                                          .setByte(2, 10)
+                                                          .newRecord("exchangeState")
+                                                          .setTimestampInMillis(0, timestamp + 100)
+                                                          .setTimestampInMillis(1, timestamp + 100)
+                                                          .setByte(2, 5)
+                                                          .newRecord("exchangeState")
+                                                          .setTimestampInMillis(0, timestamp + 350)
+                                                          .setTimestampInMillis(1, timestamp + 350)
+                                                          .setByte(2, 10)
+                                                          .newRecord("trade")
+                                                          .setTimestampInMillis(0, timestamp + 380)
+                                                          .setTimestampInMillis(1, timestamp + 380)
+                                                          .setDouble(2, 12)
+                                                          .build();
 
         this.partition.write(records, newFuture(0, 1));
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
@@ -1217,15 +1212,15 @@ public class TimeSeriesPartitionTest {
         assertEquals(0, this.partition.getMemoryUsage());
         assertEquals(null, this.partition.getFirstSegmentContainingNonPersistedData());
 
-        records = new RecordListBuilder(this.def).newRecord("exchangeState")
-                                                 .setTimestampInMillis(0, timestamp + 400)
-                                                 .setTimestampInMillis(1, timestamp + 400)
-                                                 .setByte(2, 0)
-                                                 .newRecord("exchangeState")
-                                                 .setTimestampInMillis(0, timestamp + 1200)
-                                                 .setTimestampInMillis(1, timestamp + 1200)
-                                                 .setByte(2, 0)
-                                                 .build();
+        records = new DataBlockBuilder(this.def).newRecord("exchangeState")
+                                                .setTimestampInMillis(0, timestamp + 400)
+                                                .setTimestampInMillis(1, timestamp + 400)
+                                                .setByte(2, 0)
+                                                .newRecord("exchangeState")
+                                                .setTimestampInMillis(0, timestamp + 1200)
+                                                .setTimestampInMillis(1, timestamp + 1200)
+                                                .setByte(2, 0)
+                                                .build();
 
         this.partition.write(records, newFuture(0, 2));
         assertEquals(MEMTIMESERIES_SIZE, this.partition.getMemoryUsage());
